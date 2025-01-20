@@ -1,0 +1,8 @@
+airco_woonkamer_temperatuur_offset:
+  id: 721E5CBC-FE5C-4FE8-934A-BC6701F376CE
+  name: Airco Woonkamer Temperatuur Offset
+  min: -5
+  max: 5
+  step: 0.5
+  unit_of_measurement: "°C"
+  icon: mdi:thermometer
