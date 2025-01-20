@@ -70,7 +70,7 @@
       unit_of_measurement: "°C"
       value_template: >-
         {% if states('binary_sensor.airco_woonkamer_mag_verwarmen') %}
-            {{ states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | int + states('input_number.airco_woonkamer_temperatuur_offset') }}
+            {{ states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float + states('input_number.airco_woonkamer_temperatuur_offset') | float }}
         {% else %}
           {% if states('sensor.airco_woonkamer_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < (states('input_number.airco_woonkamer_drempelwaarde_koelen') | int) 
               and states('sensor.tstat_9d4027_current_temperature') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < (states('input_number.airco_woonkamer_drempelwaarde_koelen') | int)  %}
