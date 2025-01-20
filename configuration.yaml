@@ -46,8 +46,6 @@ tts:
   - platform: google_translate
     language: "nl"
 
-openhasp: !include includes/openhasp.yaml
-
 homeassistant:
   allowlist_external_dirs:
     - "/config/openhasp"
