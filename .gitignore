@@ -13,6 +13,7 @@ __pycache__
 .storage
 deps
 tts/*.mp3
+tts/*.wav
 
 # Specific file ignores
 core
