@@ -47,8 +47,6 @@ tts:
     language: "nl"
 
 homeassistant:
-  allowlist_external_dirs:
-    - "/config/openhasp"
   media_dirs:
     media: /media
 
