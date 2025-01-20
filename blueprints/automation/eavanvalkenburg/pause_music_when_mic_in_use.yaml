@@ -1,0 +1,64 @@
+blueprint:
+  name: Pause Music when Mic in use
+  description: Pause the music when a microphone is used, built for Mac.
+  domain: automation
+  input:
+    microphone_sensor:
+      name: Microphone Sensor
+      description: The sensor that gets set to the name of a microphone when it is
+        in use.
+      selector:
+        entity:
+          domain: sensor
+    microphone_name:
+      name: Name of the Microphone
+      description: The name the sensor takes on.
+    speaker:
+      name: Speaker
+      description: The speaker to pause.
+      selector:
+        entity:
+          domain: media_player
+    person:
+      name: Person
+      description: Select the person that needs to be at the zone selected.
+      selector:
+        entity:
+          domain: person
+    zone:
+      name: Zone
+      description: Select the Zone the person needs to be in.
+      default: zone.home
+      selector:
+        entity:
+          domain: zone
+  source_url: https://gist.github.com/eavanvalkenburg/9b232ce34270157110642c6cd25da8cf
+mode: single
+max_exceeded: silent
+trigger:
+  platform: state
+  entity_id: !input 'microphone_sensor'
+  to: !input 'microphone_name'
+variables:
+  zone: !input 'zone'
+  zone_name: '{{ zone[5:] }}'
+  entity: !input 'person'
+condition:
+- '{{is_state(entity, zone_name)}}'
+- condition: state
+  entity_id: !input 'speaker'
+  state: playing
+action:
+- service: media_player.media_pause
+  data:
+    entity_id: !input 'speaker'
+- wait_for_trigger:
+  - platform: state
+    entity_id: !input 'microphone_sensor'
+    to: Inactive
+  timeout:
+    minutes: 300
+  continue_on_timeout: false
+- service: media_player.media_play
+  data:
+    entity_id: !input 'speaker'

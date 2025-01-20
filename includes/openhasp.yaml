@@ -1,0 +1,219 @@
+plate:
+  objects:
+    - obj: "p1b2" # time label
+      properties:
+        "text": "{{ states('sensor.time') }}"
+
+    - obj: "p1b3" # source label
+      properties:
+        "text": "{{ state_attr('media_player.woonkamer','source') if state_attr('media_player.woonkamer','source') else 'Uit' }}"
+
+    - obj: "p1b4" # title label
+      properties:
+        "text": "{{ state_attr('media_player.woonkamer','media_title') if state_attr('media_player.woonkamer','media_title') else '-' }}"
+
+    - obj: "p1b5" # artist label
+      properties:
+        "text": "{{ state_attr('media_player.woonkamer','media_artist') if state_attr('media_player.woonkamer','media_artist') else '-' }}"
+
+    - obj: "p1b6" #volume up
+      event:
+        "down":
+          - service: media_player.volume_up
+            data:
+              entity_id: media_player.woonkamer,media_player.keuken
+
+    - obj: "p1b7" #volume down
+      event:
+        "down":
+          - service: media_player.volume_down
+            data:
+              entity_id: media_player.woonkamer,media_player.keuken
+
+    - obj: "p1b8" # repeat
+      properties:
+        "text": >
+          {% if is_state_attr('media_player.woonkamer', 'repeat', 'one') %}
+          {{ "\uE458" | e }}
+          {% elif is_state_attr('media_player.woonkamer', 'repeat', 'all') %}
+          {{ "\uE456" | e }}
+          {% else %}
+          {{ "\uE457" | e }}
+          {% endif %}
+        "text_opa": "{{ '80' if (is_state('media_player.woonkamer','unavailable') or is_state('media_player.woonkamer','unknown')) else '255' }}"
+      event:
+        "down":
+          - service: media_player.repeat_set
+            data:
+              entity_id: media_player.woonkamer
+              repeat: >
+                {% if is_state_attr('media_player.woonkamer', 'repeat', 'one') %}
+                all
+                {% elif is_state_attr('media_player.woonkamer', 'repeat', 'all') %}
+                off
+                {% elif is_state_attr('media_player.woonkamer', 'repeat', 'off') %}
+                one
+                {% endif %}
+    - obj: "p1b9" # prev
+      properties:
+        "text_opa": "{{ '80' if (is_state('media_player.woonkamer','unavailable') or is_state('media_player.woonkamer','unknown')) else '255' }}"
+      event:
+        "down":
+          - service: media_player.media_previous_track
+            target:
+              entity_id: media_player.woonkamer
+
+    - obj: "p1b10" # play/pause/stop
+      properties:
+        "text": >
+          {% if is_state('media_player.woonkamer', 'playing') %}
+          {{ "\uE3E4" | e }}
+          {% else %}
+          {{ "\uE40A" | e }}
+          {% endif %}
+        "text_opa": "{{ '80' if (is_state('media_player.woonkamer','unavailable') or is_state('media_player.woonkamer','unknown')) else '255' }}"
+      event:
+        "down":
+          - service: media_player.media_play_pause
+            target:
+              entity_id: media_player.woonkamer
+        "long":
+          - service: media_player.media_stop
+            target:
+              entity_id: media_player.woonkamer
+
+    - obj: "p1b11" # next
+      properties:
+        "text_opa": "{{ '80' if (is_state('media_player.woonkamer','unavailable') or is_state('media_player.woonkamer','unknown')) else '255' }}"
+      event:
+        "down":
+          - service: media_player.media_next_track
+            target:
+              entity_id: media_player.woonkamer
+
+    - obj: "p1b12" # shuffle
+      properties:
+        "text_color": >
+          {% if state_attr('media_player.woonkamer', 'shuffle') %}
+          {{ "green"}}
+          {% else %}
+          {{ "white" }}
+          {% endif %}
+      event:
+        "down":
+          - service: media_player.shuffle_set
+            data:
+              entity_id: media_player.woonkamer
+              shuffle: >
+                {% if state_attr('media_player.woonkamer', 'shuffle') %}
+                false
+                {% else %}
+                true
+                {% endif %}
+
+    # - obj: "p1b15"
+    #   properties:
+    #     "text": "{{ states('sensor.active_spotify_user_woonkamer')  }}"
+
+    - obj: "p1b16" # volume slider
+      properties:
+        "val": "{{ state_attr('media_player.woonkamer','volume_level') * 100 }}"
+        "click": "{{ 'false' if (is_state('media_player.woonkamer','unavailable') or is_state('media_player.woonkamer','unknown')) else 'true' }}"
+      event:
+        "changed":
+          - service: media_player.volume_set
+            data:
+              entity_id: media_player.woonkamer, media_player.keuken
+              volume_level: "{{ val | int / 100 }}"
+        "up":
+          - service: media_player.volume_set
+            data:
+              entity_id: media_player.woonkamer, media_player.keuken
+              volume_level: "{{ val | int / 100 }}"
+
+    - obj: "p2b5" #christian_chill overlay
+      event:
+        "up":
+          - service: spotcast.start
+            data:
+              uri: https://open.spotify.com/playlist/4Sn58FrYvZB9WtSORMOtcB?si=dcf9004ae0734fe2
+              account: "{{ states('sensor.laatste_spotify_gebruiker_woonkamer')  }}"
+              spotify_device_id: 683db77df6c0230b405c8f4f26c68c11d7056b90 #Woonkamer
+              shuffle: true
+              random_song: true
+          - service: openhasp.change_page
+            entity_id: openhasp.plate
+            data:
+              page: 1
+          - service: automation.trigger
+            entity_id: automation.woonkamer_veranderd_van_nummer
+    - obj: "p2b7" #christian_metal overlay
+      event:
+        "up":
+          - service: spotcast.start
+            data:
+              uri: https://open.spotify.com/playlist/25NnJlNpiQzdF165gm5N96?si=d72f9871b62f4c0e
+              account: "{{ states('sensor.laatste_spotify_gebruiker_woonkamer')  }}"
+              spotify_device_id: 683db77df6c0230b405c8f4f26c68c11d7056b90 #Woonkamer
+              shuffle: true
+              random_song: true
+          - service: openhasp.change_page
+            entity_id: openhasp.plate
+            data:
+              page: 1
+          - service: automation.trigger
+            entity_id: automation.woonkamer_veranderd_van_nummer
+    - obj: "p2b9" #dikkiedik overlay
+      event:
+        "up":
+          - service: spotcast.start
+            data:
+              uri: https://open.spotify.com/album/039lHS8vGY6jnx2Wd1EbpO?si=IE8TkKUGRvGCrFftkzBSDg&dl_branch=1
+              account: "{{ states('sensor.laatste_spotify_gebruiker_woonkamer')  }}"
+              spotify_device_id: 683db77df6c0230b405c8f4f26c68c11d7056b90 #Woonkamer
+              shuffle: false
+          - service: openhasp.change_page
+            entity_id: openhasp.plate
+            data:
+              page: 1
+          - service: automation.trigger
+            entity_id: automation.woonkamer_veranderd_van_nummer
+    - obj: "p2b11" #genietmomentjes overlay
+      event:
+        "up":
+          - service: spotcast.start
+            data:
+              uri: https://open.spotify.com/playlist/0TF6ITII7LNGUaXz9or82J?si=0a818317776249a8
+              account: "{{ states('sensor.laatste_spotify_gebruiker_woonkamer')  }}"
+              spotify_device_id: 683db77df6c0230b405c8f4f26c68c11d7056b90 #Woonkamer
+              shuffle: true
+              random_song: true
+          - service: openhasp.change_page
+            entity_id: openhasp.plate
+            data:
+              page: 1
+          - service: automation.trigger
+            entity_id: automation.woonkamer_veranderd_van_nummer
+    - obj: "p2b13" #christian acoustic overlay
+      event:
+        "up":
+          - service: spotcast.start
+            data:
+              uri: https://open.spotify.com/playlist/2ezjkeV1wJYYe7UyZlcF1M?si=242f1aba5d4347cd
+              account: "{{ states('sensor.laatste_spotify_gebruiker_woonkamer')  }}"
+              spotify_device_id: 683db77df6c0230b405c8f4f26c68c11d7056b90 #Woonkamer
+              shuffle: true
+              random_song: true
+          - service: openhasp.change_page
+            entity_id: openhasp.plate
+            data:
+              page: 1
+          - service: automation.trigger
+            entity_id: automation.woonkamer_veranderd_van_nummer
+    - obj: "p2b14"
+      event:
+        "down":
+          - service: media_player.select_source
+            data:
+              entity_id: media_player.woonkamer
+              source: "Groot Nieuws Radio"

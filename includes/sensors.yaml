@@ -1,0 +1,130 @@
+- platform: template
+  sensors:
+    lights_on_count:
+      friendly_name: Lampen aan
+      value_template: "{{ states.light|selectattr('state','equalto','on')|list|length }}"
+    woonkamer_temperatuur:
+      friendly_name: Woonkamer temperatuur
+      unit_of_measurement: "℃"
+      value_template: "{{ state_attr('climate.thermostaat', 'current_temperature') }}"
+
+    woonkamer_ingestelde_temperatuur:
+      friendly_name: Woonkamer ingestelde temperatuur
+      unit_of_measurement: "℃"
+      value_template: "{{ state_attr('climate.thermostaat', 'temperature') }}"
+
+    timestamp_start_van_vandaag:
+      value_template: >
+        {{ as_timestamp(now().replace(hour=0).replace(minute=0).replace(second=0)) }}
+      unit_of_measurement: "s"
+
+    half_uur_voor_alarm:
+      friendly_name: Halfuur voor alarm
+      value_template: >
+        {% set t_alarm = state_attr("input_datetime.wekker", "timestamp") | int %}
+        {% set t_start = states("sensor.timestamp_start_van_vandaag") | int %}
+        {% set half_hour_before_alarm = t_alarm + t_start - 60 * 30 %}
+        {{ half_hour_before_alarm | timestamp_custom("%H:%M", True) }}
+
+    half_uur_voor_werken:
+      friendly_name: Halfuur voor werken
+      value_template: >
+        {% set t_alarm = state_attr("input_datetime.werkdag_bram_start", "timestamp") | int %}
+        {% set t_start = states("sensor.timestamp_start_van_vandaag") | int %}
+        {% set half_hour_before_alarm = t_alarm + t_start - 60 * 30 %}
+        {{ half_hour_before_alarm | timestamp_custom("%H:%M", True) }}
+
+    dag_nl:
+      friendly_name: "dag nl"
+      value_template: >-
+        {% set dagen = ["Ma", "Di","Wo","Do","Vr","Za","Zo"] %}
+        {{ dagen[now().isoweekday()] }}
+    maand_nl:
+      friendly_name: "maand nl"
+      value_template: >-
+        {% set dagen = ["januari", "februari","maart","april","mei","juni","juli", "augustus", "september", "oktober", "november", "december"] %}
+        {{ dagen[now().month - 1] }}
+
+    calculated_current_energy_usage:
+      friendly_name: "Berekend huidig enegie verbruik"
+      value_template: >-
+        {% if states('sensor.power_produced') | int > 0 %}
+          -{{states('sensor.power_produced')}}
+        {% else %}
+            {{states('sensor.power_consumed')}}
+        {% endif %}
+      unit_of_measurement: "w"
+    self_used_energy:
+      friendly_name: "Zelf Gebruikte Energie"
+      value_template: >-
+        {{ (states('sensor.zonneplan_yield_today') | float) - (states('sensor.energy_produced_today') | float) }}
+      unit_of_measurement: "kWh"
+    self_sufficiency_score:
+      friendly_name: Zelfredzaamheid Score
+      value_template: >-
+        {{ (((states('sensor.self_used_energy') | float) /  (states('sensor.zonneplan_yield_today') | float)) * 100) | round }}
+      unit_of_measurement: "%"
+
+    airco_woonkamer_ideale_temperatuur:
+      friendly_name: "Airco Woonkamer Ideale Temperatuur"
+      unit_of_measurement: "°C"
+      value_template: >-
+        {% if states('sensor.airco_woonkamer_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < (states('input_number.airco_woonkamer_drempelwaarde_koelen') | int) 
+            and states('sensor.tstat_9d4027_current_temperature') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < (states('input_number.airco_woonkamer_drempelwaarde_koelen') | int)  %}
+          {{ states('input_number.airco_woonkamer_drempelwaarde_koelen') }}
+        {% else %}
+          {{ states('sensor.airco_woonkamer_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco') | int }}
+        {% endif %}
+
+    airco_zolder_ideale_temperatuur:
+      friendly_name: "Airco Zolder Ideale Temperatuur"
+      unit_of_measurement: "°C"
+      value_template: >-
+        {% if states('sensor.airco_zolder_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco_zolder') | int < (states('input_number.airco_zolder_drempelwaarde_koelen') | int) or states('sensor.airco_zolder_indoor') | int - states('input_number.maximaal_temperatuurverschil_airco_zolder') | int < (states('input_number.airco_zolder_drempelwaarde_koelen') | int)  %}
+         {{ states('input_number.airco_zolder_drempelwaarde_koelen') }}
+        {% else %}
+         {{ states('sensor.airco_zolder_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco_zolder') | int }}
+        {% endif %}
+
+- platform: time_date
+  display_options:
+    - "time"
+    - "date"
+    - "date_time"
+    - "date_time_utc"
+    - "date_time_iso"
+    - "time_date"
+    - "time_utc"
+
+- platform: integration
+  source: sensor.zonneplan_p1_electricity_production
+  name: electricity_production
+  unit_prefix: k
+  round: 2
+
+- platform: statistics
+  name: "Max Zonneplan P1 Electricity Average"
+  entity_id: sensor.zonneplan_p1_electricity_average
+  state_characteristic: value_max
+  max_age:
+    days: 365
+
+- platform: statistics
+  name: "Min Zonneplan P1 Electricity Average"
+  entity_id: sensor.zonneplan_p1_electricity_average
+  state_characteristic: value_min
+  max_age:
+    days: 365
+
+- platform: mqtt_room
+  device_id: "iphone_van_bram"
+  name: "iPhone van Bram"
+  state_topic: "espresense/devices/iphone_van_bram"
+  timeout: 10
+  away_timeout: 120
+- platform: mqtt_room
+  device_id: "apple_watch_van_bram"
+  name: "Apple Watch van Bram"
+  state_topic: "espresense/devices/apple_watch_van_bram"
+  timeout: 10
+  away_timeout: 120

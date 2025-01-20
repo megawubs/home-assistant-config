@@ -1,0 +1,3 @@
+energy_produced:
+  source: sendor.power_produced
+  cycle: daily

@@ -1,0 +1,294 @@
+- id: '1585591713468'
+  name: Movie Time
+  entities:
+    light.bank_lampen:
+      all_on: false
+      effect_list:
+      - colorloop
+      friendly_name: bank lampen
+      is_deconz_group: true
+      max_mireds: 500
+      min_mireds: 153
+      state: 'off'
+      supported_features: 47
+    light.hanglampen_eetkamertafel:
+      all_on: true
+      brightness: 33
+      effect_list:
+      - colorloop
+      friendly_name: Hanglampen Eetkamertafel
+      is_deconz_group: true
+      state: 'on'
+      supported_features: 45
+    light.hektars:
+      all_on: true
+      brightness: 5
+      color_temp: 370
+      effect_list:
+      - colorloop
+      friendly_name: hektars
+      is_deconz_group: true
+      max_mireds: 500
+      min_mireds: 153
+      state: 'on'
+      supported_features: 47
+    light.lamp_kast:
+      brightness: 24
+      friendly_name: Lamp Kast
+      is_deconz_group: false
+      state: 'on'
+      supported_features: 41
+- id: '1614750510452'
+  name: Vensterbank rustig
+  entities:
+    light.vensterbank:
+      effect_list:
+      - colorloop
+      brightness: 41
+      is_deconz_group: true
+      all_on: true
+      friendly_name: Vensterbank
+      supported_features: 45
+      state: 'on'
+- id: '1614751075645'
+  name: Vensterbank avond
+  entities:
+    light.vensterbank:
+      effect_list:
+      - colorloop
+      brightness: 254
+      is_deconz_group: true
+      all_on: true
+      friendly_name: Vensterbank
+      supported_features: 45
+      state: 'on'
+- id: '1614751187685'
+  name: Vensterbank spelen
+  entities:
+    light.vensterbank:
+      effect_list:
+      - colorloop
+      brightness: 104
+      is_deconz_group: true
+      all_on: true
+      friendly_name: Vensterbank
+      supported_features: 45
+      state: 'on'
+- id: '1698000461346'
+  name: Verlichting Avond
+  entities:
+    light.vensterbank:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 76
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Vensterbank
+      supported_features: 40
+      state: 'on'
+    light.hektars:
+      min_color_temp_kelvin: 1538
+      max_color_temp_kelvin: 7142
+      min_mireds: 140
+      max_mireds: 650
+      supported_color_modes:
+      - brightness
+      - color_temp
+      color_mode: color_temp
+      brightness: 51
+      color_temp_kelvin: 2702
+      color_temp: 370
+      hs_color:
+      - 28.391
+      - 65.659
+      rgb_color:
+      - 255
+      - 166
+      - 87
+      xy_color:
+      - 0.526
+      - 0.387
+      off_with_transition: false
+      off_brightness:
+      icon: mdi:floor-lamp-dual
+      friendly_name: Hektars
+      supported_features: 40
+      state: 'on'
+    light.hektar:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 48
+      off_with_transition: false
+      off_brightness:
+      friendly_name: HEKTAR
+      supported_features: 40
+      state: 'on'
+    light.box_links:
+      min_color_temp_kelvin: 2202
+      max_color_temp_kelvin: 4000
+      min_mireds: 250
+      max_mireds: 454
+      effect_list:
+      - colorloop
+      supported_color_modes:
+      - color_temp
+      - xy
+      color_mode: xy
+      brightness: 51
+      hs_color:
+      - 36.568
+      - 66.275
+      rgb_color:
+      - 255
+      - 189
+      - 86
+      xy_color:
+      - 0.501106
+      - 0.414984
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Box Links
+      supported_features: 44
+      state: 'on'
+    light.box_rechtss:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 51
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Box Rechtss
+      supported_features: 40
+      state: 'on'
+    light.hektar_mini_light:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 76
+      off_with_transition: false
+      off_brightness:
+      icon: mdi:desk-lamp
+      friendly_name: Hektar Mini Light
+      supported_features: 40
+      state: 'on'
+    light.boekenplank_light:
+      min_color_temp_kelvin: 2202
+      max_color_temp_kelvin: 4000
+      min_mireds: 250
+      max_mireds: 454
+      supported_color_modes:
+      - color_temp
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Boekenplank Light
+      supported_features: 40
+      color_mode: color_temp
+      brightness: 54
+      color_temp_kelvin: 2702
+      color_temp: 370
+      hs_color:
+      - 28.391
+      - 65.659
+      rgb_color:
+      - 255
+      - 166
+      - 87
+      xy_color:
+      - 0.526
+      - 0.387
+      state: 'on'
+    light.ikea_of_sweden_tradfri_bulb_e27_ww_806lm_light:
+      supported_color_modes:
+      - brightness
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Kastje Eetkamertafel Light
+      supported_features: 40
+      color_mode: brightness
+      brightness: 26
+      state: 'on'
+    light.bank_raam:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 102
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Bank Raam
+      supported_features: 40
+      state: 'on'
+    light.eetkamertafel_1:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 51
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Eetkamertafel 1
+      supported_features: 40
+      state: 'on'
+    light.eetkamertafel_2:
+      supported_color_modes:
+      - brightness
+      color_mode: brightness
+      brightness: 51
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Eetkamertafel 2 Light
+      supported_features: 40
+      state: 'on'
+    light.texas_instruments_cc2531_z_stack_home_1_2_build_20211115_keuken_zha_group_0x0003:
+      min_color_temp_kelvin: 2000
+      max_color_temp_kelvin: 6535
+      min_mireds: 153
+      max_mireds: 500
+      supported_color_modes:
+      - brightness
+      - color_temp
+      color_mode: color_temp
+      brightness: 61
+      color_temp_kelvin: 2066
+      color_temp: 484
+      hs_color:
+      - 30.315
+      - 91.076
+      rgb_color:
+      - 255
+      - 140
+      - 22
+      xy_color:
+      - 0.592
+      - 0.385
+      off_with_transition: false
+      off_brightness:
+      friendly_name: Texas Instruments CC2531, Z-Stack Home 1.2 (build 20211115) Keuken
+      supported_features: 40
+      state: 'on'
+  icon: mdi:lightbulb-night-outline
+  metadata:
+    light.vensterbank:
+      entity_only: true
+    light.hektars:
+      entity_only: true
+    light.hektar:
+      entity_only: true
+    light.box_links:
+      entity_only: true
+    light.box_rechtss:
+      entity_only: true
+    light.hektar_mini_light:
+      entity_only: true
+    light.boekenplank_light:
+      entity_only: true
+    light.ikea_of_sweden_tradfri_bulb_e27_ww_806lm_light:
+      entity_only: true
+    light.bank_raam:
+      entity_only: true
+    light.eetkamertafel_1:
+      entity_only: true
+    light.eetkamertafel_2:
+      entity_only: true
+    light.texas_instruments_cc2531_z_stack_home_1_2_build_20211115_keuken_zha_group_0x0003:
+      entity_only: true

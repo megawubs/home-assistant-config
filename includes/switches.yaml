@@ -1,0 +1,7 @@
+- platform: wake_on_lan
+  host: 192.168.68.111
+  name: tardis_wake_on_lan
+  turn_off:
+    - service: button.press
+      entity_id: button.tardis_shutdown
+  mac: 00:11:32:63:E5:F3

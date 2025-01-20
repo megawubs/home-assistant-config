@@ -1,0 +1,308 @@
+verwarmen:
+  alias: Verwarm het huis
+  sequence:
+  - service: climate.set_temperature
+    entity_id: climate.thermostaat
+    data:
+      temperature: '{{ states("input_number.verwarming_hoog") }}'
+  mode: single
+  icon: hass:fire
+verwaring_minimaal:
+  alias: Verwarming naar minimaale temperatuur
+  sequence:
+  - service: climate.set_temperature
+    entity_id: climate.thermostaat
+    data:
+      temperature: '{{ states("input_number.verwarming_laag") }}'
+  mode: single
+  icon: hass:water
+kantoor_verwarmen:
+  alias: Verwarm kantoor
+  sequence:
+  - service: climate.set_temperature
+    entity_id: climate.kantoor_2
+    data:
+      temperature: '{{ states("input_number.verwarming_kantoor_hoog") }}'
+  mode: single
+  icon: hass:fire
+verwaring_kantoor_minimaal:
+  alias: Verwarming kantoor naar minimaale temperatuur
+  sequence:
+  - service: climate.set_temperature
+    entity_id: climate.kantoor_2
+    data:
+      temperature: '{{ states("input_number.verwarming_kantoor_laag") }}'
+  mode: single
+  icon: hass:water
+vertrekken:
+  alias: Vertrekken van huis
+  sequence:
+  - service: script.set_low_temperature
+  - service: script.turn_off_everything
+thuiskomen:
+  alias: Thuiskomen
+  sequence: []
+  mode: single
+notificatie:
+  alias: Notificatie
+  sequence:
+  - service: notify.mobile_app_iphone_van_bram
+    data:
+      message: notificatie script getriggerd vanaf {{ automatisering }}
+  mode: parallel
+  max: 10
+badkamer_aan:
+  alias: Badkamer aan
+  sequence:
+  - choose:
+    - conditions:
+      - condition: time
+        after: 00:00:00
+        before: 06:00:00
+      sequence:
+      - service: light.turn_on
+        target:
+          entity_id: light.badkamer_leds
+        data:
+          brightness_pct: 25
+    - conditions:
+      - condition: time
+        after: 05:30:00
+        before: 07:00:00
+      sequence:
+      - service: light.turn_on
+        target:
+          entity_id: light.badkamer_leds
+        data:
+          brightness_pct: 40
+    - conditions:
+      - condition: sun
+        after: sunset
+        after_offset: '-2:00:00'
+      sequence:
+      - service: light.turn_on
+        target:
+          entity_id: light.badkamer_leds
+        data:
+          brightness_pct: 50
+    default:
+    - service: light.turn_on
+      target:
+        entity_id: light.badkamer_leds
+      data:
+        brightness_pct: 50
+  mode: single
+wakker_worden:
+  alias: Start Groot Nieuws Radio Beneden
+  sequence:
+  - data: {}
+    action: script.media_groepeer_woonkamer
+  - metadata: {}
+    data:
+      value: 0.01
+    target:
+      entity_id: input_number.volume_benedenverdieping
+    action: input_number.set_value
+  - target:
+      entity_id: media_player.woonkamer
+    data:
+      media_content_id: media-source://radio_browser/ead62101-c57c-4841-9677-8500f9097091
+      media_content_type: audio/mpeg
+    metadata:
+      title: Groot Nieuws Radio
+      thumbnail: https://www.grootnieuwsradio.nl/favicons/favicon-1-180x180.png
+      media_class: music
+      children_media_class:
+      navigateIds:
+      - {}
+      - media_content_type: app
+        media_content_id: media-source://radio_browser
+      - media_content_type: music
+        media_content_id: media-source://radio_browser/language
+      - media_content_type: music
+        media_content_id: media-source://radio_browser/language/nl
+    action: media_player.play_media
+  mode: single
+speel_geselecteerde_playlist_af:
+  alias: Speel geselecteerde playlist af
+  sequence:
+  - service: media_player.turn_on
+    data: {}
+    entity_id: media_player.sonic_box
+  - service: media_player.select_source
+    entity_id: media_player.sonic_box
+    data:
+      source: '{{ states(''input_select.sonos_source'') }}'
+  mode: single
+  icon: hass:music
+pauze_woonkamer:
+  alias: pauze woonkamer
+  sequence:
+  - service: linkplay.snapshot
+    data:
+      entity_id: media_player.woonkamer
+  mode: single
+woonkamer_aan:
+  alias: woonkamer aan
+  sequence:
+  - service: light.turn_on
+    data:
+      brightness_pct: 60
+    target:
+      entity_id: light.woonkamer
+  mode: single
+  icon: mdi:sofa
+media_groepeer_woonkamer:
+  alias: 'media: Groepeer Woonkamer'
+  sequence:
+  - data:
+      group_members:
+      - media_player.keuken
+      - media_player.eettafel
+    action: media_player.join
+    target:
+      entity_id: media_player.woonkamer
+  mode: single
+  icon: mdi:speaker-multiple
+woonkamer_uit:
+  alias: woonkamer uit
+  sequence:
+  - service: light.turn_off
+    data: {}
+    target:
+      entity_id: light.woonkamer
+  mode: single
+  icon: mdi:sofa-outline
+volume_benedenverdieping_laag:
+  alias: Volume benedenverdieping  laag
+  sequence:
+  - service: input_number.set_value
+    data:
+      value: 0.002
+    target:
+      entity_id: input_number.volume_benedenverdieping
+  mode: single
+  icon: mdi:volume-low
+mag_zolder_verwarming_aan:
+  alias: Mag zolder verwarming aan?
+  use_blueprint:
+    path: homeassistant/confirmable_notification.yaml
+    input:
+      notify_device: fbcc25d7bbac594a8027a2660eae7142
+      title: Verwarming zolder
+      message: Mag de verwarming op zolder aan gaan?
+      confirm_text: Ja
+      dismiss_text: Nee
+      confirm_action:
+      - service: script.verwarming_zolder_aan
+        data: {}
+      - service: notify.mobile_app_iphone_van_bram
+        metadata: {}
+        data:
+          message: Oke, de verwarming is aan!
+      dismiss_action:
+      - service: notify.mobile_app_iphone_van_bram
+        metadata: {}
+        data:
+          message: Nou goed dan, ik doe het niet aan
+  icon: mdi:heat-wave
+verwarming_zolder_aan:
+  alias: Verwarming zolder aan
+  sequence:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.vloerverwarming_bureau_zolder
+    action: switch.turn_on
+  mode: single
+  icon: mdi:radiator
+zolder_verwarming_uit:
+  alias: Zolder verwarming uit
+  sequence:
+  - metadata: {}
+    data: {}
+    target:
+      entity_id:
+      - switch.vloerverwarming_bureau_zolder
+    action: switch.turn_off
+  mode: single
+  icon: mdi:radiator-off
+apple_tv_aan:
+  alias: Apple TV Aan
+  sequence:
+  - action: remote.send_command
+    metadata: {}
+    data:
+      device: television
+      command: power
+    target:
+      entity_id: remote.rm_pro_remote
+  - action: media_player.turn_on
+    target:
+      entity_id: media_player.woonkamer_tv
+    data: {}
+  description: ''
+volume_benedenverdieping_laag_2:
+  alias: Volume Benedenverdieping Laag
+  sequence:
+  - action: input_number.set_value
+    metadata: {}
+    data:
+      value: 0.005
+    target:
+      entity_id: input_number.volume_benedenverdieping
+  description: ''
+  icon: mdi:volume-low
+airco_moet_omschakelen:
+  sequence:
+  - if:
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_aan
+        state: 'on'
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_aan
+        state: 'off'
+        enabled: false
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_uit
+        state: 'off'
+    then:
+    - action: input_boolean.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.airco_woonkamer_moet_uit
+    - action: input_boolean.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.airco_woonkamer_moet_aan
+  - if:
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_aan
+        state: 'off'
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_aan
+        state: 'off'
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_uit
+        state: 'off'
+    then:
+    - action: input_boolean.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.airco_woonkamer_moet_aan
+    - action: input_boolean.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - input_boolean.airco_woonkamer_moet_uit
+  alias: Airco Moet Omschakelen
+  description: ''

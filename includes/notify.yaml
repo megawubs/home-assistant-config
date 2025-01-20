@@ -1,0 +1,10 @@
+- platform: group
+  name: alle_notifiables
+  services:
+    - service: mobile_app_iphone_van_bram
+    - service: mobile_app_iphone_van_maninne
+    - service: mobile_app_ipad_van_maninne
+- platform: group
+  name: bram
+  services:
+    - service: mobile_app_iphone_van_bram

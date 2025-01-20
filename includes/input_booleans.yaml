@@ -1,0 +1,6 @@
+automatische_temperatuur:
+  name: Automatische temperatuur
+  icon: mdi:thermometer
+wekker:
+  name: Wekker is aan
+  icon: mdi:alarm

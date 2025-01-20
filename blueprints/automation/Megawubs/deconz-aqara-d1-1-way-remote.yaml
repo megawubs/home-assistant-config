@@ -1,0 +1,52 @@
+blueprint:
+  name: deCONZ - Aqara D1 (1 way) remote
+  description: 'Control anything with an Aqara D1 (1 way) remote (WXKG06LM).'
+  domain: automation
+  input:
+    remote:
+      name: Remote
+      description: Aqara D1 remote to use
+      selector:
+        device:
+          integration: deconz
+          manufacturer: LUMI
+          model: lumi.remote.b186acn02
+    single_press:
+      name: Single press
+      description: Action for single press of the button
+      default: []
+      selector:
+        action: {}
+    double_press:
+      name: Double press
+      description: Action for double press of the button
+      default: []
+      selector:
+        action: {}
+    long_press:
+      name: Hod
+      description: Action for long press of the button
+      default: []
+      selector:
+        action: {}
+  source_url: https://community.home-assistant.io/t/deconz-aqara-d1-1-way-remote-for-cover/257033
+mode: restart
+max_exceeded: silent
+trigger:
+- platform: event
+  event_type: deconz_event
+  event_data:
+    device_id: !input 'remote'
+action:
+- variables:
+    event: '{{ trigger.event.data.event }}'
+- choose:
+  - conditions:
+    - '{{ event == 1004 }}'
+    sequence: !input 'double_press'
+  - conditions:
+    - '{{ event == 1002 }}'
+    sequence: !input 'single_press'
+  - conditions:
+    - '{{ event == 1001 }}'
+    sequence: !input 'long_press'

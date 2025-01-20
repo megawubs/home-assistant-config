@@ -1,0 +1,70 @@
+- trigger:
+    - alias: Triggers every hour
+      platform: time_pattern
+      hours: "/1"
+    - alias: Triggers on home assistant startup
+      platform: homeassistant
+      event: start
+  action:
+    - alias: Collects the price information and stores this in a response variable
+      action: energyzero.get_energy_prices # replace with the service call for your integration
+      data:
+        incl_vat: false
+        config_entry: 01JGGZTXR5HD7DBK23BXAN38CM
+        start: "{{ today_at() - timedelta(days=1) }}"
+        end: "{{ today_at() + timedelta(days=2) }}"
+      response_variable: prices
+  sensor:
+    - unique_id: 79c470d8-4ccd-4f44-b3a2-e3d59d5dda8a
+      name: Energy Zero prices
+      state: "{{ prices.prices | selectattr('timestamp', '<=', utcnow().strftime('%Y-%m-%d %H:%M:%S+00:00')) | map(attribute='price') | list | last }}"
+      attributes:
+        prices: "{{ prices.prices }}"
+- trigger:
+    - alias: Triggers on home assistant startup
+      platform: homeassistant
+      event: start
+    - platform: time
+      at:
+        - "14:00"
+        - "15:00"
+        - "19:30"
+        - "20:30"
+        - "21:30"
+  sensor:
+    - unique_id: 5CF293DD-C1DA-4EF6-A1F2-CA78C66CDE17
+      name: Wasmachine starttijd
+      device_class: timestamp
+      state: >
+        {%- set sensor = 'sensor.energy_zero_prices' -%}
+        {% set duration = states('sensor.484020536050000148_bsh_common_option_estimatedtotalprogramtime') %}
+        {% set parts = duration.split(':') %}
+        {% set hours = parts[0] | int %}
+        {% set minutes = parts[1] | int %}
+        {% set hours = hours + (minutes / 60) %}
+        {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+        {{ cheapest_energy_hours(sensor=sensor, time_key='timestamp', hours=hours, start='14:00', end='13:50', include_tomorrow=true) }}
+- trigger:
+    - alias: Triggers on home assistant startup
+      platform: homeassistant
+      event: start
+    - platform: time
+      at:
+        - "14:00"
+        - "15:00"
+        - "19:30"
+        - "20:30"
+        - "21:30"
+  sensor:
+    - unique_id: 777C5388-4A57-4799-BD41-B5E15D395B55
+      name: Droger starttijd
+      device_class: timestamp
+      state: >
+        {%- set sensor = 'sensor.energy_zero_prices' -%}
+        {% set duration = states('sensor.464020536443001457_bsh_common_option_estimatedtotalprogramtime') %}
+        {% set parts = duration.split(':') %}
+        {% set hours = parts[0] | int %}
+        {% set minutes = parts[1] | int %}
+        {% set hours = hours + (minutes / 60) %}
+        {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+        {{ cheapest_energy_hours(sensor=sensor, time_key='timestamp', hours=hours, start='14:00', end='13:50', include_tomorrow=true) }}

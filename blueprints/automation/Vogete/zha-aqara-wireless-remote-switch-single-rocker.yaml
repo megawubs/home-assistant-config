@@ -1,0 +1,58 @@
+blueprint:
+  name: ZHA - Aqara Wireless Remote Switch (Single Rocker)
+  description: Automate your Xiaomi Aqara Wireless Remote Switch (Single Rocker) using
+    ZHA events.
+  domain: automation
+  input:
+    aqara_mini_switch:
+      name: Select the Aqara Wireless Remote Switch (Single Rocker)
+      description: Aqara Wireless Remote Switch (Single Rocker)
+      selector:
+        device:
+          integration: zha
+          manufacturer: LUMI
+          entity:
+          - domain:
+            - sensor
+            device_class:
+            - battery
+          multiple: false
+    button_single_press:
+      name: Single Press
+      description: Action to run on single press
+      default: []
+      selector:
+        action: {}
+    button_double_press:
+      name: Double Press
+      description: Action to run on double press
+      default: []
+      selector:
+        action: {}
+    button_long_press:
+      name: Long Press
+      description: Action to run when button is long pressed (held down)
+      default: []
+      selector:
+        action: {}
+  source_url: https://community.home-assistant.io/t/zha-aqara-wireless-remote-switch-single-rocker/266708
+mode: restart
+max_exceeded: silent
+trigger:
+- platform: event
+  event_type: zha_event
+  event_data:
+    device_id: !input aqara_mini_switch
+action:
+- variables:
+    command: '{{ trigger.event.data.command }}'
+- choose:
+  - conditions:
+    - '{{ command == ''single'' }}'
+    sequence: !input button_single_press
+  - conditions:
+    - '{{ command == ''double'' }}'
+    sequence: !input button_double_press
+  - conditions:
+    - '{{ command == ''long press'' }}'
+    sequence: !input button_long_press

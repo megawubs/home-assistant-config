@@ -1,0 +1,29 @@
+- filter:
+    include_domains:
+      - climate
+      - light
+      - cover
+    include_entities:
+      - group.adguard
+      - switch.slaapkamer
+      - switch.afzuiging
+      - switch.bijkeuken_lamp
+      - switch.bijkeuken_zolder
+      - sensor.badkamer_mulitisensor_druk
+      - sensor.badkamer_multisensor_luchtvochtigheid
+      - sensor.badkamer_multisensor_temperatuur
+      - binary_sensor.badkamer_deur_openen
+      - binary_sensor.voordeur
+      - input_boolean.bram_is_thuis
+      - input_boolean.maninne_is_thuis
+      - input_boolean.modus_gast
+      - binary_sensor.activiteit_in_de_woonkamer
+      - binary_sensor.activiteit_in_de_keuken
+      - binary_sensor.activiteit_in_de_bijkeuken
+      - binary_sensor.activiteit_in_de_hal
+      - binary_sensor.activiteit_op_de_overloop
+      - binary_sensor.activiteit_in_de_badkamer
+      - binary_sensor.beweging_overloop_zolder_beweging
+      - scene.verlichting_avond
+      - switch.tardis_wake_on_lan
+      - cover.rolgordijn_eetkamertafel_rechts_raambekleding

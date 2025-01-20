@@ -1,0 +1,64 @@
+# Configure a default setup of Home Assistant (frontend, api, etc)
+default_config:
+
+# Core Configuration
+frontend:
+  themes: !include_dir_merge_named themes
+  extra_module_url:
+    - /local/card-mod.js
+http: !include includes/http.yaml
+
+# Inputs
+input_number: !include includes/input_numbers.yaml
+input_datetime: !include includes/input_datetimes.yaml
+input_boolean: !include includes/input_booleans.yaml
+input_select: !include includes/input_selects.yaml
+
+# Logging and history
+recorder:
+  db_url: !secret db_url
+history:
+logger:
+  default: warning
+
+# Sensors
+binary_sensor: !include includes/binary_sensors.yaml
+sensor: !include includes/sensors.yaml
+template: !include includes/templates.yaml
+switch: !include includes/switches.yaml
+
+#utiltity
+utility_meter: !include includes/utility_meters.yaml
+
+calendar: !include includes/calendar.yaml
+homekit: !include includes/homekit.yaml
+cover: !include includes/covers.yaml
+automation: !include automations.yaml
+automation old: !include_dir_merge_list automations
+# light: !include includes/lights.yaml
+notify: !include includes/notify.yaml
+group: !include groups.yaml
+script: !include scripts.yaml
+scene: !include scenes.yaml
+shell_command: !include includes/shell_commands.yaml
+wake_on_lan:
+tts:
+  - platform: google_translate
+    language: "nl"
+
+openhasp: !include includes/openhasp.yaml
+
+homeassistant:
+  allowlist_external_dirs:
+    - "/config/openhasp"
+  media_dirs:
+    media: /media
+
+lovelace:
+  mode: storage
+
+zha:
+  custom_quirks_path: /config/zha/quirks/
+  zigpy_config:
+    ota:
+      ikea_provider: true

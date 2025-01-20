@@ -1,0 +1,63 @@
+hal_beweging_sensors:
+  entities:
+    - binary_sensor.activiteit_bij_de_trap
+
+bewoners:
+  entities:
+    - person.bram_wubs
+    - person.maninne_wubs
+
+adguard:
+  name: Adguard
+  icon: mdi:shield-check
+  entities:
+    - switch.adguard_filtering
+    - switch.adguard_protection
+    - switch.adguard_safe_browsing
+    - switch.adguard_safe_search
+    - switch.adguard_parental_control
+
+iphone_bram:
+  - sensor.iphone_van_bram_activity
+  - sensor.iphone_van_bram_average_active_pace
+  - sensor.iphone_van_bram_bssid
+  - sensor.iphone_van_bram_battery_level
+  - sensor.iphone_van_bram_battery_state
+  - sensor.iphone_van_bram_connection_type
+  - sensor.iphone_van_bram_distance
+  - sensor.iphone_van_bram_floors_ascended
+  - sensor.iphone_van_bram_floors_descended
+  - sensor.iphone_van_bram_geocoded_location
+  - sensor.iphone_van_bram_last_update_trigger
+  - sensor.iphone_van_bram_sim_1
+  - sensor.iphone_van_bram_ssid
+  - sensor.iphone_van_bram_steps
+  - device_tracker.iphone_van_bram
+
+iphone_maninne:
+  - sensor.iphone_van_maninne_activity
+  - sensor.iphone_van_maninne_average_active
+  - sensor.iphone_van_maninne_bssid
+  - sensor.iphone_van_maninne_battery_level
+  - sensor.iphone_van_maninne_battery_state
+  - sensor.iphone_van_maninne_connection_type
+  - sensor.iphone_van_maninne_distance
+  - sensor.iphone_van_maninne_floors_ascended
+  - sensor.iphone_van_maninne_floors_descended
+  - sensor.iphone_van_maninne_geocoded_location
+  - sensor.iphone_van_maninne_last_update_trigger
+  - sensor.iphone_van_maninne_sim_1
+  - sensor.iphone_van_maninne_sim_2
+  - sensor.iphone_van_maninne_ssid
+  - sensor.iphone_van_maninne_steps
+  - device_tracker.iphone_van_maninne
+
+ignored_entities:
+  entities:
+    - binary_sensor.updater
+
+room_assistant_trackers:
+  entities:
+    - sensor.iphone_van_bram_kamer
+    - sensor.iphone_van_maninne_kamer
+

@@ -1,0 +1,109 @@
+substitutions:
+  current_temperature: sensor.tstat_9d4027_current_temperature
+
+
+esphome:
+  name: m5paper-airco-controll
+  friendly_name: M5Paper Airco Controll
+  includes: text_utils.h
+  on_boot:
+    - priority: 220.0
+      then:
+        - it8951e.clear
+        - delay: 100ms
+        - component.update: m5paper_display
+    - priority: -100.0
+      then:
+        - delay: 5s
+        - component.update: m5paper_display
+
+external_components:
+  - source: github://Passific/m5paper_esphome
+
+esp32:
+  board: m5stack-grey
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "nJWx/Q7iXn8JUS5wGauTiDtDOCGf6J+MXE2Y9PHUvX8="
+
+ota:
+  - platform: esphome
+    password: "3246bcd27cfefbb3f8a914cdca6a9c6e"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "M5Paper-Airco-Controll"
+    password: "5MVSklicPVSr"
+
+font:
+  - file: 'gfonts://Roboto'
+    id: small_font
+    size: 25
+  - file: 'gfonts://Roboto'
+    id: normal_font
+    size: 40
+  - file: 'gfonts://Roboto@medium'
+    id: big_font
+    size: 80
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: small_icon
+    size: 25
+    glyphs: [
+      "󱦲", # arrow-up-thin
+      "󱦳", # arrow-down-thin
+      ] 
+
+captive_portal:
+# Enable psram
+psram:
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO12
+  miso_pin: GPIO13
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+
+touchscreen:
+  - platform: gt911
+    display: m5paper_display
+    id: gt911_touchscreen
+    interrupt_pin: GPIO36
+
+m5paper:
+  battery_power_pin: GPIO5
+  main_power_pin: GPIO2
+
+sensor:
+  - platform: homeassistant
+    name: Temperatuur Woonkamer
+    entity_id: ${current_temperature}
+
+display:
+  - platform: it8951e
+    id: m5paper_display
+    cs_pin: GPIO15
+    reset_pin: GPIO23
+    reset_duration: 100ms
+    busy_pin: GPIO27
+    rotation: 0
+    reversed: False
+    update_interval: never
+    lambda: |-
+        int width = GetTextWidth(&it, id(big_font), "%d", int(id((current_temperature).state));
+        int offset = 150 - (width/2);
+        it.printf(base_x + 150 - offset, base_y + 155, id(big_font), "%d",int(id(current_temperature).state));
+

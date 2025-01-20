@@ -1,0 +1,245 @@
+substitutions:
+  device_name: M5Paper
+  yield_today: sensor.zonneplan_yield_today
+  returned_today: sensor.energy_produced_today
+  consuption_today: sensor.energy_consumed_today
+  current_energy_usage: sensor.calculated_current_energy_usage
+  gas_today: sensor.gas_consumed_today
+
+esphome:
+  name: m5paper
+  friendly_name: M5Paper
+  includes: text_utils.h
+  on_boot:
+    - priority: 220.0
+      then:
+        - it8951e.clear
+        - delay: 100ms
+        - component.update: m5paper_display
+    - priority: -100.0
+      then:
+        - delay: 10s
+        - component.update: m5paper_display
+
+external_components:
+  - source: github://Passific/m5paper_esphome
+
+esp32:
+  board: m5stack-grey
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "Z0GZVuDkGNjCD3ijRiUTbhdjczQVz6saTlrgzJI+kVY="
+
+ota:
+  password: "2b2720bb74b4365e59df1c3a6c9739e5"
+  platform: esphome
+
+globals:
+  - id: material_icons_map
+    type: std::map<std::string, std::string>
+    restore_value: no
+    initial_value: |
+      {
+        {"mdi-arrow-up-thin", "󱦲"},
+        {"mdi-arrow-down-thin", "󱦳"},
+      }
+
+font:
+  - file: 'gfonts://Roboto'
+    id: small_font
+    size: 25
+  - file: 'gfonts://Roboto'
+    id: normal_font
+    size: 40
+  - file: 'gfonts://Roboto@medium'
+    id: big_font
+    size: 80
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: small_icon
+    size: 25
+    glyphs: [
+      "󱦲", # arrow-up-thin
+      "󱦳", # arrow-down-thin
+      ] 
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "M5Paper Fallback Hotspot"
+    password: "tWmXj4XiezXP"
+
+captive_portal:
+# Enable psram
+psram:
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO12
+  miso_pin: GPIO13
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+
+display:
+  - platform: it8951e
+    id: m5paper_display
+    cs_pin: GPIO15
+    reset_pin: GPIO23
+    reset_duration: 100ms
+    busy_pin: GPIO27
+    rotation: 0
+    reversed: False
+    update_interval: never
+    lambda: |-
+      uint base_y = 20;
+      uint base_x = 25;
+      uint base_x_second = base_x + 500;
+      
+      Color icon_color;
+      icon_color.raw_32 = 0x0D;
+
+      // auto white = Color(255, 255, 255);
+      // it.filled_circle(base_x + 220, base_y+ 200, 130, );
+
+      // average electicity
+      int width = GetTextWidth(&it, id(big_font), "%d", int(id(current_energy_usage).state));
+      int offset = 150 - (width/2);
+      it.printf(base_x + 150 - offset, base_y + 155, id(big_font), "%d",int(id(current_energy_usage).state));
+      it.print(base_x + 150 - offset + (width/2), base_y + 250, id(normal_font), "W");
+      it.print(base_x + 125, base_y + 332, id(small_icon), "󱦲");  // arrow-up-thin
+      //retunred today
+      it.printf(base_x + 150, base_y + 330, id(small_font), "%.1f", id(returned_today).state);
+      it.print(base_x + 215, base_y + 335, id(small_icon), "󱦳");  // arrow-down-thin
+      // consumed today
+      it.printf(base_x + 240, base_y + 330, id(small_font), "%.1f", id(consuption_today).state);
+      it.print(base_x + 190, base_y + 370, id(small_font), "kWh");
+
+      
+      //gas usage today
+      
+      it.printf(base_x + 540, base_y + 270, id(big_font), "%.1f", id(gas_today).state);
+      it.print(base_x+570, base_y + 375, id(normal_font), "m3");
+
+
+touchscreen:
+  - platform: gt911
+    display: m5paper_display
+    id: gt911_touchscreen
+    interrupt_pin: GPIO36
+
+m5paper:
+  battery_power_pin: GPIO5
+  main_power_pin: GPIO2
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/Amsterdam
+    on_time_sync:
+      - bm8563.write_time
+  - platform: bm8563
+    id: rtc_time
+    sleep_duration: 60000ms
+    on_time:
+      - seconds: 0
+        then:
+          - component.update: m5paper_display
+
+sensor:
+  - platform: adc
+    disabled_by_default: true
+    pin: GPIO35
+    name: ${device_name} battery voltage
+    id: m5paper_battery_voltage
+    update_interval: 10s
+    attenuation: 11db
+    filters:
+      - multiply: 2 #1,27272727
+  - platform: sht3xd
+    temperature:
+      name: ${device_name} temperature
+      id: m5paper_temperature
+      device_class: "temperature"
+      state_class: "measurement"
+      icon: mdi:thermometer
+    humidity:
+      name: ${device_name} humidity
+      id: m5paper_humidity
+      device_class: "humidity"
+      state_class: "measurement"
+      icon: mdi:water-percent
+    address: 0x44
+    update_interval: 10s
+  - platform: template
+    name: ${device_name} battery level
+    id: m5paper_battery_level
+    unit_of_measurement: '%'
+    device_class: "battery"
+    state_class: "measurement"
+    icon: mdi:battery-high
+    update_interval: 20s
+    lambda: |-
+      constexpr float min_level = 3.52;
+      constexpr float max_level = 4.15;
+      return ((id(m5paper_battery_voltage).state - min_level) / (max_level - min_level)) * 100.00;
+    filters:
+      - clamp:
+          min_value: 0
+          max_value: 100
+  - platform: homeassistant
+    name: Yield Today
+    id: yield_today
+    entity_id: ${yield_today}
+  - platform: homeassistant
+    name: Consuption Today
+    id: consuption_today
+    entity_id: ${consuption_today}
+  - platform: homeassistant
+    name: Returned Today
+    id: returned_today
+    entity_id: ${returned_today}
+  - platform: homeassistant
+    name: Gas Today
+    id: gas_today
+    entity_id: ${gas_today}
+  - platform: homeassistant
+    name: Average Elicticity
+    id: current_energy_usage
+    entity_id: ${current_energy_usage}
+  - platform: homeassistant
+    entity_id: sensor.7731xe_14_bio
+    id: rova_bio
+
+binary_sensor:
+  - platform: gpio
+    name: ${device_name} right button
+    id: right_button
+    icon: mdi:gesture-tap-button
+    pin:
+      number: GPIO37
+      inverted: true
+    on_release:
+      - component.update: m5paper_display
+  - platform: gpio
+    name: ${device_name} BTN/PWR button
+    icon: mdi:gesture-tap-button
+    pin:
+      number: GPIO38
+      inverted: true
+  - platform: gpio
+    name: ${device_name} left button
+    icon: mdi:gesture-tap-button
+    pin:
+      number: GPIO39
+      inverted: true

@@ -1,0 +1,103 @@
+blueprint:
+  name: deCONZ - IKEA five button remote for media player controlls
+  description:
+    'Control media players with an IKEA five button remote (the round ones).
+
+
+    The middle "on" button, toggles the play/pause of the chosen media player(s).
+
+    Dim up/down buttons will change the volume smoothly and can be pressed and
+    hold until the music volume is satisfactory.
+
+    The "left" and "right" buttons short press will go to previous and next track. The long button press
+    action can be assigned custom actions. This allows you to assign, e.g., a playlist or anything else.'
+  domain: automation
+  input:
+    remote:
+      name: Remote
+      description: IKEA remote to use
+      selector:
+        device:
+          integration: deconz
+          manufacturer: IKEA of Sweden
+          model: TRADFRI remote control
+    media_player:
+      name: Media Players(s)
+      description: The media player(s) to control
+      selector:
+        target:
+          entity:
+            domain: media_player
+    button_left_long:
+      name: Left button - long press
+      description: Action to run on long left button press
+      default: []
+      selector:
+        action: {}
+    button_right_long:
+      name: Right button - long press
+      description: Action to run on long right button press
+      default: []
+      selector:
+        action: {}
+  source_url: https://community.home-assistant.io/t/deconz-ikea-five-button-remote-for-lights/255403
+mode: restart
+max_exceeded: silent
+trigger:
+  - platform: event
+    event_type: deconz_event
+    event_data:
+      device_id: !input "remote"
+action:
+  - variables:
+      event: "{{ trigger.event.data.event }}"
+  - choose:
+      - conditions:
+          - "{{ event == 2001 }}"
+        sequence:
+          - repeat:
+              count: 10
+              sequence:
+                - service: media_player.volume_up
+                  target: !input "media_player"
+                - delay: 1
+      - conditions:
+          - "{{ event == 1002 }}"
+        sequence:
+          - service: media_player.media_play_pause
+            target: !input "media_player"
+      - conditions:
+          - "{{ event == 2002 }}"
+        sequence:
+          - service: media_player.volume_up
+            target: !input "media_player"
+      - conditions:
+          - "{{ event == 3002 }}"
+        sequence:
+          - service: media_player.volume_down
+            target: !input "media_player"
+      - conditions:
+          - "{{ event == 3001 }}"
+        sequence:
+          - repeat:
+              count: 10
+              sequence:
+                - service: media_player.volume_down
+                  target: !input "media_player"
+                - delay: 1
+      - conditions:
+          - "{{ event == 5002 }}"
+        sequence:
+          - service: media_player.media_next_track
+            target: !input "media_player"
+      - conditions:
+          - "{{ event == 5001 }}"
+        sequence: !input "button_left_long"
+      - conditions:
+          - "{{ event == 4002 }}"
+        sequence:
+          - service: media_player.media_previous_track
+            target: !input "media_player"
+      - conditions:
+          - "{{ event == 4001 }}"
+        sequence: !input "button_right_long"
