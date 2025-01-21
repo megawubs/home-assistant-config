@@ -3175,6 +3175,9 @@
   - trigger: state
     entity_id:
     - input_number.airco_woonkamer_drempelwaarde_verwarmen
+  - trigger: state
+    entity_id:
+    - input_number.airco_woonkamer_temperatuur_offset
   conditions: []
   actions:
   - choose:
@@ -3300,7 +3303,8 @@
           label_id: airco_beneden
         action: climate.set_hvac_mode
       - data:
-          temperature: 20
+          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+            float }}'
         target:
           label_id: airco_beneden
         action: climate.set_temperature
