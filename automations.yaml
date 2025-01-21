@@ -2845,47 +2845,46 @@
           entity_id: light.kantoor_lamp
           state: 'on'
         then:
-        - service: light.turn_off
-          data: {}
+        - data: {}
           target:
             entity_id: light.kantoor_lamp
-        - service: input_boolean.turn_off
-          data: {}
+          action: light.turn_off
+        - data: {}
           target:
             entity_id: input_boolean.zolder_automatiche_verlichting
+          action: input_boolean.turn_off
         else:
-        - service: light.turn_on
-          data: {}
+        - data: {}
           target:
             entity_id: light.kantoor_lamp
-        - service: input_boolean.turn_on
-          data: {}
+          action: light.turn_on
+        - data: {}
           target:
             entity_id: input_boolean.zolder_automatiche_verlichting
+          action: input_boolean.turn_on
       action_button_down_short:
       - if:
         - condition: state
           state: 'on'
           entity_id: light.bureau_licht
         then:
-        - service: light.turn_off
-          data: {}
+        - data: {}
+          action: light.turn_off
           target:
-            entity_id: light.bureau_licht
-        - service: input_boolean.turn_off
-          data: {}
+            entity_id: light.nachtkastjes_zolder
+        - data: {}
           target:
             entity_id: input_boolean.zolder_automatiche_verlichting
+          action: input_boolean.turn_off
         else:
-        - service: light.turn_on
-          data: {}
+        - data: {}
+          action: light.turn_on
           target:
-            entity_id:
-            - light.bureau_licht
-        - service: input_boolean.turn_on
-          data: {}
+            entity_id: light.nachtkastjes_zolder
+        - data: {}
           target:
             entity_id: input_boolean.zolder_automatiche_verlichting
+          action: input_boolean.turn_on
       action_button_down_double: []
       button_down_double_press: false
       button_up_double_press: false
