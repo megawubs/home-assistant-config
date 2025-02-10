@@ -2608,24 +2608,24 @@
 - id: '1681238782071'
   alias: 'Verlichting: Zolder'
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.aanwezigheid_zolder_bezetting
     from: 'off'
     to: 'on'
     id: beweging
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.aanwezigheid_zolder_bezetting
     from: 'on'
     to: 'off'
     id: Niet bezet
-  condition:
+    trigger: state
+  conditions:
   - condition: state
     entity_id: input_boolean.zolder_automatiche_verlichting
     state: 'on'
-  action:
+  actions:
   - if:
     - condition: and
       conditions:
@@ -2635,27 +2635,27 @@
         entity_id: light.kantoor_lamp
         state: 'off'
     then:
-    - service: light.turn_on
-      data:
+    - data:
         brightness_pct: 70
         transition: 2
       target:
         entity_id: light.kantoor_lamp
+      action: light.turn_on
   - if:
     - condition: and
       conditions:
       - condition: trigger
         id: Niet bezet
     then:
-    - service: light.turn_off
-      data:
+    - data:
         transition: 2
       target:
         entity_id: light.kantoor_lamp
-    - service: light.turn_off
-      data: {}
+      action: light.turn_off
+    - data: {}
+      action: light.turn_off
       target:
-        entity_id: light.bureau_licht
+        entity_id: light.nachtkastjes_zolder
   mode: restart
 - id: '1683462167634'
   alias: 'Verlichting: Woonkamer - Blueprint (ZHA)'
@@ -2866,7 +2866,7 @@
       - if:
         - condition: state
           state: 'on'
-          entity_id: light.bureau_licht
+          entity_id: light.nachtkastjes_zolder
         then:
         - data: {}
           action: light.turn_off
@@ -3068,9 +3068,9 @@
           entity_id: light.kantoor_lamp
         action: light.turn_off
       - data: {}
-        target:
-          entity_id: light.bureau_licht
         action: light.turn_off
+        target:
+          entity_id: light.nachtkastjes_zolder
     - alias: Zolder verwarming uit bij inactiviteit
       if:
       - condition: trigger
@@ -3093,7 +3093,6 @@
         target:
           entity_id:
           - switch.stekkerdoos_bureau_zolder
-          - switch.vloerverwarming_bureau_zolder
         action: switch.turn_off
         enabled: true
   mode: restart
@@ -3177,9 +3176,27 @@
   - trigger: state
     entity_id:
     - input_number.airco_woonkamer_temperatuur_offset
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 10
   conditions: []
   actions:
   - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - Temperatuur Veranderd
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_aan
+        state: 'on'
+      sequence:
+      - data:
+          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+            float }}'
+        target:
+          label_id: airco_beneden
+        action: climate.set_temperature
     - conditions:
       - condition: trigger
         id:
@@ -3293,7 +3310,10 @@
         - condition: state
           entity_id: climate.airco_woonkamer
           state: 'off'
-        enabled: false
+        - condition: state
+          entity_id: climate.airco_keuken
+          state: 'off'
+        enabled: true
       sequence:
       - metadata: {}
         data:
@@ -3319,17 +3339,20 @@
           swing_mode: Normal
         target:
           label_id: airco_beneden
+        enabled: false
       - action: select.select_option
         metadata: {}
         data:
           option: Right-Right
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
+        enabled: false
       - action: select.select_option
         data:
           option: Center-Center
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
+        enabled: false
       alias: Verwarmen
     - conditions:
       - condition: state
@@ -3960,4 +3983,48 @@
       data:
         message: De wasmachine kan om {{     as_timestamp(states('sensor.droger_start_tijd'))
           |     timestamp_custom('%H:%M') }} automatisch gestart worden
+  mode: single
+- id: '1738157687272'
+  alias: Oplader Tablet
+  description: ''
+  triggers:
+  - type: battery_level
+    device_id: 3f3c70ee3e669d4a4d1c4063e605a109
+    entity_id: 2b17662e981e888f8c56b237c15b0430
+    domain: sensor
+    metadata:
+      secondary: true
+    trigger: device
+    id: 'Vol '
+    above: 99
+  - type: battery_level
+    device_id: 3f3c70ee3e669d4a4d1c4063e605a109
+    entity_id: 2b17662e981e888f8c56b237c15b0430
+    domain: sensor
+    metadata:
+      secondary: true
+    trigger: device
+    below: 21
+    id: Bijna Leeg
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - Bijna Leeg
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+  - if:
+    - condition: trigger
+      id:
+      - 'Vol '
+    then:
+    - type: turn_off
+      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+      entity_id: d1b071a27d769061708eed2a10e73c69
+      domain: switch
   mode: single

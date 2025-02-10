@@ -219,13 +219,7 @@ verwarming_zolder_aan:
   icon: mdi:radiator
 zolder_verwarming_uit:
   alias: Zolder verwarming uit
-  sequence:
-  - metadata: {}
-    data: {}
-    target:
-      entity_id:
-      - switch.vloerverwarming_bureau_zolder
-    action: switch.turn_off
+  sequence: []
   mode: single
   icon: mdi:radiator-off
 apple_tv_aan:
