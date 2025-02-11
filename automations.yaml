@@ -784,34 +784,6 @@
     data:
       stop_actions: true
   mode: single
-- id: '1613249180086'
-  alias: 'Melding: Afval'
-  description: Groen
-  trigger:
-  - platform: state
-    entity_id: binary_sensor.groen_moet_vandaag_aan_de_weg
-    attribute: days_until_collection_date
-    to: 'on'
-  condition: []
-  action:
-  - service: notify.alle_notifiables
-    data:
-      message: Groen bak moet vandaag aan de weg!
-  mode: single
-- id: '1613249241692'
-  alias: 'Melding: Afval'
-  description: Plastic
-  trigger:
-  - platform: state
-    entity_id: binary_sensor.plastic_moet_vandaag_aan_de_weg
-    attribute: days_until_collection_date
-    to: 'on'
-  condition: []
-  action:
-  - service: notify.alle_notifiables
-    data:
-      message: Plastic moet vandaag aan de weg!
-  mode: single
 - id: '1614980635549'
   alias: 'Verlichting: Zolder Overloop'
   description: ''
