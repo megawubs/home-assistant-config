@@ -58,30 +58,11 @@
         {{ not is_state("person.bram_wubs", "home")
             and not is_state("person.maninne_wubs", "home") }}
 
-    plastic_moet_vandaag_aan_de_weg:
-      value_template: >
-        {{ 
-          is_state_attr( 'sensor.afvalinfo_pbd', 'is_collection_date_today', true)
-        }}
-
-    groen_moet_vandaag_aan_de_weg:
-      value_template: >
-        {{
-          is_state_attr('sensor.afvalinfo_gft', 'is_collection_date_today', true)
-        }}
-
     bram_slaapt:
       value_template: >
         {{
           is_state('binary_sensor.iphone_van_bram_focus', 'on') and
           (is_state('sensor.iphone_van_bram_battery_state', 'Charging') or is_state('sensor.iphone_van_bram_battery_state', 'Full')) 
-        }}
-
-    media_player_woonkamer_is_master:
-      friendly_name: Woonkamer is speaker groep master
-      value_template: >
-        {{
-          is_state_attr('media_player.woonkamer','master', true)
         }}
 
     temperatuur_woonkamer_is_boven_drempel_waarden:
@@ -125,7 +106,7 @@
           (
             (is_state('input_boolean.modus_gast', 'on') or is_state('input_boolean.airco_woonkamer_moet_aan', 'on'))
             or (
-              is_state('group.bewoners', 'home') 
+              (is_state('group.bewoners', 'home') or is_state('group.bewoners', 'Ommen'))
               and is_state('binary_sensor.open_verbinding_naar_buiten', 'off')
               and is_state('schedule.airco_woonkamer', 'on')
             )
