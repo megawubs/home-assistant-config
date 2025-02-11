@@ -13,27 +13,6 @@
       unit_of_measurement: "℃"
       value_template: "{{ state_attr('climate.thermostaat', 'temperature') }}"
 
-    timestamp_start_van_vandaag:
-      value_template: >
-        {{ as_timestamp(now().replace(hour=0).replace(minute=0).replace(second=0)) }}
-      unit_of_measurement: "s"
-
-    half_uur_voor_alarm:
-      friendly_name: Halfuur voor alarm
-      value_template: >
-        {% set t_alarm = state_attr("input_datetime.wekker", "timestamp") | int %}
-        {% set t_start = states("sensor.timestamp_start_van_vandaag") | int %}
-        {% set half_hour_before_alarm = t_alarm + t_start - 60 * 30 %}
-        {{ half_hour_before_alarm | timestamp_custom("%H:%M", True) }}
-
-    half_uur_voor_werken:
-      friendly_name: Halfuur voor werken
-      value_template: >
-        {% set t_alarm = state_attr("input_datetime.werkdag_bram_start", "timestamp") | int %}
-        {% set t_start = states("sensor.timestamp_start_van_vandaag") | int %}
-        {% set half_hour_before_alarm = t_alarm + t_start - 60 * 30 %}
-        {{ half_hour_before_alarm | timestamp_custom("%H:%M", True) }}
-
     dag_nl:
       friendly_name: "dag nl"
       value_template: >-
