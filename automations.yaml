@@ -1,60 +1,65 @@
 - id: '1607111315472'
   alias: 'Verlichting: Badkamer'
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.activiteit_in_de_badkamer_nieuw
     to: 'on'
     id: Activiteit
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.beweging_in_de_badkamer
     to: 'on'
     id: Activiteit
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.beweging_overloop_motion
     to: 'on'
     id: 'Beweging overloop '
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.acitiviteit_in_de_badkamer
     to: 'off'
     for:
       hours: 0
-      minutes: 3
+      minutes: 10
       seconds: 0
     id: Inactiviteit
-  condition:
+    trigger: state
+  - entity_id:
+    - binary_sensor.activiteit_op_de_overloop
+    to: 'off'
+    id: Geen Beweging overloop
+    trigger: state
+  conditions:
   - condition: state
     entity_id: binary_sensor.licht_intensiteit_in_de_woonkamer_onder_ingestelde_waarde
     state: 'on'
     enabled: false
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
       - Activiteit
     then:
-    - service: script.badkamer_aan
-      data: {}
+    - data: {}
+      action: script.badkamer_aan
     - wait_for_trigger:
-      - platform: state
-        entity_id:
+      - entity_id:
         - binary_sensor.acitiviteit_in_de_badkamer
         to: 'off'
         for:
           hours: 0
           minutes: 3
           seconds: 0
+        trigger: state
       continue_on_timeout: false
       enabled: false
-    - service: light.turn_off
-      target:
+    - target:
         entity_id: light.badkamer_leds
       data: {}
       enabled: false
+      action: light.turn_off
   - if:
     - condition: and
       conditions:
@@ -65,17 +70,35 @@
       after: '21:00:00'
       before: 06:00:00
     then:
-    - service: script.badkamer_aan
-      data: {}
+    - data: {}
+      action: script.badkamer_aan
   - if:
     - condition: trigger
       id:
       - Inactiviteit
     then:
-    - service: light.turn_off
-      target:
+    - target:
         entity_id: light.badkamer_leds
       data: {}
+      action: light.turn_off
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - Geen Beweging overloop
+      - condition: state
+        entity_id: binary_sensor.badkamer_deur
+        for:
+          hours: 0
+          minutes: 1
+          seconds: 30
+        state: 'off'
+    then:
+    - target:
+        entity_id: light.badkamer_leds
+      data: {}
+      action: light.turn_off
   mode: restart
 - id: '1608489795748'
   alias: 'Melding: Home Assistant shutdown'
@@ -109,10 +132,10 @@
     input:
       day: '0'
       actions:
-      - service: notify.bram
-        data:
+      - data:
           message: "{{sensors}} hebben laag batterij niveau \U0001F50B"
-      threshold: '15'
+        action: notify.bram
+      threshold: 20
 - id: '1608671800538'
   alias: 'Verlichting: Keuken - Blueprint (Remote)'
   description: ''
@@ -824,17 +847,17 @@
 - id: '1616100847722'
   alias: 'Melding: Badkamer'
   description: Lampen zijn al een uur aan
-  trigger:
-  - platform: state
-    entity_id: light.badkamer_leds
+  triggers:
+  - entity_id: light.badkamer_leds
     to: 'on'
     for: 01:00:00
-  condition: []
-  action:
-  - service: notify.bram
-    data:
+    trigger: state
+  conditions: []
+  actions:
+  - data:
       title: Alert!
       message: Badkamer Leds zijn al een uur aan...
+    action: notify.bram
   mode: single
 - id: '1618254843752'
   alias: "Melding: Bel \U0001F514"
@@ -1873,7 +1896,10 @@
     to: 'off'
     id: inactiviteit
     trigger: state
-  conditions: []
+  conditions:
+  - condition: numeric_state
+    entity_id: sensor.aanwezigheid_overloop_licht
+    below: 100
   actions:
   - if:
     - condition: and
@@ -1883,6 +1909,9 @@
       - condition: state
         entity_id: sun.sun
         state: below_horizon
+      - condition: time
+        after: 07:00:00
+        enabled: false
     then:
     - target:
         entity_id:
@@ -4028,3 +4057,16 @@
       entity_id: d1b071a27d769061708eed2a10e73c69
       domain: switch
   mode: single
+- id: '1739218743822'
+  alias: Batterij Notificatie
+  description: ''
+  use_blueprint:
+    path: sbyx/low-battery-level-detection-notification-for-all-battery-sensors.yaml
+    input:
+      day: 1
+      actions:
+      - action: notify.mobile_app_iphone_van_bram
+        metadata: {}
+        data:
+          message: 'Lage batterij niveau voor: {{sensors}}'
+      threshold: 15
