@@ -61,8 +61,7 @@
     bram_slaapt:
       value_template: >
         {{
-          is_state('binary_sensor.iphone_van_bram_focus', 'on') and
-          (is_state('sensor.iphone_van_bram_battery_state', 'Charging') or is_state('sensor.iphone_van_bram_battery_state', 'Full')) 
+          is_state('input_text.focus_bram', 'Slaap') 
         }}
 
     temperatuur_woonkamer_is_boven_drempel_waarden:
@@ -95,7 +94,7 @@
           is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off')
           and is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off')
           and is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
-          
+        
         }}
 
     airco_woonkamer_mag_aan:
