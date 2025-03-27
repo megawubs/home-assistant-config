@@ -88,12 +88,12 @@
         id:
         - Geen Beweging overloop
       - condition: state
-        entity_id: binary_sensor.badkamer_deur
         for:
           hours: 0
           minutes: 1
           seconds: 30
         state: 'off'
+        entity_id: binary_sensor.activiteit_in_de_badkamer_nieuw
     then:
     - target:
         entity_id: light.badkamer_leds
@@ -1872,6 +1872,7 @@
   - condition: numeric_state
     entity_id: sensor.aanwezigheid_overloop_licht
     below: 100
+    enabled: false
   actions:
   - if:
     - condition: and
@@ -1889,7 +1890,7 @@
         entity_id:
         - light.overloop_licht
       data:
-        brightness_pct: 5
+        brightness_pct: 1
       action: light.turn_on
   - if:
     - condition: and
@@ -1901,7 +1902,7 @@
         state: above_horizon
     then:
     - data:
-        brightness_pct: 70
+        brightness_pct: 1
       target:
         entity_id:
         - light.overloop_licht
@@ -2997,11 +2998,13 @@
     id: Schedule
     to: 'on'
     trigger: state
+    enabled: false
   - entity_id:
     - schedule.verwarming_zolder
     id: Schedule Off
     to: 'off'
     trigger: state
+    enabled: false
   conditions: []
   actions:
   - parallel:
@@ -3017,12 +3020,9 @@
           state: 'on'
           entity_id: input_boolean.thuiswerkdag
         - condition: state
-          entity_id: schedule.verwarming_zolder
           state: 'on'
-        - condition: state
-          entity_id: input_boolean.automatische_verlichting_woonkamer
-          state: 'on'
-          enabled: false
+          enabled: true
+          entity_id: input_boolean.zolder_automatiche_verlichting
       then:
       - action: switch.turn_on
         metadata: {}
@@ -3169,8 +3169,8 @@
       seconds: 0
   - trigger: time_pattern
     hours: '*'
-    minutes: '*'
-    seconds: '30'
+    minutes: /5
+    seconds: '0'
   - trigger: state
     entity_id:
     - input_number.airco_woonkamer_drempelwaarde_verwarmen
@@ -3360,19 +3360,17 @@
         entity_id: binary_sensor.airco_woonkamer_mag_ventileren
         state: 'on'
       sequence:
-      - data:
-          temperature: '{{ state_attr(''climate.airco_woonkamer'', ''current_temperature'')
-            | float }}'
-          hvac_mode: heat
-        target:
-          entity_id: climate.airco_woonkamer
-        action: climate.set_temperature
-        enabled: false
       - target:
           label_id: airco_beneden
         data: {}
         action: climate.turn_on
         enabled: true
+      - data:
+          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+            float }}'
+        target:
+          label_id: airco_beneden
+        action: climate.set_temperature
       - action: climate.set_fan_mode
         metadata: {}
         data:
@@ -3588,8 +3586,8 @@
     - binary_sensor.airco_zolder_mag_verwarmen
   - trigger: time_pattern
     hours: '*'
-    minutes: '*'
-    seconds: '10'
+    minutes: /9
+    seconds: '0'
   conditions: []
   actions:
   - choose:
@@ -3904,11 +3902,6 @@
       data:
         message: De wasmachine kan om {{     as_timestamp(states('sensor.wasmachine_start_tijd'))
           |     timestamp_custom('%H:%M') }} automatisch gestart worden
-    - action: notify.mobile_app_iphone_van_maninne
-      metadata: {}
-      data:
-        message: De wasmachine kan om {{     as_timestamp(states('sensor.wasmachine_start_tijd'))
-          |     timestamp_custom('%H:%M') }} automatisch gestart worden
   mode: single
 - id: '1736198196339'
   alias: Droger
@@ -4042,3 +4035,61 @@
         data:
           message: 'Lage batterij niveau voor: {{sensors}}'
       threshold: 15
+- id: '1739633394772'
+  alias: Tardis uit als Bram gaat slapen
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.bram_slaapt
+    from: 'off'
+    to: 'on'
+  conditions:
+  - condition: state
+    entity_id: person.bram_wubs
+    state: home
+  actions:
+  - device_id: b2d69c0e09216b2e8c1368ffe89620b7
+    domain: button
+    entity_id: 877f99616e2c10f90eda2f02cb834413
+    type: press
+  mode: single
+- id: '1742760995362'
+  alias: Tv uit wanneer kids naar beneden komen na 19:00
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.aanwezigheid_overloop_bezetting
+    from: 'off'
+    to: 'on'
+  conditions:
+  - condition: and
+    conditions:
+    - condition: time
+      after: '19:00:00'
+    - condition: device
+      device_id: b8b91f9dc0372141ed9fe9ea7c14e6c5
+      domain: media_player
+      entity_id: 80153165539c2b19dc5de5af791c6076
+      type: is_playing
+  actions:
+  - wait_for_trigger:
+    - trigger: state
+      entity_id:
+      - binary_sensor.beweging_in_de_hal_beweging
+      to: 'on'
+    continue_on_timeout: false
+    timeout:
+      hours: 0
+      minutes: 5
+      seconds: 0
+      milliseconds: 0
+  - action: remote.send_command
+    metadata: {}
+    data:
+      device: television
+      command: power
+    target:
+      entity_id: remote.rm_pro_remote
+  mode: single
