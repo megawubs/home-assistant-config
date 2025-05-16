@@ -201,6 +201,6 @@
       value_template: >
         {{ states('sensor.aanwezigheid_zolder_target_distance') | float(999) < 2 }}
       delay_on:
-        seconds: 10
+        seconds: 2
       delay_off:
         seconds: 30
