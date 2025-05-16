@@ -1687,37 +1687,6 @@
   condition: []
   action: []
   mode: single
-- id: '1671394995489'
-  alias: 'Numeriek: Essent tarrief'
-  description: ''
-  trigger:
-  - platform: time
-    at: 07:00:00
-    id: normaal
-  - platform: time
-    at: '23:00:00'
-    id: dal
-  condition: []
-  action:
-  - if:
-    - condition: trigger
-      id: normaal
-    then:
-    - service: input_number.set_value
-      data:
-        value: 0.21396
-      target:
-        entity_id: input_number.electicity_tarief
-  - if:
-    - condition: trigger
-      id: dal
-    then:
-    - service: input_number.set_value
-      data:
-        value: 0.20024
-      target:
-        entity_id: input_number.electicity_tarief
-  mode: single
 - id: '1672482812086'
   alias: Aanewzigheid
   description: ''
@@ -2993,18 +2962,6 @@
       minutes: 6
       seconds: 0
     trigger: state
-  - entity_id:
-    - schedule.verwarming_zolder
-    id: Schedule
-    to: 'on'
-    trigger: state
-    enabled: false
-  - entity_id:
-    - schedule.verwarming_zolder
-    id: Schedule Off
-    to: 'off'
-    trigger: state
-    enabled: false
   conditions: []
   actions:
   - parallel:
@@ -3023,12 +2980,13 @@
           state: 'on'
           enabled: true
           entity_id: input_boolean.zolder_automatiche_verlichting
+        - condition: zone
+          entity_id: person.bram_wubs
+          zone: zone.home
+        - condition: state
+          entity_id: schedule.werktijden
+          state: 'on'
       then:
-      - action: switch.turn_on
-        metadata: {}
-        data: {}
-        target:
-          entity_id: switch.vloerverwarming_bureau_zolder
       - action: switch.turn_on
         metadata: {}
         data: {}
@@ -3371,6 +3329,13 @@
         target:
           label_id: airco_beneden
         action: climate.set_temperature
+        enabled: false
+      - action: climate.set_hvac_mode
+        metadata: {}
+        data:
+          hvac_mode: fan_only
+        target:
+          label_id: airco_beneden
       - action: climate.set_fan_mode
         metadata: {}
         data:
@@ -4092,4 +4057,134 @@
       command: power
     target:
       entity_id: remote.rm_pro_remote
+  mode: single
+- id: '1745870733358'
+  alias: Power Block
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.p1_meter_vermogen
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: -50
+    id: Opladen
+  - trigger: numeric_state
+    entity_id:
+    - sensor.p1_meter_vermogen
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    above: 0
+    id: Stoppen
+  - trigger: time_pattern
+    hours: '*'
+    minutes: '*'
+    id: Change Charge
+    enabled: false
+    seconds: /13
+  - trigger: template
+    value_template: "{% set current_power = states('sensor.p1_meter_vermogen') | float(0)
+      %}\n\n{# Check if previous state is available before trying to access it #}\n{%
+      if trigger.from_state is not none %}\n  {% set previous_power = trigger.from_state.state
+      | float(0) %}\n\n  {# --- Define your significant change threshold in Watts
+      here --- #}\n  {% set threshold = 100 %}\n\n  {# Check:\n       1. Current power
+      is negative (exporting)\n       2. Previous power was negative (was exporting)\n
+      \      3. The absolute difference between them exceeds the threshold\n  #}\n
+      \ {{ current_power < 0 and previous_power < 0 and (current_power - previous_power)
+      | abs > threshold }}\n\n{% else %}\n  {# If no previous state exists (e.g.,
+      on Home Assistant restart),\n     we can't calculate a change, so evaluate to
+      false. #}\n  false\n{% endif %}"
+    id: Change Charge
+    alias: Wanneer P1 meter vermogen drastisch veranderd
+    enabled: false
+  - trigger: state
+    entity_id:
+    - number.power_block_potential_charge
+    id: Change Charge
+    enabled: true
+  conditions: []
+  actions:
+  - alias: Aanzetten
+    if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - Opladen
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.power_block_socket
+    - action: notify.bram
+      metadata: {}
+      data:
+        message: Power Block Socket is aangezet
+      enabled: false
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - Stoppen
+    then:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.power_block_socket
+    alias: Uitzetten
+  - alias: Change Charge
+    if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - Opladen
+        - Change Charge
+      - condition: device
+        type: is_on
+        device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+        entity_id: d1b071a27d769061708eed2a10e73c69
+        domain: switch
+      - condition: state
+        entity_id: sensor.power_block_battery_charging_state
+        state: charging
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.power_block_socket
+      enabled: false
+    - action: number.set_value
+      metadata: {}
+      data:
+        value: '{{ states(''number.power_block_potential_charge'') | int}}
+
+          '
+      target:
+        entity_id: number.power_block_ac_charging_power
+  mode: parallel
+  max: 10
+- id: '1747251126776'
+  alias: ID.5
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.p1_meter_vermogen
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    below: -500
+    id: Terugleveren
+  conditions: []
+  actions: []
   mode: single
