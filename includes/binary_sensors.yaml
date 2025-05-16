@@ -199,7 +199,7 @@
       friendly_name: "Bureau Zolder Bezet"
       unique_id: bureau_zolder_bezet
       value_template: >
-        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(999) < 2 }}
+        {{  states('sensor.aanwezigheid_zolder_target_distance') | float(999) > 0.1 and states('sensor.aanwezigheid_zolder_target_distance') | float(999) < 2 }}
       delay_on:
         seconds: 2
       delay_off:
