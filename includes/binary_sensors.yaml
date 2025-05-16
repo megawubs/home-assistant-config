@@ -194,3 +194,13 @@
          is_state('binary_sensor.open_verbinding_naar_buiten_badkamer', 'off') and
          is_state('schedule.verwarming_badkamer', 'on')
         }}
+
+  bureau_zolder_bezet:
+    friendly_name: "Bureau Zolder Bezet"
+    unique_id: bureau_zolder_bezet
+    value_template: >
+      {{ states('sensor.aanwezigheid_zolder_target_distance') | float(999) < 2 }}
+    delay_on:
+      seconds: 10
+    delay_off:
+      seconds: 30
