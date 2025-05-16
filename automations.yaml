@@ -292,49 +292,52 @@
 - id: '1609196365224'
   alias: 'Verlichting: Woonkamer'
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - binary_sensor.activiteit_in_de_woonkamer
     to: 'on'
     from: 'off'
     id: beweging gedetecteerd
-  - platform: sun
-    event: sunset
+    trigger: state
+  - event: sunset
     offset: -00:45:00
     id: zon gaat onder
     alias: Zon gaat onder
     enabled: false
-  - platform: sun
-    event: sunrise
+    trigger: sun
+  - event: sunrise
     offset: +01:30:00
     id: zon komt op
     alias: Zon komt op
-  - platform: state
-    entity_id:
+    trigger: sun
+  - entity_id:
     - input_boolean.modus_slaap
     from: 'off'
     to: 'on'
     id: Slaap modus gaat aan
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.activiteit_in_de_woonkamer
     to: 'off'
     from: 'on'
     id: Inactiviteit gedetecteerd
-  - platform: state
-    entity_id:
+    trigger: state
+  - entity_id:
     - binary_sensor.licht_intensiteit_in_de_woonkamer_onder_ingestelde_waarde
     from: 'off'
     to: 'on'
     id: Het wordt donker
-  condition:
-  - condition: or
+    trigger: state
+  conditions:
+  - condition: and
     conditions:
     - condition: state
       entity_id: input_boolean.automatische_verlichting_woonkamer
       state: 'on'
-  action:
+    - condition: state
+      entity_id: input_boolean.modus_gast
+      state: 'off'
+  actions:
   - if:
     - condition: and
       conditions:
@@ -358,11 +361,11 @@
       alias: Getriggerd bij beweging en woonkamer is uit en de zon gaat bijna onder
         en slaap modus is uit
     then:
-    - service: script.woonkamer_aan
-      data: {}
-    - service: notify.bram
-      data:
+    - data: {}
+      action: script.woonkamer_aan
+    - data:
         message: Woonkamer aan omdat er beweging was en het is donker genoeg
+      action: notify.bram
     alias: Woonkamer aan als er beweging was en wanneer het donker is als we wakker
       zijn
   - if:
@@ -375,12 +378,12 @@
         state: 'on'
       alias: Zon gaat onder en er was beweging
     then:
-    - service: script.woonkamer_aan
-      data: {}
-    - service: notify.bram
-      data:
+    - data: {}
+      action: script.woonkamer_aan
+    - data:
         message: Woonkamer aan omdat de zon onder gaat en er activiteit was in de
           woonkamer
+      action: notify.bram
     alias: Woonkamer aan als zon onder gaat en er beweging was
   - if:
     - condition: and
@@ -392,8 +395,8 @@
         state: 'on'
       alias: Woonkamer uit als de zon op komt
     then:
-    - service: script.woonkamer_uit
-      data: {}
+    - data: {}
+      action: script.woonkamer_uit
   - if:
     - condition: and
       conditions:
@@ -403,8 +406,7 @@
         entity_id: input_boolean.modus_slaap
         state: 'on'
     then:
-    - service: light.turn_on
-      data:
+    - data:
         brightness_pct: 30
         transition: 9
       target:
@@ -413,6 +415,7 @@
         - light.texas_instruments_cc2531_z_stack_home_1_2_build_20211115_keuken_zha_group_0x0003
         - light.box_links
         - light.box_rechtss
+      action: light.turn_on
     alias: Nacht modus wanneer beweging in de woonkamer in de nacht. Automatisch uit
       gaan wanneer er geen beweging meer is
   - if:
@@ -428,17 +431,17 @@
         state: 'on'
     then:
     - wait_for_trigger:
-      - platform: state
-        entity_id:
+      - entity_id:
         - binary_sensor.activiteit_in_de_woonkamer_voor_afgelopen_half_uur
         from: 'on'
         to: 'off'
+        trigger: state
       continue_on_timeout: false
-    - service: notify.bram
-      data:
+    - data:
         message: Woonkamer uit gedaan!
-    - service: script.woonkamer_uit
-      data: {}
+      action: notify.bram
+    - data: {}
+      action: script.woonkamer_uit
   - if:
     - condition: and
       conditions:
@@ -449,14 +452,14 @@
         state: 'on'
       alias: Woonkamer uit als lampen aan zijn en er geen activteit is
     then:
-    - service: media_player.media_stop
-      data: {}
+    - data: {}
       target:
         area_id: 3baf8165348041e1b29208776b5bf03d
         entity_id: media_player.woonkamer
       enabled: false
-    - service: script.woonkamer_uit
-      data: {}
+      action: media_player.media_stop
+    - data: {}
+      action: script.woonkamer_uit
   - if:
     - condition: and
       conditions:
@@ -466,8 +469,8 @@
         entity_id: binary_sensor.activiteit_in_de_woonkamer
         state: 'on'
     then:
-    - service: script.woonkamer_aan
-      data: {}
+    - data: {}
+      action: script.woonkamer_aan
   mode: restart
 - id: '1609197798376'
   alias: 'Schakelaar: Modus wakker gaat aan'
@@ -942,25 +945,35 @@
     action: homeassistant.turn_off
 - id: e279cbdb-3235-4657-8e2f-77521884ae50
   alias: 'Aanwezigheid: Herstel alles van voordat we weg waren'
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - group.bewoners
     to: home
     from:
-  action:
-  - service: notify.bram
-    data:
+    trigger: state
+  actions:
+  - data:
       message: Alles weer herstellen van voordat we weg waren!
       title: Home Assistant
-  - service: scene.apply
-    target:
+    action: notify.bram
+  - target:
       entity_id: scene.voor_weggaan
     data:
       entities: voor_weggaan
-  - service: linkplay.restore
-    data:
+    action: scene.apply
+  - data:
       entity_id: media_player.woonkamer
+    action: linkplay.restore
+  - if:
+    - condition: state
+      entity_id: input_boolean.modus_gast
+      state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.modus_gast
 - id: '1639682498630'
   alias: 'Melding: Batterij'
   description: ''
