@@ -155,15 +155,30 @@ woonkamer_aan:
 media_groepeer_woonkamer:
   alias: 'media: Groepeer Woonkamer'
   sequence:
-  - data:
-      group_members:
-      - media_player.keuken
-      - media_player.eettafel
-    action: media_player.join
-    target:
-      entity_id: media_player.woonkamer
+  - if:
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: media_player.keuken
+        state: unavailable
+    then:
+    - data:
+        group_members:
+        - media_player.eettafel
+      action: media_player.join
+      target:
+        entity_id: media_player.woonkamer
+    else:
+    - data:
+        group_members:
+        - media_player.eettafel
+        - media_player.keuken
+      action: media_player.join
+      target:
+        entity_id: media_player.woonkamer
   mode: single
   icon: mdi:speaker-multiple
+  description: ''
 woonkamer_uit:
   alias: woonkamer uit
   sequence:
@@ -237,17 +252,6 @@ apple_tv_aan:
       entity_id: media_player.woonkamer_tv
     data: {}
   description: ''
-volume_benedenverdieping_laag_2:
-  alias: Volume Benedenverdieping Laag
-  sequence:
-  - action: input_number.set_value
-    metadata: {}
-    data:
-      value: 0.005
-    target:
-      entity_id: input_number.volume_benedenverdieping
-  description: ''
-  icon: mdi:volume-low
 airco_moet_omschakelen:
   sequence:
   - if:

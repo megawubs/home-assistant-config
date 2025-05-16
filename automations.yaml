@@ -662,34 +662,34 @@
 - id: '1609655799624'
   alias: 'Verlichting & Media: Woonkamer'
   description: ''
-  trigger:
-  - platform: state
-    entity_id: binary_sensor.activiteit_in_de_woonkamer
+  triggers:
+  - entity_id: binary_sensor.activiteit_in_de_woonkamer
     to: 'on'
-  condition:
+    trigger: state
+  conditions:
   - condition: state
     entity_id: input_boolean.ochtend_routine_heeft_plaatsgevonden
     state: 'off'
-  action:
+  actions:
   - choose:
     - conditions:
       - condition: time
-        after: 05:00:00
+        after: 06:00:00
         before: '12:00:00'
         enabled: true
       sequence:
-      - service: script.media_groepeer_woonkamer
-        data: {}
-      - service: script.wakker_worden
-        data: {}
-      - service: cover.open_cover
-        data: {}
+      - data: {}
+        action: script.media_groepeer_woonkamer
+      - data: {}
+        action: script.wakker_worden
+      - data: {}
         target:
           area_id: 3baf8165348041e1b29208776b5bf03d
-      - service: input_boolean.turn_on
-        data: {}
+        action: cover.open_cover
+      - data: {}
         target:
           entity_id: input_boolean.ochtend_routine_heeft_plaatsgevonden
+        action: input_boolean.turn_on
     default: []
     enabled: true
   trace:
@@ -2279,38 +2279,39 @@
 - id: '1680438381401'
   alias: Volume regelaars
   description: ''
-  trigger:
-  - platform: state
-    entity_id:
+  triggers:
+  - entity_id:
     - input_number.volume_benedenverdieping
     id: groepsvolume
-  - platform: state
-    entity_id:
+    trigger: state
+    enabled: false
+  - entity_id:
     - input_number.volume_woonkamer
     id: woonkamer
-  condition: []
-  action:
+    trigger: state
+  conditions: []
+  actions:
   - if:
     - condition: trigger
       id: groepsvolume
     then:
-    - service: media_player.volume_set
-      data_template:
+    - data_template:
         volume_level: '{{ states(''input_number.volume_benedenverdieping'') | float
           }}'
       target:
         entity_id:
         - media_player.benedenverdieping
+      action: media_player.volume_set
+    enabled: false
   - if:
     - condition: trigger
       id: woonkamer
     then:
-    - service: media_player.volume_set
-      data_template:
+    - data_template:
         volume_level: '{{ states(''input_number.volume_woonkamer'') | float }}'
       target:
         entity_id:
-        - media_player.woonkamer
+      action: media_player.volume_set
   mode: single
 - id: '1680852073817'
   alias: 'Verlichting: bijkeuken zolder'
@@ -2396,26 +2397,26 @@
             entity_id: sensor.actieve_media_player_woonkamer
             state: media_player.woonkamer_tv
         then:
-        - service: remote.send_command
-          data:
+        - data:
             num_repeats: 1
             delay_secs: 0.4
             hold_secs: 0
             command: left
           target:
             entity_id: remote.woonkamer_tv
+          action: remote.send_command
         enabled: true
         else:
-        - service: media_player.media_previous_track
-          data: {}
+        - data: {}
           target:
             entity_id: media_player.woonkamer
           enabled: true
+          action: media_player.media_previous_track
       action_button_right_short:
-      - service: media_player.media_next_track
-        data: {}
+      - data: {}
         target:
           entity_id: media_player.woonkamer
+        action: media_player.media_next_track
       action_button_up_short:
       - if:
         - condition: or
@@ -2424,32 +2425,31 @@
             entity_id: sensor.actieve_media_player_woonkamer
             state: media_player.woonkamer_tv
         then:
-        - service: remote.send_command
-          data:
+        - data:
             num_repeats: 1
             delay_secs: 0.4
             hold_secs: 0
             command: up
           target:
             entity_id: remote.woonkamer_tv
+          action: remote.send_command
         enabled: true
         else:
+        - data: {}
+          target:
+            entity_id: input_number.volume_woonkamer
+          action: input_number.increment
         - if:
           - condition: state
             entity_id: media_player.woonkamer
             attribute: master
             state: true
           then:
-          - service: input_number.increment
-            data: {}
+          - data: {}
             target:
               entity_id: input_number.volume_benedenverdieping
-          else:
-          - service: input_number.increment
-            data: {}
-            target:
-              entity_id: input_number.volume_woonkamer
-          enabled: true
+            action: input_number.increment
+          enabled: false
       action_button_down_short:
       - if:
         - condition: or
@@ -2458,32 +2458,32 @@
             entity_id: sensor.actieve_media_player_woonkamer
             state: media_player.woonkamer_tv
         then:
-        - service: remote.send_command
-          data:
+        - data:
             num_repeats: 1
             delay_secs: 0.4
             hold_secs: 0
             command: down
           target:
             entity_id: remote.woonkamer_tv
+          action: remote.send_command
         enabled: true
         else:
+        - data: {}
+          target:
+            entity_id: input_number.volume_woonkamer
+          action: input_number.decrement
         - if:
           - condition: state
             entity_id: media_player.woonkamer
             attribute: master
             state: true
           then:
-          - service: input_number.decrement
-            data: {}
+          - data: {}
             target:
               entity_id: input_number.volume_benedenverdieping
             enabled: true
-          else:
-          - service: input_number.decrement
-            data: {}
-            target:
-              entity_id: input_number.volume_woonkamer
+            action: input_number.decrement
+          enabled: false
       action_button_center_short:
       - if:
         - condition: or
@@ -2492,48 +2492,47 @@
             entity_id: sensor.actieve_media_player_woonkamer
             state: media_player.woonkamer_tv
         then:
-        - service: remote.send_command
-          data:
+        - data:
             num_repeats: 1
             delay_secs: 0.4
             hold_secs: 0
             command: pause
           target:
             entity_id: remote.woonkamer_tv
+          action: remote.send_command
         enabled: true
         else:
-        - service: media_player.media_play_pause
-          data: {}
+        - data: {}
           target:
             entity_id: media_player.woonkamer
+          action: media_player.media_play_pause
       action_button_center_long:
-      - service: script.media_groepeer_woonkamer
-        data: {}
-      - service: script.wakker_worden
-        data: {}
+      - data: {}
+        action: script.media_groepeer_woonkamer
+      - data: {}
         enabled: false
+        action: script.wakker_worden
       action_button_down_double: []
       button_up_long_loop: true
       button_down_long_loop: true
       button_right_long_max_loop_repeats: 15
       button_down_long_max_loop_repeats: 5
       action_button_up_long:
+      - data: {}
+        target:
+          entity_id: input_number.volume_woonkamer
+        action: input_number.increment
       - if:
         - condition: state
           entity_id: media_player.woonkamer
           attribute: master
           state: true
         then:
-        - service: input_number.increment
-          data: {}
+        - data: {}
           target:
             entity_id: input_number.volume_benedenverdieping
-        else:
-        - service: input_number.increment
-          data: {}
-          target:
-            entity_id: input_number.volume_woonkamer
-        enabled: true
+          action: input_number.increment
+        enabled: false
       - delay:
           hours: 0
           minutes: 0
@@ -2541,22 +2540,21 @@
           milliseconds: 400
         enabled: true
       action_button_down_long:
+      - data: {}
+        target:
+          entity_id: input_number.volume_woonkamer
+        action: input_number.decrement
       - if:
         - condition: state
           entity_id: media_player.woonkamer
           attribute: master
           state: true
         then:
-        - service: input_number.decrement
-          data: {}
+        - data: {}
           target:
             entity_id: input_number.volume_benedenverdieping
-        else:
-        - service: input_number.decrement
-          data: {}
-          target:
-            entity_id: input_number.volume_woonkamer
-        enabled: true
+          action: input_number.decrement
+        enabled: false
       - delay:
           hours: 0
           minutes: 0
@@ -2564,14 +2562,14 @@
           milliseconds: 400
         enabled: true
       action_button_right_double:
-      - service: script.media_groepeer_woonkamer
-        data: {}
+      - data: {}
+        action: script.media_groepeer_woonkamer
       button_right_double_press: false
       button_left_double_press: false
       action_button_center_double:
-      - service: script.media_groepeer_woonkamer
-        data: {}
+      - data: {}
         enabled: false
+        action: script.media_groepeer_woonkamer
       button_center_double_press: false
       helper_last_controller_event: input_text.media_woonkamer_helper
       helper_double_press_delay: 0
