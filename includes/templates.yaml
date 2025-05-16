@@ -68,19 +68,3 @@
         {% set hours = hours + (minutes / 60) %}
         {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
         {{ cheapest_energy_hours(sensor=sensor, time_key='timestamp', hours=hours, start='14:00', end='13:50', include_tomorrow=true) }}
-
-- trigger:
-    - platform: numeric_state
-      entity_id: sensor.aanwezigheid_zolder_target_distance #! Change this to your actual sensor ID
-      below: 1.5
-      for:
-        seconds: 10
-  binary_sensor:
-      - name: "Presence Detected Near"
-        unique_id: bureau_zolder_bezet # Optional: for easier management
-        state: "{{ trigger.to_state.state != 'unknown' and trigger.to_state.state != 'unavailable' }}"
-        # This sensor will turn on when the trigger fires.
-        # It will automatically turn off when the condition (distance < 1.5m) is no longer met.
-        # If you want it to stay on until manually reset or another condition, you'd need a more complex setup (e.g., with automations).
-        # For your use case (true when condition met for 10s, false otherwise), this is sufficient.
-        auto_off: true # This ensures the sensor turns off when the condition is no longer met
