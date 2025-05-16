@@ -2284,7 +2284,6 @@
     - input_number.volume_benedenverdieping
     id: groepsvolume
     trigger: state
-    enabled: false
   - entity_id:
     - input_number.volume_woonkamer
     id: woonkamer
@@ -2302,17 +2301,22 @@
         entity_id:
         - media_player.benedenverdieping
       action: media_player.volume_set
-    enabled: false
   - if:
     - condition: trigger
       id: woonkamer
     then:
-    - data_template:
-        volume_level: '{{ states(''input_number.volume_woonkamer'') | float }}'
+    - action: media_player.volume_set
       target:
-        entity_id:
-      action: media_player.volume_set
-  mode: single
+        entity_id: "{% set woonkamer_player = 'media_player.woonkamer' %} {% set members
+          =\n  state_attr(woonkamer_player, 'group_members') %} {# Controleer expliciet\n
+          \ op None en op een lege lijst #} {% if members is none or members | length\n
+          \ == 0 %}\n    {{ [woonkamer_player] }} {# Retourneer een lijst met de hoofdspeler
+          #}\n  {% else %}\n    {{ members }} {# Retourneer de lijst van groepsleden
+          #}\n  {% endif %}\n"
+      data:
+        volume_level: '{{ states(''input_number.volume_woonkamer'') | float }}'
+  mode: parallel
+  max: 10
 - id: '1680852073817'
   alias: 'Verlichting: bijkeuken zolder'
   description: ''
@@ -2439,17 +2443,6 @@
           target:
             entity_id: input_number.volume_woonkamer
           action: input_number.increment
-        - if:
-          - condition: state
-            entity_id: media_player.woonkamer
-            attribute: master
-            state: true
-          then:
-          - data: {}
-            target:
-              entity_id: input_number.volume_benedenverdieping
-            action: input_number.increment
-          enabled: false
       action_button_down_short:
       - if:
         - condition: or
@@ -2472,18 +2465,6 @@
           target:
             entity_id: input_number.volume_woonkamer
           action: input_number.decrement
-        - if:
-          - condition: state
-            entity_id: media_player.woonkamer
-            attribute: master
-            state: true
-          then:
-          - data: {}
-            target:
-              entity_id: input_number.volume_benedenverdieping
-            enabled: true
-            action: input_number.decrement
-          enabled: false
       action_button_center_short:
       - if:
         - condition: or
@@ -2515,24 +2496,13 @@
       action_button_down_double: []
       button_up_long_loop: true
       button_down_long_loop: true
-      button_right_long_max_loop_repeats: 15
-      button_down_long_max_loop_repeats: 5
+      button_right_long_max_loop_repeats: 94
+      button_down_long_max_loop_repeats: 1378
       action_button_up_long:
       - data: {}
         target:
           entity_id: input_number.volume_woonkamer
         action: input_number.increment
-      - if:
-        - condition: state
-          entity_id: media_player.woonkamer
-          attribute: master
-          state: true
-        then:
-        - data: {}
-          target:
-            entity_id: input_number.volume_benedenverdieping
-          action: input_number.increment
-        enabled: false
       - delay:
           hours: 0
           minutes: 0
@@ -2544,17 +2514,6 @@
         target:
           entity_id: input_number.volume_woonkamer
         action: input_number.decrement
-      - if:
-        - condition: state
-          entity_id: media_player.woonkamer
-          attribute: master
-          state: true
-        then:
-        - data: {}
-          target:
-            entity_id: input_number.volume_benedenverdieping
-          action: input_number.decrement
-        enabled: false
       - delay:
           hours: 0
           minutes: 0
@@ -2566,14 +2525,12 @@
         action: script.media_groepeer_woonkamer
       button_right_double_press: false
       button_left_double_press: false
-      action_button_center_double:
-      - data: {}
-        enabled: false
-        action: script.media_groepeer_woonkamer
+      action_button_center_double: []
       button_center_double_press: false
       helper_last_controller_event: input_text.media_woonkamer_helper
       helper_double_press_delay: 0
-      button_up_long_max_loop_repeats: 15
+      button_up_long_max_loop_repeats: 1383
+      button_right_long_loop: false
 - id: '1681238782071'
   alias: 'Verlichting: Zolder'
   description: ''
