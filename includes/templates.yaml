@@ -16,18 +16,29 @@
         
         {# Gebruik de VASTGEZETTE waarde, niet de live sensor #}
         {% set hours = states('input_number.ariston_vastgezette_opwarmduur') %}
-          
+        {% set search_start = today_at("12:00") %}
+        {% set search_end = today_at("17:00") %}
+        {% set include_tomorrow = false %}
+
+        {# Als het nu al voorbij de eindtijd van vandaag is, zoek dan vanaf morgen. #}
+        {% if now() >= search_end %}
+          {% set search_start = today_at("12:00") + timedelta(days=1) %}
+          {% set search_end = today_at("17:00") + timedelta(days=1) %}
+          {% set include_tomorrow = true %}
+        {% endif %}
+        
         {# Alleen berekenen als de duur groter is dan 0 #}
-          {% if hours | float(0) > 0 %}
-          {{ cheapest_energy_hours(
-            sensor=sensor,
-            time_key='datetime',
-            hours=hours,
-            start=today_at("12:00"),
-            end=today_at("17:00")
-            )
-          }}
-          {% else %}
-          {# Geef een 'none' waarde terug als er niets te plannen valt #}
-            {{ None }}
-          {% endif %}
+        {% if hours | float(0) > 0 %}
+        {{ cheapest_energy_hours(
+           sensor=sensor,
+           time_key='datetime',
+           hours=hours,
+           start=search_start,
+           end=search_end,
+           include_tomorrow=include_tomorrow
+           )
+        }}
+        {% else %}
+        {# Geef een 'none' waarde terug als er niets te plannen valt #}
+          {{ None }}
+        {% endif %}
