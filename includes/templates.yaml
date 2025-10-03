@@ -31,40 +31,37 @@
         - "19:30"
         - "20:30"
         - "21:30"
-  sensor:
-    - unique_id: 5CF293DD-C1DA-4EF6-A1F2-CA78C66CDE17
-      name: Wasmachine starttijd
-      device_class: timestamp
-      state: >
-        {%- set sensor = 'sensor.energy_zero_prices' -%}
-        {% set duration = states('sensor.484020536050000148_bsh_common_option_estimatedtotalprogramtime') %}
-        {% set parts = duration.split(':') %}
-        {% set hours = parts[0] | int %}
-        {% set minutes = parts[1] | int %}
-        {% set hours = hours + (minutes / 60) %}
-        {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
-        {{ cheapest_energy_hours(sensor=sensor, time_key='timestamp', hours=hours, start='14:00', end='13:50', include_tomorrow=true) }}
 - trigger:
     - alias: Triggers on home assistant startup
       platform: homeassistant
       event: start
-    - platform: time
-      at:
-        - "14:00"
-        - "15:00"
-        - "19:30"
-        - "20:30"
-        - "21:30"
+    - platform: state
+      entity_id: sensor.ariston_opgewarmd_in
+    - platform: state
+      entity_id: sensor.current_tariff
   sensor:
-    - unique_id: 777C5388-4A57-4799-BD41-B5E15D395B55
-      name: Droger starttijd
+    - unique_id: 0F824D26-3489-45C7-83CD-2E831B3643E8
+      name: Boiler opwarmen
       device_class: timestamp
       state: >
-        {%- set sensor = 'sensor.energy_zero_prices' -%}
-        {% set duration = states('sensor.464020536443001457_bsh_common_option_estimatedtotalprogramtime') %}
-        {% set parts = duration.split(':') %}
-        {% set hours = parts[0] | int %}
-        {% set minutes = parts[1] | int %}
-        {% set hours = hours + (minutes / 60) %}
+        {%- set sensor = 'sensor.current_tariff' -%}
         {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
-        {{ cheapest_energy_hours(sensor=sensor, time_key='timestamp', hours=hours, start='14:00', end='13:50', include_tomorrow=true) }}
+        {% set hours = states('sensor.ariston_opgewarmd_in') %}
+        {% set start = "00:00" %}
+        {% set end = "05:00" %}
+        
+        {% if now() > today_at("05:00") and now() < today_at("17:00") %}
+        {% set start="10:00" %}
+        {% set end="17:00" %}
+        {% elif now() > today_at("17:00") and now() < today_at('21:30') %}
+        {% set start="18:00" %}
+        {% set end="21:30" %}
+        {% endif %}
+        
+        {% set include_tomorrow = now() > today_at("21:30") %}
+        {% if include_tomorrow %}
+        {% set start = now() %}
+        {% endif %}
+        
+        {{ cheapest_energy_hours(sensor=sensor, time_key='datetime', hours=hours, start=start, end=end, include_tomorrow=include_tomorrow) }}
+        

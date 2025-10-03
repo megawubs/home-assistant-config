@@ -49,3 +49,5 @@ www/community
 # Temporary ignores
 .old_config
 .shopping_list.json
+addons_config
+addons_autoscripts

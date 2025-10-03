@@ -1,0 +1,28 @@
+ # Optional: Control the mode (not tested yet..)
+  mode_zero:
+    url: https://192.168.68.106/api/batteries
+    method: PUT
+    headers:
+      authorization: !secret home_wizard_token
+      accept: "application/json"
+    payload: '{"mode": "zero"}'
+    verify_ssl: false
+    content_type: 'application/json'
+  mode_to_full:
+    url: https://192.168.68.106/api/batteries
+    method: PUT
+    headers:
+      authorization: !secret home_wizard_token
+      accept: "application/json"
+    payload: '{"mode": "to_full"}'
+    verify_ssl: false
+    content_type: 'application/json'
+  mode_standby:
+    url: https://192.168.68.106/api/batteries
+    method: PUT
+    headers:
+      authorization: !secret home_wizard_token
+      accept: "application/json"
+    payload: '{"mode": "standby"}'
+    verify_ssl: false
+    content_type: 'application/json'

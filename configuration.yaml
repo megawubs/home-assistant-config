@@ -41,6 +41,8 @@ group: !include groups.yaml
 script: !include scripts.yaml
 scene: !include scenes.yaml
 shell_command: !include includes/shell_commands.yaml
+rest: !include includes/rest.yaml
+rest_command: !include includes/rest_command.yaml
 wake_on_lan:
 tts:
   - platform: google_translate

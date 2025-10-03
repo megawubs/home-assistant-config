@@ -261,16 +261,18 @@
       hours: 0
       minutes: 0
       seconds: 30
-  conditions:
-  - condition: state
-    entity_id: binary_sensor.licht_intensiteit_in_de_woonkamer_onder_ingestelde_waarde
-    state: 'on'
-    enabled: true
+  conditions: []
   actions:
   - if:
-    - condition: trigger
-      id:
-      - aan
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - aan
+      - condition: state
+        entity_id: binary_sensor.licht_intensiteit_in_de_woonkamer_onder_ingestelde_waarde
+        state: 'on'
+        enabled: true
     then:
     - data:
         brightness_pct: 100
@@ -519,7 +521,10 @@
     to: 'on'
     id: Beweging
     trigger: state
-  conditions: []
+  conditions:
+  - condition: state
+    entity_id: input_boolean.automatische_verlichting_woonkamer
+    state: 'on'
   actions:
   - if:
     - condition: trigger
@@ -573,9 +578,15 @@
     id: geen beweging gedetecteerd
     trigger: state
   conditions:
-  - condition: template
-    value_template: '{{ states(''sensor.verlichtingssterkte_woonkamer'' ) | float
-      <= states(''input_number.minimale_verlichtingssterkte_woonkamer'') | float }}'
+  - condition: and
+    conditions:
+    - condition: template
+      value_template: '{{ states(''sensor.verlichtingssterkte_woonkamer'' ) | float
+        <= states(''input_number.minimale_verlichtingssterkte_woonkamer'') | float
+        }}'
+    - condition: state
+      entity_id: input_boolean.automatische_verlichting_woonkamer
+      state: 'on'
   actions:
   - if:
     - condition: and
@@ -676,10 +687,15 @@
   actions:
   - choose:
     - conditions:
-      - condition: time
-        after: 06:00:00
-        before: '12:00:00'
-        enabled: true
+      - condition: and
+        conditions:
+        - condition: time
+          after: 06:00:00
+          before: '12:00:00'
+          enabled: true
+        - condition: state
+          entity_id: input_boolean.automatische_verlichting_woonkamer
+          state: 'on'
       sequence:
       - data: {}
         action: script.media_groepeer_woonkamer
@@ -769,23 +785,26 @@
   alias: 'Verlichting: Benedenverdieping'
   description: Licht intensiteit in de woonkamer boven ingestelde waarde -> benedenverdieping
     uit
-  trigger:
-  - platform: numeric_state
-    entity_id: sensor.verlichtingssterkte_woonkamer
+  triggers:
+  - entity_id: sensor.verlichtingssterkte_woonkamer
     above: input_number.minimale_verlichtingssterkte_woonkamer
-  condition: []
-  action:
-  - service: light.turn_off
-    target:
+    trigger: numeric_state
+  conditions:
+  - condition: state
+    entity_id: group.bewoners
+    state: Home
+  actions:
+  - target:
       area_id:
       - 3baf8165348041e1b29208776b5bf03d
     data:
       transition: 25
-  - service: automation.turn_off
-    target:
+    action: light.turn_off
+  - target:
       entity_id: automation.licht_intensiteit_in_de_woonkamer_boven_de_20_woonkamer_uit
     data:
       stop_actions: true
+    action: automation.turn_off
   mode: single
 - id: '1614980635549'
   alias: 'Verlichting: Zolder Overloop'
@@ -1226,26 +1245,32 @@
       button_down_double_press: true
       helper_double_press_delay: 700
       action_button_up_short:
-      - service: cover.open_cover
-        data: {}
+      - data: {}
         target:
-          area_id: 3baf8165348041e1b29208776b5bf03d
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - eettafel
+        action: cover.open_cover
       action_button_up_release:
-      - service: cover.stop_cover
-        data: {}
+      - data: {}
         target:
-          area_id: 3baf8165348041e1b29208776b5bf03d
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - eettafel
+        action: cover.stop_cover
       action_button_up_double:
-      - service: cover.stop_cover
-        data: {}
+      - data: {}
         target:
-          area_id: 3baf8165348041e1b29208776b5bf03d
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - eettafel
+        action: cover.stop_cover
       action_button_down_short:
-      - service: cover.close_cover
-        data: {}
+      - data: {}
         target:
           area_id: 3baf8165348041e1b29208776b5bf03d
         enabled: false
+        action: cover.close_cover
       - if:
         - type: is_not_open
           condition: device
@@ -1253,28 +1278,34 @@
           entity_id: 8d9e18252da8d21567cc6e7ac637e720
           domain: binary_sensor
         then:
-        - service: cover.close_cover
-          data: {}
+        - data: {}
           target:
-            area_id: 3baf8165348041e1b29208776b5bf03d
+            area_id:
+            - 3baf8165348041e1b29208776b5bf03d
+            - eettafel
+          action: cover.close_cover
         else:
         - parallel:
-          - service: cover.close_cover
-            data: {}
+          - data: {}
             target:
               device_id:
               - f3387d18940fb1ca5c778754b0979e61
               - cfc0b6dbbd0c6d120317077800dbc850
+            action: cover.close_cover
       action_button_down_release:
-      - service: cover.stop_cover
-        data: {}
+      - data: {}
         target:
-          area_id: 3baf8165348041e1b29208776b5bf03d
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - eettafel
+        action: cover.stop_cover
       action_button_down_double:
-      - service: cover.stop_cover
-        data: {}
+      - data: {}
         target:
-          area_id: 3baf8165348041e1b29208776b5bf03d
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - eettafel
+        action: cover.stop_cover
       helper_debounce_delay: 0
 - id: '1663182819002'
   alias: 'Raambedekking: Woonkamer'
@@ -1285,11 +1316,6 @@
     trigger: sun
   conditions: []
   actions:
-  - data: {}
-    target:
-      area_id: 3baf8165348041e1b29208776b5bf03d
-    enabled: false
-    action: cover.close_cover
   - if:
     - type: is_not_open
       condition: device
@@ -1299,7 +1325,9 @@
     then:
     - data: {}
       target:
-        area_id: 3baf8165348041e1b29208776b5bf03d
+        area_id:
+        - 3baf8165348041e1b29208776b5bf03d
+        - eettafel
       action: cover.close_cover
     else:
     - parallel:
@@ -1317,15 +1345,15 @@
 - id: '1663183039821'
   alias: 'Raambedekking: Woonkamer'
   description: Openen
-  trigger:
-  - platform: sun
-    event: sunrise
+  triggers:
+  - event: sunrise
     offset: 0
-  - platform: state
-    entity_id:
+    trigger: sun
+  - entity_id:
     - binary_sensor.activiteit_in_de_woonkamer
     to: 'on'
-  condition:
+    trigger: state
+  conditions:
   - condition: sun
     after: sunrise
     before: sunset
@@ -1350,15 +1378,17 @@
   - condition: state
     entity_id: input_boolean.automatische_verlichting_woonkamer
     state: 'on'
-  action:
-  - service: cover.open_cover
-    data: {}
+  actions:
+  - data: {}
     target:
-      area_id: 3baf8165348041e1b29208776b5bf03d
-  - service: input_boolean.turn_on
-    data: {}
+      area_id:
+      - 3baf8165348041e1b29208776b5bf03d
+      - eettafel
+    action: cover.open_cover
+  - data: {}
     target:
       entity_id: input_boolean.rolgordijn_eetkamertafel_automatisch_geopend
+    action: input_boolean.turn_on
   mode: single
 - id: '1664394061308'
   alias: 'Schakelaar: Thuiswerkdag'
@@ -2320,12 +2350,10 @@
     then:
     - action: media_player.volume_set
       target:
-        entity_id: "{% set woonkamer_player = 'media_player.woonkamer' %} {% set members
-          =\n  state_attr(woonkamer_player, 'group_members') %} {# Controleer expliciet\n
-          \ op None en op een lege lijst #} {% if members is none or members | length\n
-          \ == 0 %}\n    {{ [woonkamer_player] }} {# Retourneer een lijst met de hoofdspeler
-          #}\n  {% else %}\n    {{ members }} {# Retourneer de lijst van groepsleden
-          #}\n  {% endif %}\n"
+        entity_id:
+        - media_player.woonkamer
+        - media_player.keuken
+        - media_player.eettafel
       data:
         volume_level: '{{ states(''input_number.volume_woonkamer'') | float }}'
   mode: parallel
@@ -2362,42 +2390,6 @@
       target:
         entity_id: switch.bijkeuken_zolder
   mode: single
-- id: '1680981121235'
-  alias: 'Verlichting: Masterbedroom'
-  description: ''
-  use_blueprint:
-    path: EPMatt/ikea_e1766.yaml
-    input:
-      integration: ZHA
-      helper_last_controller_event: input_text.schakelaar_slaapkamer_helper
-      action_button_up_short:
-      - type: toggle
-        device_id: 021c3cd4fbf711ea850ce78959291f51
-        entity_id: switch.slaapkamer
-        domain: switch
-      - if:
-        - condition: state
-          entity_id: light.slaapkamer_bm
-          state: 'on'
-        then:
-        - service: light.turn_off
-          data: {}
-          target:
-            entity_id: light.slaapkamer_bm
-      action_button_down_short:
-      - type: toggle
-        device_id: 021c3cd4fbf711ea850ce78959291f51
-        entity_id: switch.slaapkamer
-        domain: switch
-      - if:
-        - condition: state
-          entity_id: light.slaapkamer_bm
-          state: 'on'
-        then:
-        - service: light.turn_off
-          data: {}
-          target:
-            entity_id: light.slaapkamer_bm
 - id: '129685483721940619038'
   alias: 'Afstandsbediening: Muziek Woonkamer'
   description: ''
@@ -2544,58 +2536,6 @@
       helper_double_press_delay: 0
       button_up_long_max_loop_repeats: 1383
       button_right_long_loop: false
-- id: '1681238782071'
-  alias: 'Verlichting: Zolder'
-  description: ''
-  triggers:
-  - entity_id:
-    - binary_sensor.aanwezigheid_zolder_bezetting
-    from: 'off'
-    to: 'on'
-    id: beweging
-    trigger: state
-  - entity_id:
-    - binary_sensor.aanwezigheid_zolder_bezetting
-    from: 'on'
-    to: 'off'
-    id: Niet bezet
-    trigger: state
-  conditions:
-  - condition: state
-    entity_id: input_boolean.zolder_automatiche_verlichting
-    state: 'on'
-  actions:
-  - if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id: beweging
-      - condition: state
-        entity_id: light.kantoor_lamp
-        state: 'off'
-    then:
-    - data:
-        brightness_pct: 70
-        transition: 2
-      target:
-        entity_id: light.kantoor_lamp
-      action: light.turn_on
-  - if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id: Niet bezet
-    then:
-    - data:
-        transition: 2
-      target:
-        entity_id: light.kantoor_lamp
-      action: light.turn_off
-    - data: {}
-      action: light.turn_off
-      target:
-        entity_id: light.nachtkastjes_zolder
-  mode: restart
 - id: '1683462167634'
   alias: 'Verlichting: Woonkamer - Blueprint (ZHA)'
   description: ''
@@ -2770,7 +2710,7 @@
       library_name: Audio Boeken
   mode: single
 - id: '1697607298005'
-  alias: 'Verlichting Schakelaar: Zolder'
+  alias: 'Verlichting: Zolder'
   description: ''
   use_blueprint:
     path: EPMatt/ikea_e1766.yaml
@@ -2824,11 +2764,46 @@
           target:
             entity_id: input_boolean.zolder_automatiche_verlichting
           action: input_boolean.turn_on
-      action_button_down_double: []
-      button_down_double_press: false
-      button_up_double_press: false
-      helper_double_press_delay: 100
-      helper_debounce_delay: 0
+      action_button_down_double:
+      - if:
+        - condition: device
+          device_id: 71f27134959e53d7a39ac2de181d2d00
+          domain: cover
+          entity_id: 243582ca6749d5c62f16dcd5aa320ee0
+          type: is_closing
+        then:
+        - action: cover.stop_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+        else:
+        - action: cover.close_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+      button_down_double_press: true
+      button_up_double_press: true
+      action_button_up_double:
+      - if:
+        - condition: device
+          device_id: 71f27134959e53d7a39ac2de181d2d00
+          domain: cover
+          entity_id: 243582ca6749d5c62f16dcd5aa320ee0
+          type: is_opening
+        then:
+        - action: cover.stop_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+        else:
+        - action: cover.open_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
 - id: '1702616898816'
   alias: 'Verlichting: Slaapkamer (ZHA)'
   description: ''
@@ -2873,27 +2848,54 @@
       entity_id: '{{ trigger.entity_id }}'
   mode: restart
 - id: '1713988326145'
-  alias: 'Schakelaar: Zolder Werkplek'
+  alias: 'Schakelaar: Zolder Bureau'
   description: ''
   use_blueprint:
     path: EPMatt/ikea_e1766.yaml
     input:
       controller_device: 3b383bba02f0a51a70ee0694848683de
       action_button_down_short:
-      - service: switch.toggle
-        target:
-          entity_id:
-          - switch.zolder_verwarming
-          - switch.zolder_vloerkleedverwarming
-        data: {}
+      - if:
+        - condition: device
+          device_id: 71f27134959e53d7a39ac2de181d2d00
+          domain: cover
+          entity_id: 243582ca6749d5c62f16dcd5aa320ee0
+          type: is_closing
+        then:
+        - action: cover.stop_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+        else:
+        - action: cover.close_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
       action_button_up_short:
-      - service: switch.toggle
-        target:
-          entity_id:
-          - switch.bureau_zolder_randaparatuur
-        data: {}
+      - if:
+        - condition: device
+          device_id: 71f27134959e53d7a39ac2de181d2d00
+          domain: cover
+          entity_id: 243582ca6749d5c62f16dcd5aa320ee0
+          type: is_opening
+        then:
+        - action: cover.stop_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+        else:
+        - action: cover.open_cover
+          metadata: {}
+          data: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
       helper_last_controller_event: input_text.schakelaar_zolder_bureau_helper
       integration: ZHA
+      button_up_double_press: true
+      button_down_double_press: true
 - id: '1713989923973'
   alias: 'Klimaat & Verlichting: Zolder'
   description: ''
@@ -2930,6 +2932,17 @@
       minutes: 6
       seconds: 0
     trigger: state
+  - trigger: state
+    entity_id:
+    - binary_sensor.presence_detected_near
+    to: 'on'
+    id: Bureau bezet
+  - trigger: state
+    entity_id:
+    - binary_sensor.presence_detected_near
+    to: 'off'
+    id: Bureau niet bezet
+    enabled: false
   conditions: []
   actions:
   - parallel:
@@ -2939,11 +2952,11 @@
         conditions:
         - condition: trigger
           id:
-          - Activiteit
-          - Schedule
+          - Bureau bezet
         - condition: state
           state: 'on'
           entity_id: input_boolean.thuiswerkdag
+          enabled: false
         - condition: state
           state: 'on'
           enabled: true
@@ -2951,9 +2964,15 @@
         - condition: zone
           entity_id: person.bram_wubs
           zone: zone.home
+          enabled: false
         - condition: state
           entity_id: schedule.werktijden
           state: 'on'
+          enabled: true
+        - condition: state
+          entity_id: binary_sensor.presence_detected_near
+          state: 'on'
+          enabled: false
       then:
       - action: switch.turn_on
         metadata: {}
@@ -3009,11 +3028,12 @@
       - metadata: {}
         data: {}
         action: script.zolder_verwarming_uit
-    - alias: Zet Randaparatuur uit bij inactiviteit voor 3 min
+      enabled: false
+    - alias: Zet Randaparatuur uit bij inactiviteit
       if:
       - condition: trigger
         id:
-        - Inactiviteit
+        - Bureau niet bezet
       then:
       - metadata: {}
         data: {}
@@ -3125,13 +3145,30 @@
           label_id: airco_beneden
         action: climate.set_temperature
     - conditions:
-      - condition: trigger
-        id:
-        - Afkoelen
-        enabled: false
       - condition: state
         entity_id: binary_sensor.airco_woonkamer_mag_afkoelen
         state: 'on'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: heat
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: dry
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: auto
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: 'off'
+        - condition: state
+          entity_id: climate.airco_keuken
+          state: 'off'
+        enabled: true
       sequence:
       - target:
           entity_id: climate.airco_woonkamer
@@ -3166,6 +3203,7 @@
           option: Center-Center
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
+        enabled: false
       - action: notify.mobile_app_iphone_van_bram
         metadata: {}
         data:
@@ -3340,12 +3378,11 @@
 - id: '1724615319447'
   alias: Airco Zolder
   description: ''
-  trigger:
-  - platform: time
-    at: '20:30:00'
+  triggers:
+  - at: '20:30:00'
     id: Koelen voor de nacht
-  - platform: numeric_state
-    entity_id:
+    trigger: time
+  - entity_id:
     - sensor.airco_zolder_indoor
     for:
       hours: 0
@@ -3353,8 +3390,8 @@
       seconds: 0
     below: 19.5
     id: Onder 19,5 voor 10 min
-  - platform: numeric_state
-    entity_id:
+    trigger: numeric_state
+  - entity_id:
     - sensor.airco_zolder_indoor
     for:
       hours: 0
@@ -3362,14 +3399,15 @@
       seconds: 0
     id: Boven 20 voor 5 min
     above: 20
-  - platform: time
-    at: 06:30:00
+    trigger: numeric_state
+  - at: 07:30:00
     id: ' Stoppen met koelen'
-  condition:
+    trigger: time
+  conditions:
   - condition: state
     entity_id: group.bewoners
     state: home
-  action:
+  actions:
   - if:
     - condition: trigger
       id:
@@ -3793,8 +3831,8 @@
         id:
         - Wasmachine mag starten
       - condition: state
-        entity_id: sensor.484020536050000148_bsh_common_status_operationstate
         state: Ready
+        entity_id: sensor.wasmachine_bedrijfsstatus
     then:
     - if:
       - condition: state
@@ -3816,7 +3854,7 @@
       metadata: {}
       data: {}
       target:
-        entity_id: button.484020536050000148_start_pause
+        entity_id: button.wasmachine_start
     - action: notify.mobile_app_iphone_van_bram
       metadata: {}
       data:
@@ -3911,50 +3949,6 @@
         message: De wasmachine kan om {{     as_timestamp(states('sensor.droger_start_tijd'))
           |     timestamp_custom('%H:%M') }} automatisch gestart worden
   mode: single
-- id: '1738157687272'
-  alias: Oplader Tablet
-  description: ''
-  triggers:
-  - type: battery_level
-    device_id: 3f3c70ee3e669d4a4d1c4063e605a109
-    entity_id: 2b17662e981e888f8c56b237c15b0430
-    domain: sensor
-    metadata:
-      secondary: true
-    trigger: device
-    id: 'Vol '
-    above: 99
-  - type: battery_level
-    device_id: 3f3c70ee3e669d4a4d1c4063e605a109
-    entity_id: 2b17662e981e888f8c56b237c15b0430
-    domain: sensor
-    metadata:
-      secondary: true
-    trigger: device
-    below: 21
-    id: Bijna Leeg
-  conditions: []
-  actions:
-  - if:
-    - condition: trigger
-      id:
-      - Bijna Leeg
-    then:
-    - action: switch.turn_on
-      metadata: {}
-      data: {}
-      target:
-        device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
-  - if:
-    - condition: trigger
-      id:
-      - 'Vol '
-    then:
-    - type: turn_off
-      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
-      entity_id: d1b071a27d769061708eed2a10e73c69
-      domain: switch
-  mode: single
 - id: '1739218743822'
   alias: Batterij Notificatie
   description: ''
@@ -3993,7 +3987,7 @@
   triggers:
   - trigger: state
     entity_id:
-    - binary_sensor.aanwezigheid_overloop_bezetting
+    - binary_sensor.aanwezigheid_overloop
     from: 'off'
     to: 'on'
   conditions:
@@ -4156,3 +4150,371 @@
   conditions: []
   actions: []
   mode: single
+- id: '1750614803586'
+  alias: Notificatie boiler
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.ariston_is_heating
+  conditions: []
+  actions:
+  - if:
+    - condition: template
+      value_template: '{{ states("binary_sensor.ariston_is_heating") != "unavailable"
+        }}'
+    then:
+    - action: notify.bram
+      metadata: {}
+      data:
+        message: Boiler verwarming is {{ states('binary_sensor.ariston_is_heating')
+          }}
+  mode: single
+- id: '1752090338503'
+  alias: 'Rolluik: Zolder'
+  description: ''
+  triggers:
+  - event: sunset
+    offset: -000:30:00
+    trigger: sun
+  - event: sunrise
+    offset: +000:30:00
+    trigger: sun
+    enabled: false
+  conditions: []
+  actions:
+  - if:
+    - condition: device
+      device_id: 71f27134959e53d7a39ac2de181d2d00
+      domain: cover
+      entity_id: 243582ca6749d5c62f16dcd5aa320ee0
+      type: is_open
+    then:
+    - data: {}
+      action: cover.close_cover
+      target:
+        area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+    else:
+    - if:
+      - condition: state
+        entity_id: group.bewoners
+        state: away
+      then:
+      - action: cover.open_cover
+        target:
+          area_id:
+          - 6d60dd9d13ff4ee4b715cf080394ac41
+        data: {}
+  mode: single
+- id: '1752146866920'
+  alias: 'ID.5: Laadkosten reset'
+  description: ''
+  triggers:
+  - type: power
+    device_id: 87f07313dafafc43ecadf9d78b6eb6b7
+    entity_id: 4482e09fb572353f49257510ac224071
+    domain: sensor
+    trigger: device
+    above: 2
+    enabled: false
+  - trigger: time
+    at: 00:00:00
+  conditions: []
+  actions:
+  - action: dynamic_energy_cost.reset_cost
+    metadata: {}
+    data: {}
+    target:
+      entity_id: sensor.kwh_meter_id_5_netto_vermogen_daily_energy_cost
+  mode: single
+- id: '1755599276669'
+  alias: Boiler opwarmen als het goedkoop is
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    hours: '*'
+    minutes: /2
+  - trigger: state
+    entity_id:
+    - binary_sensor.ariston_mag_aan_op_basis_van_tijd
+  - trigger: state
+    entity_id:
+    - binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
+    to: 'on'
+    for:
+      hours: 0
+      minutes: 1
+      seconds: 0
+    enabled: false
+  - trigger: state
+    entity_id:
+    - binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    enabled: false
+  - trigger: state
+    entity_id:
+    - input_boolean.ariston_moet_uit
+  - trigger: state
+    entity_id:
+    - sensor.ariston_opgewarmd_in
+    id: Opgewarmd In
+  conditions: []
+  actions:
+  - if:
+    - condition: state
+      entity_id: water_heater.boiler
+      state: unavailable
+    then:
+    - action: homeassistant.update_entity
+      metadata: {}
+      data:
+        entity_id:
+        - water_heater.boiler
+    - wait_for_trigger:
+      - trigger: state
+        entity_id:
+        - water_heater.boiler
+        to:
+        from: unavailable
+      continue_on_timeout: false
+      enabled: true
+      timeout:
+        hours: 0
+        minutes: 0
+        seconds: 50
+        milliseconds: 0
+  - if:
+    - condition: state
+      entity_id: binary_sensor.ariston_is_heating
+      state: 'off'
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.ariston_power
+    enabled: false
+  - if:
+    - condition: and
+      conditions:
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
+          state: 'on'
+        - condition: state
+          entity_id: binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
+          state: 'on'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: switch.ariston_power
+          state: 'off'
+        - condition: state
+          entity_id: water_heater.boiler
+          state: GREEN
+    then:
+    - action: switch.turn_on
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.ariston_power
+    - action: water_heater.set_operation_mode
+      metadata: {}
+      data:
+        operation_mode: BOOST
+      target:
+        entity_id: water_heater.boiler
+    - action: water_heater.set_temperature
+      metadata: {}
+      data:
+        temperature: 75
+      target:
+        device_id: de7b74355666694e40775f40a187191e
+    - action: input_datetime.set_datetime
+      metadata: {}
+      data:
+        datetime: '{{now()+timedelta(hours=states("sensor.ariston_opgewarmd_in")|
+          int )}}'
+      target:
+        entity_id: input_datetime.ariston_verwachte_eind_tijd
+  - if:
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
+        state: 'off'
+      - condition: state
+        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
+        state: 'off'
+      - condition: state
+        entity_id: switch.ariston_power
+        state: 'on'
+    then:
+    - action: switch.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: switch.ariston_power
+      enabled: false
+    - action: water_heater.set_operation_mode
+      metadata: {}
+      data:
+        operation_mode: GREEN
+      target:
+        entity_id: water_heater.boiler
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - Opgewarmd In
+        enabled: true
+      - condition: state
+        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
+        state: 'off'
+        enabled: false
+    then:
+    - action: input_datetime.set_datetime
+      metadata: {}
+      data:
+        datetime: '{% if states(''sensor.boiler_opwarmen'') | as_datetime > now()
+          %}
+
+          {{ (states(''sensor.boiler_opwarmen'') | as_datetime | as_local) + timedelta(hours=states("sensor.ariston_opgewarmd_in")|
+          float )  }}
+
+          {% else %}
+
+          {{now()+timedelta(hours=states("sensor.ariston_opgewarmd_in")| float )}}
+
+          {% endif %}'
+      target:
+        entity_id: input_datetime.ariston_verwachte_eind_tijd
+    enabled: false
+  mode: restart
+- id: '1757710929956'
+  alias: Batterij niet ontladen als auto geladen wordt
+  description: ''
+  triggers:
+  - trigger: numeric_state
+    entity_id:
+    - sensor.kwh_meter_id_5_vermogen
+    above: 1
+    id: Laden
+  - trigger: numeric_state
+    entity_id:
+    - sensor.kwh_meter_id_5_vermogen
+    id: Nul op de meter
+    below: 1
+  - trigger: state
+    entity_id:
+    - binary_sensor.ariston_is_heating
+    to: 'off'
+    id: Nul op de meter
+    enabled: false
+  - trigger: state
+    entity_id:
+    - binary_sensor.ariston_is_heating
+    to: 'on'
+    id: standby
+    enabled: false
+  - trigger: state
+    entity_id:
+    - input_select.homewizard_battery_group_mode
+    to: Uit
+    id: standby
+  - trigger: state
+    entity_id:
+    - input_select.homewizard_battery_group_mode
+    to: Laden
+    id: Laden
+  - trigger: state
+    entity_id:
+    - input_select.homewizard_battery_group_mode
+    to: Nul op de meter
+    id: Nul op de meter
+  - trigger: state
+    entity_id:
+    - binary_sensor.stroom_is_goedkoop
+    from:
+    to: 'on'
+    id: Laden
+  - trigger: state
+    entity_id:
+    - binary_sensor.stroom_is_goedkoop
+    from:
+    to: 'off'
+    id: Nul op de meter
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - standby
+    then:
+    - action: rest_command.mode_standby
+      metadata: {}
+      data: {}
+    alias: Standby
+  - if:
+    - condition: trigger
+      id:
+      - Nul op de meter
+    then:
+    - action: rest_command.mode_zero
+      metadata: {}
+      data: {}
+    alias: Nul op de meter
+  - if:
+    - condition: trigger
+      id:
+      - Laden
+    then:
+    - action: rest_command.mode_to_full
+      metadata: {}
+      data: {}
+    alias: Laden
+  mode: single
+- id: '1758048541867'
+  alias: Cover Control Automation (CCA)
+  description: ''
+  use_blueprint:
+    path: hvorragend/cover_control_automation.yaml
+    input:
+      blind: cover.rolluik_dakkapel
+      auto_options:
+      - auto_up_enabled
+      - auto_down_enabled
+      - auto_sun_enabled
+      - auto_shading_enabled
+      - auto_brightness_enabled
+      - auto_ventilate_enabled
+      cover_status_options: cover_helper_enabled
+      cover_status_helper: input_text.zolder_rolluik_helper
+      ventilate_position: 25
+      time_control: time_control_input
+      default_brightness_sensor: sensor.aanwezigheid_zolder_licht
+      contact_window_tilted: binary_sensor.zolder_raam_openen
+      shading_forecast_sensor: weather.home
+      shading_forecast_type: hourly
+      shading_weather_conditions:
+      - lightning
+      - partlycloudy
+      resident_sensor: binary_sensor.aanwezigheid_zolder_bezetting
+      resident_config:
+      - resident_allow_ventilation
+      ignore_after_manual_config:
+      - ignore_closing_after_manual
+      - ignore_opening_after_manual
+      reset_override_config: reset_fixed_time
+      reset_override_time: 08:00:00
+      check_config: true
+      time_up_early: 07:00:00
+      time_up_early_non_workday: 08:00:00
+      workday_sensor: binary_sensor.workday_sensor
+      sun_elevation_up: 11.2

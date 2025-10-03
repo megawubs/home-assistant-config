@@ -101,10 +101,12 @@
 
 - platform: mqtt_room
   device_id: "iphone_van_bram"
-  name: "iPhone van Bram"
-  state_topic: "espresense/devices/iphone_van_bram"
+  name: "iPhone van Bram kamer"
+  state_topic: "espresense/devices/phone:iphone-bram"
   timeout: 10
   away_timeout: 120
+  unique_id: C34C16E1-2B2D-46DB-A89F-0DF0556B451E
+
 - platform: mqtt_room
   device_id: "apple_watch_van_bram"
   name: "Apple Watch van Bram"

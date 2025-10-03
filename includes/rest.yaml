@@ -1,0 +1,35 @@
+  - resource: https://192.168.68.106/api/batteries
+    verify_ssl: false
+    headers:
+      Authorization: !secret home_wizard_token
+        
+    sensor:
+      - name: "Battery group mode"
+        value_template: "{{ value_json.mode }}"
+        unique_id: battery_group_mode
+        
+      - name: "Battery group power"
+        value_template: "{{ value_json.power_w | float }}"
+        unit_of_measurement: "W"
+        state_class: measurement
+        device_class: power
+        unique_id: battery_group_power
+        
+      - name: "Battery group target power"
+        value_template: "{{ value_json.target_power_w | float }}"
+        unit_of_measurement: "W"
+        state_class: measurement
+        device_class: power
+        unique_id: battery_group_target_power
+        
+      - name: "Battery group max consumption power"
+        value_template: "{{ value_json.max_consumption_w | float }}"
+        unit_of_measurement: "W"
+        device_class: power
+        unique_id: battery_group_max_consumption_power
+        
+      - name: "Battery group max production power"
+        value_template: "{{ value_json.max_production_w | float }}"
+        unit_of_measurement: "W"
+        device_class: power
+        unique_id: battery_group_max_production_power
