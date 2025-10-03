@@ -73,7 +73,11 @@
       friendly_name: "Airco woonkamer mag afkoelen"
       value_template: >
         {{
-            is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'on') or 
+            ( 
+              is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'on') and 
+              is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') 
+            )
+            or
             (
               is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'on')
               and is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off')
@@ -85,22 +89,27 @@
       friendly_name: "Airco woonkamer mag verwarmen"
       value_template: >
         {{
-          is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'on') or 
-            (
-              is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
-              is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'on') and
-              is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
-            )
+          ( 
+            is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'on') and 
+            is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'off') 
+          ) 
+          or 
+          (
+            is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
+            is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'on') and
+            is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
+          )
         }}
 
     airco_woonkamer_mag_ventileren:
       friendly_name: "Airco woonkamer mag ventileren"
       value_template: >
         {{
-          is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off')
-          and is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off')
-          and is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
-        
+          is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') and  
+          is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'off') and
+          is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
+          is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off') and
+          is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
         }}
 
     airco_woonkamer_mag_aan:
