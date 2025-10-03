@@ -3,7 +3,7 @@
       platform: homeassistant
       event: start
     - platform: state
-      entity_id: sensor.ariston_opgewarmd_in
+      entity_id: input_number.ariston_vastgezette_opwarmduur
     - platform: state
       entity_id: sensor.current_tariff
   sensor:
@@ -13,10 +13,9 @@
       state: >
         {%- set sensor = 'sensor.current_tariff' -%}
         {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
-        {% set hours = states('sensor.ariston_opgewarmd_in') %}
         
         {# Gebruik de VASTGEZETTE waarde, niet de live sensor #}
-        {% set hours = states('input_number.vastgezette_opwarmduur') %}
+        {% set hours = states('input_number.ariston_vastgezette_opwarmduur') %}
           
         {# Alleen berekenen als de duur groter is dan 0 #}
           {% if hours | float(0) > 0 %}
