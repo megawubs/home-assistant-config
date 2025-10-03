@@ -3127,6 +3127,16 @@
       hours: 0
       minutes: 0
       seconds: 10
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_woonkamer_moet_afkoelen
+    id: moet afkoelen gaat aan
+    to: 'on'
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_woonkamer_moet_verwarmen
+    id: moet verwarmen gaat aan
+    to: 'on'
   conditions: []
   actions:
   - choose:
@@ -3373,6 +3383,43 @@
         data:
           message: Airco woonkamer is gaan verwarmen
         enabled: true
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - moet afkoelen gaat aan
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_afkoelen
+        state: 'on'
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_verwarmen
+        state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id: input_boolean.airco_woonkamer_moet_verwarmen
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - moet verwarmen gaat aan
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_afkoelen
+        state: 'on'
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_moet_verwarmen
+        state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      metadata: {}
+      data: {}
+      target:
+        entity_id:
+        - input_boolean.airco_woonkamer_moet_afkoelen
   mode: queued
   max: 10
 - id: '1724615319447'
@@ -4496,7 +4543,7 @@
       - auto_ventilate_enabled
       cover_status_options: cover_helper_enabled
       cover_status_helper: input_text.zolder_rolluik_helper
-      ventilate_position: 25
+      ventilate_position: 15
       time_control: time_control_input
       default_brightness_sensor: sensor.aanwezigheid_zolder_licht
       contact_window_tilted: binary_sensor.zolder_raam_openen
@@ -4518,3 +4565,100 @@
       time_up_early_non_workday: 08:00:00
       workday_sensor: binary_sensor.workday_sensor
       sun_elevation_up: 11.2
+- id: '1759521136361'
+  alias: Boiler - Compleet Cyclus Management
+  description: Herijkt de opwarmduur, start en stopt de boiler op het optimale moment,
+    zelfs als hij offline was.
+  triggers:
+  - at:
+    - '10:00:00'
+    - '11:00:00'
+    - '12:00:00'
+    - '13:00:00'
+    id: herijken
+    trigger: time
+  - entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
+    id: cyclus_controle
+    trigger: state
+  - entity_id: water_heater.boiler
+    from: unavailable
+    id: boiler_online
+    trigger: state
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: herijken
+      - condition: state
+        entity_id: input_boolean.ariston_verwarmingscyclus_actief
+        state: 'off'
+      sequence:
+      - target:
+          entity_id: input_number.ariston_vastgezette_opwarmduur
+        data:
+          value: '{{ states("sensor.ariston_opgewarmd_in") | float(0) }}'
+        action: input_number.set_value
+    - conditions:
+      - condition: trigger
+        id: cyclus_controle
+      - condition: state
+        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
+        state: 'on'
+      - condition: state
+        entity_id: input_boolean.ariston_verwarmingscyclus_actief
+        state: 'off'
+      sequence:
+      - target:
+          entity_id: input_boolean.boiler_verwarmingscyclus_actief
+        action: input_boolean.turn_on
+      - target:
+          entity_id: switch.ariston_power
+        action: switch.turn_on
+      - data:
+          operation_mode: BOOST
+        target:
+          entity_id: water_heater.boiler
+        action: water_heater.set_operation_mode
+    - conditions:
+      - condition: trigger
+        id: cyclus_controle
+      - condition: state
+        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
+        state: 'off'
+      - condition: state
+        entity_id: input_boolean.ariston_verwarmingscyclus_actief
+        state: 'on'
+      sequence:
+      - data:
+          operation_mode: GREEN
+        target:
+          entity_id: water_heater.boiler
+        action: water_heater.set_operation_mode
+      - target:
+          entity_id: switch.ariston_power
+        action: switch.turn_off
+      - target:
+          entity_id: input_boolean.boiler_verwarmingscyclus_actief
+        action: input_boolean.turn_off
+      - target:
+          entity_id: input_number.vastgezette_opwarmduur
+        data:
+          value: 0
+        action: input_number.set_value
+    - conditions:
+      - condition: trigger
+        id: boiler_online
+      - condition: state
+        entity_id: input_boolean.ariston_verwarmingscyclus_actief
+        state: 'on'
+      sequence:
+      - target:
+          entity_id: switch.ariston_power
+        action: switch.turn_on
+        data: {}
+      - data:
+          operation_mode: BOOST
+        target:
+          entity_id: water_heater.boiler
+        action: water_heater.set_operation_mode
+  mode: restart
