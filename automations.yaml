@@ -4721,10 +4721,22 @@
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''start_wasmachine''
             else ''droger'' }}'
           appliance_entity: 'sensor.{{appliance_name}}_bedrijfsstatus'
+          appliance_aan_uit: 'switch.{{appliance_name}}_aan_uit'
+      - if:
+          condition: template
+          value_template: {{ is_state(appliance_aan_uit, 'off') }}
+        then:
+          - action: switch.turn_on
+            target: {{ appliance_aan_uit }}
+          - wait_for_trigger:
+              - trigger: state
+                entity_id: {{ appliance_entity }}
+                to: 'on'
+                timeout: 00:05:00
       - if:
           condition: template
           value_template: |
-            {{ is_state(appliance_entity, 'ready')}}
+            {{ is_state(appliance_entity, 'Ready')}}
         then:
           - action: button.press
             metadata: {}
