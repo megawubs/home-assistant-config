@@ -4724,7 +4724,7 @@
           condition: state
           entity_id: sensor.{{ appliance_name }}_bedrijfsstatus
           state: 'Ready'
-          then:
+        then:
           - action: button.press
             metadata: {}
             data: {}
