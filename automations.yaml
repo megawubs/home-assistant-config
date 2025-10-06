@@ -4724,7 +4724,8 @@
           appliance_aan_uit: 'switch.{{appliance_name}}_aan_uit'
       - if:
           condition: template
-          value_template: {{ is_state(appliance_aan_uit, 'off') }}
+          value_template: |
+            {{ is_state(appliance_aan_uit, 'off') }}
         then:
           - action: switch.turn_on
             target: {{ appliance_aan_uit }}
