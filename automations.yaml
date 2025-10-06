@@ -4579,6 +4579,8 @@
     trigger: time
   - entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
     id: cyclus_controle
+    trigger: state
+    to: 'on'
   - entity_id: water_heater.boiler
     from: unavailable
     id: boiler_online
