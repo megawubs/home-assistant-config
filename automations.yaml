@@ -4728,10 +4728,10 @@
             {{ is_state(appliance_aan_uit, 'off') }}
         then:
           - action: switch.turn_on
-            entity_id: {{ appliance_aan_uit }}
+            entity_id: '{{ appliance_aan_uit }}'
           - wait_for_trigger:
               - trigger: state
-                entity_id: {{ appliance_entity }}
+                entity_id: '{{ appliance_entity }}'
                 to: 'on'
                 timeout: 00:05:00
       - if:
