@@ -4737,7 +4737,8 @@
             target:
               entity_id: '{{ appliance_aan_uit }}'
           - delay: '00:00:10'
-          - wait_template: '{{ is_state(appliance_entity, 'on') }}'
+          - wait_template: |
+              '{{ is_state(appliance_entity, 'on') }}'
             timeout: '00:02:00'
             continue_on_timeout: false
       - if:
