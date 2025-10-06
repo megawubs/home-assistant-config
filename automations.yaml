@@ -4722,7 +4722,8 @@
             else ''droger'' }}'
       - if:
           condition: state
-          entity_id: sensor.{{ appliance_name }}_bedrijfsstatus
+          entity_id: |
+            sensor.{{ appliance_name }}_bedrijfsstatus
           state: 'Ready'
         then:
           - action: button.press
