@@ -4382,7 +4382,7 @@
         temperature: 75
       target:
         device_id: de7b74355666694e40775f40a187191e
-    - action: input_datetime.set_datetime
+    - service: input_datetime.set_datetime
       metadata: {}
       data:
         datetime: '{{now()+timedelta(hours=states("sensor.ariston_opgewarmd_in")|
@@ -4402,13 +4402,13 @@
         entity_id: switch.ariston_power
         state: 'on'
     then:
-    - action: switch.turn_off
+    - service: switch.turn_off
       metadata: {}
       data: {}
       target:
         entity_id: switch.ariston_power
       enabled: false
-    - action: water_heater.set_operation_mode
+    - service: water_heater.set_operation_mode
       metadata: {}
       data:
         operation_mode: GREEN
@@ -4426,7 +4426,7 @@
         state: 'off'
         enabled: false
     then:
-    - action: input_datetime.set_datetime
+    - service: input_datetime.set_datetime
       metadata: {}
       data:
         datetime: '{% if states(''sensor.boiler_opwarmen'') | as_datetime > now()
@@ -4579,7 +4579,6 @@
     trigger: time
   - entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
     id: cyclus_controle
-    trigger: state
   - entity_id: water_heater.boiler
     from: unavailable
     id: boiler_online
@@ -4666,23 +4665,23 @@
   alias: Wasmachine en Droger - Slim Plannen en Starten
   description: Plant en start de wasmachine of droger op het goedkoopste moment in
     de nacht.
-  triggers:
-  - entity_id:
-    - button.wasmachine_start
-    id: wasmachine_klaar
-    trigger: state
-    from: unavailable
-  - entity_id:
-    - button.droger_start
-    id: droger_klaar
-    trigger: state
-    from: unavailable
-  - at: input_datetime.wasmachine_geplande_starttijd
-    id: start_wasmachine
-    trigger: time
-  - at: input_datetime.droger_geplande_starttijd
-    id: start_droger
-    trigger: time
+  trigger:
+    - platform: state
+      entity_id:
+      - button.wasmachine_start
+      id: wasmachine_klaar
+      from: 'unavailable'
+    - platform: state
+      entity_id:
+      - button.droger_start
+      id: droger_klaar
+      from: 'unavailable'
+    - platform: time
+      at: input_datetime.wasmachine_geplande_starttijd
+      id: start_wasmachine
+    - platform: time
+      at: input_datetime.droger_geplande_starttijd
+      id: start_droger
   conditions: []
   actions:
   - choose:
@@ -4697,20 +4696,27 @@
             else ''droger'' }}'
           duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
           duration_hours: '{{ states(duration_sensor) | int(0) }}'
-      - variables:
-          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
-            %}  {% set search_start = now() %} {% set search_end = today_at('07:00')
-            + timedelta(days=1) %}  {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
-            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
-            \   end=search_end,\n    include_tomorrow=true\n   )\n}}"
-      - target:
+          start_time: >
+            {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}  
+            {% set search_start = now() %}
+            {% set search_end = today_at('07:00') + timedelta(days=1) %}
+            {{ cheapest_energy_hours(
+                sensor='sensor.current_tariff',
+                time_key='datetime',
+                hours=duration_hours,
+                start=search_start,
+                end=search_end,
+                include_tomorrow=true
+              )
+            }}
+      - service: input_datetime.set_datetime
+        target:
           entity_id: input_datetime.{{ appliance_name }}_geplande_starttijd
         data:
           datetime: '{{ start_time }}'
-        action: input_datetime.set_datetime
-      - action: notify.mobile_app_iphone_van_bram
+      - service: notify.mobile_app_iphone_van_bram
         data:
-          message: De {{appliance_name}} wordt om {{start_time}} gestart!
+          message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | as_local | timestamp_custom('%H:%M')}} gestart!
     - conditions:
       - condition: trigger
         id:
@@ -4727,24 +4733,23 @@
           value_template: |
             {{ is_state(appliance_aan_uit, 'off') }}
         then:
-          - action: switch.turn_on
-            entity_id: '{{ appliance_aan_uit }}'
-          - wait_for_trigger:
-              - trigger: state
-                entity_id: '{{ appliance_entity }}'
-                to: 'on'
-                timeout: 00:05:00
+          - service: switch.turn_on
+            target:
+              entity_id: '{{ appliance_aan_uit }}'
+          - delay: '00:00:10'
+          - wait_template: '{{ is_state(appliance_entity, 'on') }}'
+            timeout: '00:02:00'
+            continue_on_timeout: false
       - if:
           condition: template
           value_template: |
             {{ is_state(appliance_entity, 'Ready')}}
         then:
-          - action: button.press
-            metadata: {}
-            data: {}
+          - service: button.press
             target:
               entity_id: button.{{appliance_name}}_start
-          - action: notify.mobile_app_iphone_van_bram
+          - service: notify.mobile_app_iphone_van_bram
             data:
               message: De {{appliance_name}} is gestart!
+              title: Planning Wasmachine/Droger
   mode: parallel
