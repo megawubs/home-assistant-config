@@ -4662,3 +4662,70 @@
           entity_id: water_heater.boiler
         action: water_heater.set_operation_mode
   mode: restart
+- id: '1759527385163'
+  alias: Wasmachine en Droger - Slim Plannen en Starten
+  description: Plant en start de wasmachine of droger op het goedkoopste moment in
+    de nacht.
+  triggers:
+  - entity_id:
+    - button.wasmachine_start
+    id: wasmachine_klaar
+    trigger: state
+    from: unavailable
+  - entity_id:
+    - button.droger_start
+    id: droger_klaar
+    trigger: state
+    from: unavailable
+  - at: input_datetime.wasmachine_geplande_starttijd
+    id: start_wasmachine
+    trigger: time
+  - at: input_datetime.droger_geplande_starttijd
+    id: start_droger
+    trigger: time
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id:
+        - wasmachine_klaar
+        - droger_klaar
+      sequence:
+      - variables:
+          appliance_name: '{{ ''wasmachine'' if trigger.id == ''wasmachine_klaar''
+            else ''droger'' }}'
+          duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
+          duration_hours: '{{ states(duration_sensor) | int(0) }}'
+      - variables:
+          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
+            %}  {% set search_start = now() %} {% set search_end = today_at('07:00')
+            + timedelta(days=1) %}  {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
+            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
+            \   end=search_end,\n    include_tomorrow=true\n   )\n}}"
+      - target:
+          entity_id: input_datetime.{{ appliance_name }}_geplande_starttijd
+        data:
+          datetime: '{{ start_time }}'
+        action: input_datetime.set_datetime
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: De {{appliance_name}} wordt om {{start_time}} gestart!
+    - conditions:
+      - condition: trigger
+        id:
+        - start_wasmachine
+        - start_droger
+      sequence:
+      - variables:
+          appliance_name: '{{ ''wasmachine'' if trigger.id == ''start_wasmachine''
+            else ''droger'' }}'
+      - action: button.press
+        metadata: {}
+        data: {}
+        target:
+          entity_id: button.{{appliance_name}}_start
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: De {{appliance_name}} is gestart!
+  mode: parallel
