@@ -4697,7 +4697,8 @@
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''wasmachine_klaar''
             else ''droger'' }}'
           duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
-          duration_hours: {{ states(duration_sensor) | float(3.5) }}
+          duration_hours: >
+              {{ states(duration_sensor) | float(3.5) }}
           start_time: >
             {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}  
             {% set search_start = now() %}
