@@ -4697,7 +4697,7 @@
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''wasmachine_klaar''
             else ''droger'' }}'
           duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
-          duration_hours: '{{ states(duration_sensor) | int(0) }}'
+          duration_hours: {{ states(duration_sensor) | float(3.5) }}
           start_time: >
             {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}  
             {% set search_start = now() %}
@@ -4718,7 +4718,7 @@
           datetime: '{{ start_time }}'
       - service: notify.mobile_app_iphone_van_bram
         data:
-          message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | as_local | timestamp_custom('%H:%M')}} gestart!
+          message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | timestamp_custom('%H:%M')}} gestart!
     - conditions:
       - condition: trigger
         id:
@@ -4740,7 +4740,7 @@
               entity_id: '{{ appliance_aan_uit }}'
           - delay: '00:00:10'
           - wait_template: |
-              '{{ is_state(appliance_entity, 'on') }}'
+              '{{ is_state(appliance_entity, 'Ready') }}'
             timeout: '00:02:00'
             continue_on_timeout: false
       - if:
