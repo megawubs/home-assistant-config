@@ -4667,23 +4667,35 @@
   alias: Wasmachine en Droger - Slim Plannen en Starten
   description: Plant en start de wasmachine of droger op het goedkoopste moment in
     de nacht.
-  trigger:
-    - platform: state
-      entity_id:
-      - button.wasmachine_start
-      id: wasmachine_klaar
-      from: 'unavailable'
-    - platform: state
-      entity_id:
-      - button.droger_start
-      id: droger_klaar
-      from: 'unavailable'
-    - platform: time
-      at: input_datetime.wasmachine_geplande_starttijd
-      id: start_wasmachine
-    - platform: time
-      at: input_datetime.droger_geplande_starttijd
-      id: start_droger
+  triggers:
+  - entity_id:
+    - button.wasmachine_start
+    id: wasmachine_klaar
+    from: unavailable
+    trigger: state
+  - entity_id:
+    - button.droger_start
+    id: droger_klaar
+    from: unavailable
+    trigger: state
+  - at: input_datetime.wasmachine_geplande_starttijd
+    id: start_wasmachine
+    trigger: time
+  - at: input_datetime.droger_geplande_starttijd
+    id: start_droger
+    trigger: time
+  - trigger: state
+    entity_id:
+    - sensor.droger_bedrijfsstatus
+    from: Run
+    to: Finished
+    id: Droger Finished
+  - trigger: state
+    entity_id:
+    - sensor.wasmachine_bedrijfsstatus
+    from: Run
+    to: Finished
+    id: Wasmachine Finished
   conditions: []
   actions:
   - choose:
@@ -4697,29 +4709,23 @@
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''wasmachine_klaar''
             else ''droger'' }}'
           duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
-          duration_hours: >
-              {{ states(duration_sensor) | float(3.5) }}
-          start_time: >
-            {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}  
-            {% set search_start = now() %}
-            {% set search_end = today_at('07:00') + timedelta(days=1) %}
-            {{ cheapest_energy_hours(
-                sensor='sensor.current_tariff',
-                time_key='datetime',
-                hours=duration_hours,
-                start=search_start,
-                end=search_end,
-                include_tomorrow=true
-              )
-            }}
-      - service: input_datetime.set_datetime
-        target:
+          duration_hours: '{{ states(duration_sensor) | float(3.5) }}
+
+            '
+          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
+            %}   {% set search_start = now() %} {% set search_end = today_at('07:00')
+            + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
+            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
+            \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
+      - target:
           entity_id: input_datetime.{{ appliance_name }}_geplande_starttijd
         data:
           datetime: '{{ start_time }}'
-      - service: notify.mobile_app_iphone_van_bram
-        data:
-          message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | timestamp_custom('%H:%M')}} gestart!
+        action: input_datetime.set_datetime
+      - data:
+          message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | timestamp_custom('%H:%M')}}
+            gestart!
+        action: notify.mobile_app_iphone_van_bram
     - conditions:
       - condition: trigger
         id:
@@ -4729,31 +4735,46 @@
       - variables:
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''start_wasmachine''
             else ''droger'' }}'
-          appliance_entity: 'sensor.{{appliance_name}}_bedrijfsstatus'
-          appliance_aan_uit: 'switch.{{appliance_name}}_aan_uit'
+          appliance_entity: sensor.{{appliance_name}}_bedrijfsstatus
+          appliance_aan_uit: switch.{{appliance_name}}_aan_uit
       - if:
           condition: template
-          value_template: |
-            {{ is_state(appliance_aan_uit, 'off') }}
+          value_template: '{{ is_state(appliance_aan_uit, ''off'') }}
+
+            '
         then:
-          - service: switch.turn_on
-            target:
-              entity_id: '{{ appliance_aan_uit }}'
-          - delay: '00:00:10'
-          - wait_template: |
-              '{{ is_state(appliance_entity, 'Ready') }}'
-            timeout: '00:02:00'
-            continue_on_timeout: false
+        - target:
+            entity_id: '{{ appliance_aan_uit }}'
+          action: switch.turn_on
+        - delay: 00:00:10
+        - wait_template: '''{{ is_state(appliance_entity, ''Ready'') }}''
+
+            '
+          timeout: 00:02:00
+          continue_on_timeout: false
       - if:
-          condition: template
-          value_template: |
-            {{ is_state(appliance_entity, 'Ready')}}
+        - condition: template
+          value_template: '{{ is_state(appliance_entity, ''Ready'')}}
+
+            '
         then:
-          - service: button.press
-            target:
-              entity_id: button.{{appliance_name}}_start
-          - service: notify.mobile_app_iphone_van_bram
-            data:
-              message: De {{appliance_name}} is gestart!
-              title: Planning Wasmachine/Droger
+        - target:
+            entity_id: button.{{appliance_name}}_start
+          action: button.press
+        - data:
+            message: De {{appliance_name}} is gestart!
+            title: Planning Wasmachine/Droger
+          action: notify.mobile_app_iphone_van_bram
+    - conditions:
+      - condition: trigger
+        id:
+        - Droger Finished
+        - Wasmachine Finished
+      sequence:
+      - variables:
+          appliance_name: '{{ ''wasmachine'' if trigger.id == ''Wasmachine Finished''
+            else ''droger'' }}'
+      - data:
+          message: De {{appliance_name}} is klaar!
+        action: notify.mobile_app_iphone_van_bram
   mode: parallel
