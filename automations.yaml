@@ -4672,8 +4672,7 @@
   mode: restart
 - id: '1759527385163'
   alias: Wasmachine en Droger - Slim Plannen en Starten
-  description: Plant en start de wasmachine of droger op het goedkoopste moment in
-    de nacht.
+  description: Plant en start de wasmachine of droger op het goedkoopste.
   triggers:
   - entity_id:
     - button.wasmachine_start
@@ -4703,6 +4702,9 @@
     from: Run
     to: Finished
     id: Wasmachine Finished
+  - trigger: time_pattern
+    hours: *
+    id: keep_alive
   conditions: []
   actions:
   - choose:
@@ -4717,14 +4719,17 @@
             else ''droger'' }}'
           duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
           child_lock: switch.{{ appliance_name }}_child_lock
-          duration_hours: '{{ states(duration_sensor) | float(3.5) }}
-
-            '
+          appliance_program_scheduled: input_boolean.{{ appliance_name }}_programma_ingepland
+          duration_hours: '{{ states(duration_sensor) | float(3.5) }}'
           start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
             %}   {% set search_start = now() %} {% set search_end = today_at('07:00')
             + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
             \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
             \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
+      - if:
+          - condition: template
+            value_template: {{ is_state(appliance_program_scheduled, 'on') }}
+            then: []
       - target:
           entity_id: input_datetime.{{ appliance_name }}_geplande_starttijd
         data:
@@ -4738,6 +4743,10 @@
         target: {}
         data:
           entity_id: switch.{{appliance_name}}_child_lock
+      - action: input_boolean.turn_on
+        target: {}
+        data:
+          entity_id: {{ appliance_program_scheduled }}
     - conditions:
       - condition: trigger
         id:
@@ -4749,27 +4758,22 @@
             else ''droger'' }}'
           appliance_entity: sensor.{{appliance_name}}_bedrijfsstatus
           appliance_aan_uit: switch.{{appliance_name}}_aan_uit
+          appliance_program_scheduled: input_boolean.{{ appliance_name }}_programma_ingepland
+      - if:
+          - condition: template
+            value_template: {{ is_state(appliance_program_scheduled, 'off') }}
+            then: []
       - if:
         - condition: template
-          value_template: '{{ is_state(appliance_aan_uit, ''off'') }}
-
-            '
+          value_template: '{{ is_state(appliance_aan_uit, ''off'')  }}'
         then:
         - target:
             entity_id: '{{ appliance_aan_uit }}'
           action: switch.turn_on
         - delay: 00:00:10
-        - wait_template: '{{ is_state(appliance_entity, ''Ready'') }}
-
-            '
-          timeout: 00:02:00
-          continue_on_timeout: false
-          enabled: false
       - if:
         - condition: template
-          value_template: '{{ is_state(appliance_entity, ''Ready'')}}
-
-            '
+          value_template: '{{ is_state(appliance_entity, ''Ready'')}}'
         then:
         - target:
             entity_id: button.{{appliance_name}}_start
@@ -4779,6 +4783,9 @@
             message: De {{appliance_name}} is gestart!
             title: Planning Wasmachine/Droger
           action: notify.mobile_app_iphone_van_bram
+        - action: input_boolean.turn_off
+          target:
+            entity_id: {{ appliance_program_scheduled }}
     - conditions:
       - condition: trigger
         id:
@@ -4791,4 +4798,25 @@
       - data:
           message: De {{appliance_name}} is klaar!
         action: notify.mobile_app_iphone_van_bram
+    - conditions:
+        - condition: trigger
+          id:
+          - keep_alive
+      sequence:
+         - if:
+             - condition: state
+               entity_id: input_boolean.droger_programma_ingepland
+               state: 'on'
+               then:
+                 - action: switch.turn_on
+                   target:
+                     entity_id: switch.droger_aan_uit
+         - if:
+            - condition: state
+              entity_id: input_boolean.wasmachine_programma_ingepland
+              state: 'on'
+              then:
+                - action: switch.turn_on
+                  target:
+                    - entity_id: switch.wasmachine_aan_uit
   mode: parallel
