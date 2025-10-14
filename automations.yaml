@@ -4728,24 +4728,25 @@
             \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
       - if:
           - condition: template
-            value_template: '{{ is_state(appliance_program_scheduled, 'on') }}'
-      - target:
-          entity_id: input_datetime.{{ appliance_name }}_geplande_starttijd
-        data:
-          datetime: '{{ start_time }}'
-        action: input_datetime.set_datetime
-      - data:
-          message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | timestamp_custom('%H:%M')}}
-            gestart!
-        action: notify.mobile_app_iphone_van_bram
-      - action: switch.turn_on
-        target: {}
-        data:
-          entity_id: switch.{{appliance_name}}_child_lock
-      - action: input_boolean.turn_on
-        target: {}
-        data:
-          entity_id: {{ appliance_program_scheduled }}
+            value_template: '{{ is_state(appliance_program_scheduled, 'off') }}'
+            then:
+            - target:
+                entity_id: input_datetime.{{ appliance_name }}_geplande_starttijd
+              data:
+                datetime: '{{ start_time }}'
+              action: input_datetime.set_datetime
+            - data:
+                message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | timestamp_custom('%H:%M')}}
+                  gestart!
+              action: notify.mobile_app_iphone_van_bram
+            - action: switch.turn_on
+              target: {}
+              data:
+                entity_id: switch.{{appliance_name}}_child_lock
+            - action: input_boolean.turn_on
+              target: {}
+              data:
+                entity_id: {{ appliance_program_scheduled }}
     - conditions:
       - condition: trigger
         id:
@@ -4760,30 +4761,31 @@
           appliance_program_scheduled: input_boolean.{{ appliance_name }}_programma_ingepland
       - if:
           - condition: template
-            value_template: {{ is_state(appliance_program_scheduled, 'off') }}
-      - if:
-        - condition: template
-          value_template: '{{ is_state(appliance_aan_uit, ''off'')  }}'
-        then:
-        - target:
-            entity_id: '{{ appliance_aan_uit }}'
-          action: switch.turn_on
-        - delay: 00:00:10
-      - if:
-        - condition: template
-          value_template: '{{ is_state(appliance_entity, ''Ready'')}}'
-        then:
-        - target:
-            entity_id: button.{{appliance_name}}_start
-          action: button.press
-          data: {}
-        - data:
-            message: De {{appliance_name}} is gestart!
-            title: Planning Wasmachine/Droger
-          action: notify.mobile_app_iphone_van_bram
-        - action: input_boolean.turn_off
-          target:
-            entity_id: {{ appliance_program_scheduled }}
+            value_template: {{ is_state(appliance_program_scheduled, 'on') }}
+            then:
+              - if:
+                - condition: template
+                  value_template: '{{ is_state(appliance_aan_uit, ''off'')  }}'
+                then:
+                - target:
+                    entity_id: '{{ appliance_aan_uit }}'
+                  action: switch.turn_on
+                - delay: 00:00:10
+              - if:
+                - condition: template
+                  value_template: '{{ is_state(appliance_entity, ''Ready'')}}'
+                then:
+                - target:
+                    entity_id: button.{{appliance_name}}_start
+                  action: button.press
+                  data: {}
+                - data:
+                    message: De {{appliance_name}} is gestart!
+                    title: Planning Wasmachine/Droger
+                  action: notify.mobile_app_iphone_van_bram
+                - action: input_boolean.turn_off
+                  target:
+                    entity_id: {{ appliance_program_scheduled }}
     - conditions:
       - condition: trigger
         id:
