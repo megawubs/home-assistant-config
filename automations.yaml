@@ -4552,6 +4552,8 @@
       shading_weather_conditions:
       - lightning
       - partlycloudy
+      - sunny
+      - clear
       resident_sensor: binary_sensor.aanwezigheid_zolder_bezetting
       resident_config:
       - resident_allow_ventilation
@@ -4565,6 +4567,11 @@
       time_up_early_non_workday: 08:00:00
       workday_sensor: binary_sensor.workday_sensor
       sun_elevation_up: 11.2
+      shading_azimuth_start: 141
+      shading_elevation_min: 71.5
+      shading_brightness_sensor: sensor.aanwezigheid_zolder_licht
+      shading_sun_brightness_start: 17575
+      shading_sun_brightness_end: 11131
 - id: '1759521136361'
   alias: Boiler - Compleet Cyclus Management
   description: Herijkt de opwarmduur, start en stopt de boiler op het optimale moment,
@@ -4709,6 +4716,7 @@
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''wasmachine_klaar''
             else ''droger'' }}'
           duration_sensor: sensor.{{ appliance_name }}_estimated_total_program_time
+          child_lock: switch.{{ appliance_name }}_child_lock
           duration_hours: '{{ states(duration_sensor) | float(3.5) }}
 
             '
@@ -4726,6 +4734,10 @@
           message: De {{appliance_name}} wordt om {{ as_timestamp(start_time) | timestamp_custom('%H:%M')}}
             gestart!
         action: notify.mobile_app_iphone_van_bram
+      - action: switch.turn_on
+        target: {}
+        data:
+          entity_id: switch.{{appliance_name}}_child_lock
     - conditions:
       - condition: trigger
         id:
@@ -4738,7 +4750,7 @@
           appliance_entity: sensor.{{appliance_name}}_bedrijfsstatus
           appliance_aan_uit: switch.{{appliance_name}}_aan_uit
       - if:
-          condition: template
+        - condition: template
           value_template: '{{ is_state(appliance_aan_uit, ''off'') }}
 
             '
@@ -4747,11 +4759,12 @@
             entity_id: '{{ appliance_aan_uit }}'
           action: switch.turn_on
         - delay: 00:00:10
-        - wait_template: '''{{ is_state(appliance_entity, ''Ready'') }}''
+        - wait_template: '{{ is_state(appliance_entity, ''Ready'') }}
 
             '
           timeout: 00:02:00
           continue_on_timeout: false
+          enabled: false
       - if:
         - condition: template
           value_template: '{{ is_state(appliance_entity, ''Ready'')}}
@@ -4761,6 +4774,7 @@
         - target:
             entity_id: button.{{appliance_name}}_start
           action: button.press
+          data: {}
         - data:
             message: De {{appliance_name}} is gestart!
             title: Planning Wasmachine/Droger
