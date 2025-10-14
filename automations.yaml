@@ -4703,7 +4703,7 @@
     to: Finished
     id: Wasmachine Finished
   - trigger: time_pattern
-    hours: *
+    hours: '*/1'
     id: keep_alive
   conditions: []
   actions:
