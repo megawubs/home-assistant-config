@@ -157,8 +157,7 @@
       friendly_name: "Airco zolder mag verwarmen"
       value_template: >
         {{
-          ( is_state('sensor.season', 'winter') or is_state('sensor.season', 'spring') ) 
-          and is_state('binary_sensor.airco_zolder_mag_aan', 'on')
+           is_state('binary_sensor.airco_zolder_mag_aan', 'on')
         }}
 
     airco_zolder_mag_ventileren:
