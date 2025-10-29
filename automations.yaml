@@ -1826,51 +1826,6 @@
   description: Nieuw
   triggers:
   - entity_id:
-    - binary_sensor.beweging_overloop_motion
-    from: 'on'
-    to: 'off'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
-    id: inactiviteit
-    trigger: state
-    enabled: false
-  - entity_id:
-    - binary_sensor.beweging_overloop_zolder_beweging
-    to: 'on'
-    id: activiteit
-    from: 'off'
-    trigger: state
-    enabled: false
-  - entity_id:
-    - binary_sensor.beweging_in_de_hal_beweging
-    from: 'off'
-    to: 'on'
-    id: activiteit
-    trigger: state
-    enabled: false
-  - entity_id:
-    - sensor.beweging_in_de_hal_batterij
-    from: 'on'
-    to: 'off'
-    id: inactiviteit
-    trigger: state
-    enabled: false
-  - entity_id:
-    - binary_sensor.badkamer_deur
-    to: 'on'
-    id: activiteit
-    trigger: state
-    enabled: false
-  - entity_id:
-    - binary_sensor.beweging_overloop_motion
-    from:
-    to: 'on'
-    id: activiteit
-    trigger: state
-    enabled: false
-  - entity_id:
     - binary_sensor.activiteit_op_de_overloop
     to: 'on'
     id: activiteit
@@ -1881,10 +1836,12 @@
     id: inactiviteit
     trigger: state
   conditions:
-  - condition: numeric_state
-    entity_id: sensor.aanwezigheid_overloop_licht
-    below: 100
-    enabled: false
+  - condition: or
+    conditions:
+    - condition: time
+      before: 05:00:00
+    - condition: time
+      after: 07:00:00
   actions:
   - if:
     - condition: and
@@ -3782,8 +3739,7 @@
   triggers:
   - trigger: time_pattern
     hours: '*'
-    minutes: '*'
-    seconds: '15'
+    minutes: /5
   - trigger: state
     entity_id:
     - schedule.verwarming_badkamer
@@ -3800,7 +3756,8 @@
         hvac_mode: heat
         temperature: '{{ states("input_number.badkamer_temperatuur_hoog")| float }}'
       target:
-        entity_id: climate.radiator_thermostaat_badkamer_thermostaat
+        entity_id:
+        - climate.badkamer_verwarming
   - if:
     - condition: state
       entity_id: binary_sensor.radiatorkraan_badkamer_mag_aan
@@ -3812,7 +3769,8 @@
         hvac_mode: heat
         temperature: '{{ states("input_number.badkamer_temperatuur_laag")| float }}'
       target:
-        entity_id: climate.radiator_thermostaat_badkamer_thermostaat
+        entity_id:
+        - climate.badkamer_verwarming
   mode: single
 - id: '1733785619696'
   alias: 'Klimaat: Zoned Heating'
@@ -3857,69 +3815,6 @@
       metadata: {}
       data:
         message: Zoned Heating is aan gegaan
-  mode: single
-- id: '1736194824508'
-  alias: Wasmachine
-  description: ''
-  triggers:
-  - trigger: time
-    at: sensor.wasmachine_start_tijd
-    id: Wasmachine mag starten
-  - trigger: state
-    entity_id:
-    - sensor.wasmachine_start_tijd
-    id: Starttijd wasmachine is bekend
-  conditions: []
-  actions:
-  - if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id:
-        - Wasmachine mag starten
-      - condition: state
-        state: Ready
-        entity_id: sensor.wasmachine_bedrijfsstatus
-    then:
-    - if:
-      - condition: state
-        entity_id: switch.484020536050000148_bsh_common_setting_powerstate
-        state: 'off'
-      then:
-      - action: switch.turn_on
-        metadata: {}
-        data: {}
-        target:
-          entity_id: switch.484020536050000148_bsh_common_setting_powerstate
-      - wait_for_trigger:
-        - trigger: state
-          entity_id:
-          - button.484020536050000148_start_pause
-          to:
-      enabled: true
-    - action: button.press
-      metadata: {}
-      data: {}
-      target:
-        entity_id: button.wasmachine_start
-    - action: notify.mobile_app_iphone_van_bram
-      metadata: {}
-      data:
-        message: Was machine is gestart!
-    - action: notify.mobile_app_iphone_van_maninne_2
-      metadata: {}
-      data:
-        message: Was machine is gestart!
-  - if:
-    - condition: trigger
-      id:
-      - Starttijd wasmachine is bekend
-    then:
-    - action: notify.mobile_app_iphone_van_bram
-      metadata: {}
-      data:
-        message: De wasmachine kan om {{     as_timestamp(states('sensor.wasmachine_start_tijd'))
-          |     timestamp_custom('%H:%M') }} automatisch gestart worden
   mode: single
 - id: '1736198196339'
   alias: Droger
@@ -4281,6 +4176,7 @@
   - trigger: time_pattern
     hours: '*'
     minutes: /2
+    enabled: false
   - trigger: state
     entity_id:
     - binary_sensor.ariston_mag_aan_op_basis_van_tijd
@@ -4309,6 +4205,16 @@
     entity_id:
     - sensor.ariston_opgewarmd_in
     id: Opgewarmd In
+  - trigger: state
+    entity_id:
+    - water_heater.boiler
+    to: unavailable
+  - trigger: state
+    entity_id:
+    - input_boolean.ariston_moet_uit
+  - trigger: state
+    entity_id:
+    - input_boolean.ariston_moet_aan
   conditions: []
   actions:
   - if:
@@ -4382,13 +4288,13 @@
         temperature: 75
       target:
         device_id: de7b74355666694e40775f40a187191e
-    - service: input_datetime.set_datetime
-      metadata: {}
+    - metadata: {}
       data:
         datetime: '{{now()+timedelta(hours=states("sensor.ariston_opgewarmd_in")|
           int )}}'
       target:
         entity_id: input_datetime.ariston_verwachte_eind_tijd
+      action: input_datetime.set_datetime
   - if:
     - condition: and
       conditions:
@@ -4402,18 +4308,18 @@
         entity_id: switch.ariston_power
         state: 'on'
     then:
-    - service: switch.turn_off
-      metadata: {}
+    - metadata: {}
       data: {}
       target:
         entity_id: switch.ariston_power
       enabled: false
-    - service: water_heater.set_operation_mode
-      metadata: {}
+      action: switch.turn_off
+    - metadata: {}
       data:
         operation_mode: GREEN
       target:
         entity_id: water_heater.boiler
+      action: water_heater.set_operation_mode
   - if:
     - condition: and
       conditions:
@@ -4426,8 +4332,7 @@
         state: 'off'
         enabled: false
     then:
-    - service: input_datetime.set_datetime
-      metadata: {}
+    - metadata: {}
       data:
         datetime: '{% if states(''sensor.boiler_opwarmen'') | as_datetime > now()
           %}
@@ -4442,6 +4347,7 @@
           {% endif %}'
       target:
         entity_id: input_datetime.ariston_verwachte_eind_tijd
+      action: input_datetime.set_datetime
     enabled: false
   mode: restart
 - id: '1757710929956'
@@ -4678,9 +4584,14 @@
   - trigger: state
     entity_id:
     - sensor.droger_bedrijfsstatus
-    from: Run
     to: Finished
     id: Droger Finished
+  - trigger: state
+    entity_id:
+    - sensor.droger_bedrijfsstatus
+    to: run
+    id: Droger Started
+    from: delayedstart
   - trigger: state
     entity_id:
     - sensor.wasmachine_bedrijfsstatus
@@ -4689,12 +4600,26 @@
     id: Wasmachine Finished
   - trigger: state
     entity_id:
+    - sensor.wasmachine_bedrijfsstatus
+    from: delayedstart
+    to: run
+    id: Wasmachine Started
+  - trigger: state
+    entity_id:
     - select.droger_geselecteerd_programma
     id: droger_klaar
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 7
   - trigger: state
     entity_id:
     - select.wasmachine_geselecteerd_programma
     id: wasmachine_klaar
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 7
   conditions: []
   actions:
   - choose:
@@ -4704,7 +4629,7 @@
         - wasmachine_klaar
       sequence:
       - variables:
-          duration_hours: '{{ states(''sensor.droger_estimated_total_program_time'')
+          duration_hours: '{{ states(''sensor.wasmachine_estimated_total_program_time'')
             | float(3.5) }}
 
             '
@@ -4713,9 +4638,11 @@
             + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
             \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
             \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
-          hours: '{{ (start_time | as_datetime - now()).days * 24 + (start_time |
-            as_datetime - now()).seconds // 3600 }}'
-          minutes: '{{ ((start_time | as_datetime - now()).seconds % 3600) // 60 }}'
+          end_time: '{{ (start_time | as_datetime) + timedelta(hours=duration_hours)
+            }}'
+          hours: '{{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
+            - now()).seconds // 3600 }}'
+          minutes: '{{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}'
       - action: homeconnect_ws.start_program
         metadata: {}
         data:
@@ -4732,7 +4659,7 @@
         - droger_klaar
       sequence:
       - variables:
-          duration_hours: '{{ states(''sensor.wasmachine_estimated_total_program_time'')
+          duration_hours: '{{ states(''sensor.droger_estimated_total_program_time'')
             | float(3.5) }}
 
             '
@@ -4741,9 +4668,11 @@
             + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
             \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
             \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
-          hours: '{{ (start_time | as_datetime - now()).days * 24 + (start_time |
-            as_datetime - now()).seconds // 3600 }}'
-          minutes: '{{ ((start_time | as_datetime - now()).seconds % 3600) // 60 }}'
+          end_time: '{{ (start_time | as_datetime) + timedelta(hours=duration_hours)
+            }}'
+          hours: '{{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
+            - now()).seconds // 3600 }}'
+          minutes: '{{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}'
       - action: homeconnect_ws.start_program
         metadata: {}
         data:
@@ -4767,4 +4696,59 @@
       - data:
           message: De {{appliance_name}} is klaar!
         action: notify.mobile_app_iphone_van_bram
+    - conditions:
+      - condition: trigger
+        id:
+        - Droger Started
+        - Wasmachine Started
+      sequence:
+      - variables:
+          appliance_name: '{{ ''wasmachine'' if trigger.id == ''Wasmachine Started''
+            else ''droger'' }}'
+          appliance_program_scheduled: input_boolean.{{ appliance_name }}_programma_ingepland
+      - data:
+          message: De {{appliance_name}} is gestart!
+        action: notify.mobile_app_iphone_van_bram
   mode: parallel
+- id: '1760897078053'
+  alias: Taken Jozua
+  description: ''
+  use_blueprint:
+    path: gist.githubusercontent.com/recurring_todo.yaml
+    input:
+      tasklist: todo.jozua
+      schedule: Daily
+      task_1_name: Tanden poetsen
+      task_2_name: Bed opmaken
+      task_3_name: Kamer opruimen
+      task_4_name: Tafel afruimen
+      task_5_name: Aankleden
+      tasklist_template: todo.jozua_dagelijks_template
+- id: '1760900643001'
+  alias: Taken Anne-Lize
+  description: ''
+  use_blueprint:
+    path: gist.githubusercontent.com/recurring_todo.yaml
+    input:
+      tasklist: todo.anne_lize
+      schedule: Daily
+      task_1_name: Tanden poetsen
+      task_2_name: Bed opmaken
+      task_3_name: Kamer opruimen
+      task_4_name: Tafel afruimen
+      task_5_name: Aankleden
+      tasklist_template: todo.anne_lize_dagelijks_template
+- id: '1760901318298'
+  alias: Taken Rosalyn
+  description: ''
+  use_blueprint:
+    path: gist.githubusercontent.com/recurring_todo.yaml
+    input:
+      tasklist: todo.rosalyn
+      schedule: Daily
+      task_1_name: Tanden poetsen
+      task_2_name: Bed opmaken
+      task_3_name: Kamer opruimen
+      task_4_name: Tafel afruimen
+      task_5_name: Aankleden
+      tasklist_template: todo.rosalyn_dagelijks_template
