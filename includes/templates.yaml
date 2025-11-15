@@ -42,3 +42,22 @@
         {# Geef een 'none' waarde terug als er niets te plannen valt #}
           {{ None }}
         {% endif %}
+
+    - unique_id: zolder_afstand_test_readable
+      name: "Zolder Afstand Test"
+      state: >
+        {% set distance = states('sensor.aanwezigheid_zolder_target_distance') | float(0) %}
+        {% if distance == 0 %}
+          Geen detectie
+        {% elif distance < 1 %}
+          {{ (distance * 100) | round(0) }} cm - Heel dichtbij
+        {% elif distance < 2 %}
+          {{ distance | round(1) }} m - Dichtbij (mogelijk bureau?)
+        {% elif distance < 4 %}
+          {{ distance | round(1) }} m - Middel afstand
+        {% elif distance < 7 %}
+          {{ distance | round(1) }} m - Ver weg (mogelijk bed?)
+        {% else %}
+          {{ distance | round(1) }} m - Zeer ver
+        {% endif %}
+      icon: mdi:ruler
