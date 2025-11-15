@@ -51,3 +51,6 @@ www/community
 .shopping_list.json
 addons_config
 addons_autoscripts
+
+# Context files (local work notes)
+.context
