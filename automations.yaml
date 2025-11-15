@@ -4393,14 +4393,12 @@
     id: Nul op de meter
   - trigger: state
     entity_id:
-    - binary_sensor.stroom_is_goedkoop
-    from:
+    - binary_sensor.stroomtarief_onder_gemiddelde
     to: 'on'
     id: Laden
   - trigger: state
     entity_id:
-    - binary_sensor.stroom_is_goedkoop
-    from:
+    - binary_sensor.stroomtarief_onder_gemiddelde
     to: 'off'
     id: Nul op de meter
   conditions: []
