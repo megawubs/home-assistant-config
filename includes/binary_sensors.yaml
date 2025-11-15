@@ -228,7 +228,6 @@
       value_template: >
         {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) > 0.1
            and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 2.0 }}
-      icon: mdi:numeric-1-circle
 
     zolder_zone_2_4m:
       friendly_name: "Test: Zolder Zone 2-4m"
@@ -236,7 +235,6 @@
       value_template: >
         {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 2.0
            and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 4.0 }}
-      icon: mdi:numeric-2-circle
 
     zolder_zone_4_6m:
       friendly_name: "Test: Zolder Zone 4-6m"
@@ -244,11 +242,9 @@
       value_template: >
         {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 4.0
            and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 6.0 }}
-      icon: mdi:numeric-3-circle
 
     zolder_zone_6plus:
       friendly_name: "Test: Zolder Zone 6m+"
       unique_id: zolder_zone_6plus
       value_template: >
         {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 6.0 }}
-      icon: mdi:numeric-4-circle
