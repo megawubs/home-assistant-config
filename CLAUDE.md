@@ -119,6 +119,21 @@ When working with energy-based automations:
 **Energy**: Sensors containing `zonneplan_*`, `energy_*`, `power_*`
 **Input Helpers**: Prefixed with `input_number.*`, `input_boolean.*`, etc.
 
+## Context Documentation
+
+The `.context/` directory (gitignored) contains detailed technical documentation about ongoing work, decisions, and implementation details:
+
+- **Purpose**: Preserve conversation context, technical decisions, and implementation details for future AI sessions
+- **Format**: Markdown files with descriptive names
+- **Not committed**: These are local working notes that don't need version control
+- **When to use**: Complex multi-session tasks, feature implementations, troubleshooting sessions
+
+**Active context files:**
+- `zolder-verlichting-zones-optimalisatie.md` - Attic lighting automation with distance-based zones
+- `batterij-laden-goedkope-stroom.md` - Battery charging optimization based on electricity prices
+
+When working on existing features or debugging, check `.context/` for relevant documentation that provides background, decisions made, and current status.
+
 ## Notes for AI Assistants
 
 - Preserve Dutch language in all user-facing strings
@@ -127,3 +142,5 @@ When working with energy-based automations:
 - Be mindful of the split configuration structure - changes often need to be made in `includes/` directory
 - The `custom_templates/` directory exists but is not in version control - reference the macro imports in existing code
 - Energy optimization automations are complex - study existing patterns before modifying
+- **Document complex work**: Create/update `.context/` files for multi-session tasks or complex features
+- **Check context first**: Before starting work, check if there's relevant `.context/` documentation

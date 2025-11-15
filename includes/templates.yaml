@@ -61,3 +61,50 @@
           {{ distance | round(1) }} m - Zeer ver
         {% endif %}
       icon: mdi:ruler
+
+    - unique_id: gemiddeld_stroomtarief_vandaag
+      name: "Gemiddeld Stroomtarief Vandaag"
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: >
+        {% set current_tariff = state_attr('sensor.current_tariff', 'forecast') %}
+        {% if current_tariff %}
+          {% set today_start = now().replace(hour=0, minute=0, second=0, microsecond=0) %}
+          {% set today_end = today_start + timedelta(days=1) %}
+          {% set today_prices = current_tariff | selectattr('datetime', 'defined')
+             | map(attribute='datetime')
+             | map('as_datetime')
+             | select('>=', today_start)
+             | select('<', today_end)
+             | list %}
+          {% set prices = [] %}
+          {% for item in current_tariff %}
+            {% if item.datetime is defined %}
+              {% set dt = item.datetime | as_datetime %}
+              {% if dt >= today_start and dt < today_end and item.electricity_price is defined %}
+                {% set prices = prices + [item.electricity_price / 10000000] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {% if prices | length > 0 %}
+            {{ (prices | sum / prices | length) | round(4) }}
+          {% else %}
+            {{ states('sensor.current_tariff') | float(0.25) }}
+          {% endif %}
+        {% else %}
+          {{ states('sensor.current_tariff') | float(0.25) }}
+        {% endif %}
+      icon: mdi:chart-line
+
+    - unique_id: stroomtarief_verschil_met_gemiddelde
+      name: "Stroomtarief Verschil met Gemiddelde"
+      unit_of_measurement: "%"
+      state: >
+        {% set current = states('sensor.current_tariff') | float(0) %}
+        {% set average = states('sensor.gemiddeld_stroomtarief_vandaag') | float(0) %}
+        {% if average > 0 %}
+          {{ (((current - average) / average) * 100) | round(1) }}
+        {% else %}
+          0
+        {% endif %}
+      icon: mdi:percent
