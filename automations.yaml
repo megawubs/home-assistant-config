@@ -4749,3 +4749,13 @@
       task_4_name: Tafel afruimen
       task_5_name: Aankleden
       tasklist_template: todo.rosalyn_dagelijks_template
+- id: '1735228800000'
+  alias: 'Maintenance: Cleanup Audiobookshelf Logs'
+  description: Verwijdert automatisch Audiobookshelf scan logs ouder dan 7 dagen
+  triggers:
+  - trigger: time
+    at: '03:00:00'
+  conditions: []
+  actions:
+  - action: shell_command.cleanup_audiobookshelf_logs
+    data: {}

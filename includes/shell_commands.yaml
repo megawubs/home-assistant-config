@@ -1,1 +1,2 @@
-
+# Shell commands voor maintenance taken
+cleanup_audiobookshelf_logs: "find /mnt/data/addon_configs/e419b1cb_audiobookshelf/metadata/logs -type f -mtime +7 -delete 2>/dev/null || true"
