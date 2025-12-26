@@ -226,12 +226,12 @@
       friendly_name: "Bed Zolder Bezet"
       unique_id: bed_zolder_bezet
       value_template: >
-        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 4.0
-           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 6.0 }}
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 3.5
+           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) <= 7.0 }}
       delay_on:
-        seconds: 5
+        seconds: 10
       delay_off:
-        minutes: 2
+        minutes: 10
 
     # Test sensoren voor afstandsbereiken
     zolder_zone_0_2m:
