@@ -4439,7 +4439,6 @@
     input:
       blind: cover.rolluik_dakkapel
       auto_options:
-      - auto_up_enabled
       - auto_down_enabled
       - auto_sun_enabled
       - auto_shading_enabled
@@ -4448,7 +4447,7 @@
       cover_status_options: cover_helper_enabled
       cover_status_helper: input_text.zolder_rolluik_helper
       ventilate_position: 15
-      time_control: time_control_input
+      time_control: time_control_disabled
       default_brightness_sensor: sensor.aanwezigheid_zolder_licht
       contact_window_tilted: binary_sensor.zolder_raam_openen
       shading_forecast_sensor: weather.home
@@ -4461,14 +4460,12 @@
       resident_sensor: binary_sensor.aanwezigheid_zolder_bezetting
       resident_config:
       - resident_allow_ventilation
-      ignore_after_manual_config:
-      - ignore_closing_after_manual
-      - ignore_opening_after_manual
-      reset_override_config: reset_fixed_time
+      ignore_after_manual_config: []
+      reset_override_config: reset_disabled
       reset_override_time: 08:00:00
       check_config: true
-      time_up_early: 07:00:00
-      time_up_early_non_workday: 08:00:00
+      time_up_early: 08:00:00
+      time_up_early_non_workday: 09:00:00
       workday_sensor: binary_sensor.workday_sensor
       sun_elevation_up: 11.2
       shading_azimuth_start: 141
@@ -4476,6 +4473,8 @@
       shading_brightness_sensor: sensor.aanwezigheid_zolder_licht
       shading_sun_brightness_start: 17575
       shading_sun_brightness_end: 11131
+      time_up_late: '10:00:00'
+      time_up_late_non_workday: 08:30:00
 - id: '1759521136361'
   alias: Boiler - Compleet Cyclus Management
   description: Herijkt de opwarmduur, start en stopt de boiler op het optimale moment,
