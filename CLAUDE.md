@@ -131,8 +131,15 @@ The `.context/` directory (gitignored) contains detailed technical documentation
 **Active context files:**
 - `zolder-verlichting-zones-optimalisatie.md` - Attic lighting automation with distance-based zones
 - `batterij-laden-goedkope-stroom.md` - Battery charging optimization based on electricity prices
+- `troubleshooting-guide.md` - Comprehensive troubleshooting guide with lessons learned (disk management, LD2410 sensors, add-on configuration)
+- `toekomstige-projecten.md` - Future project ideas and improvements
 
 When working on existing features or debugging, check `.context/` for relevant documentation that provides background, decisions made, and current status.
+
+**For troubleshooting:**
+- Disk full / HAOS issues → See `.context/troubleshooting-guide.md`
+- LD2410 sensor issues → See `.context/troubleshooting-guide.md` section on sensors
+- Add-on configuration → See `.context/troubleshooting-guide.md` add-on management section
 
 ## Notes for AI Assistants
 

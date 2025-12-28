@@ -122,7 +122,11 @@
           (
             (is_state('input_boolean.modus_gast', 'on') or is_state('input_boolean.airco_woonkamer_moet_aan', 'on'))
             or (
-              (is_state('group.bewoners', 'home') or is_state('group.bewoners', 'Ommen'))
+              (
+                is_state('group.bewoners', 'home')
+                or is_state('group.bewoners', 'Ommen')
+                or (is_state('input_boolean.vakantie_modus', 'on') and states('sensor.airco_woonkamer_outdoor') | float(99) < 5)
+              )
               and is_state('binary_sensor.open_verbinding_naar_buiten', 'off')
               and is_state('schedule.airco_woonkamer', 'on')
             )
