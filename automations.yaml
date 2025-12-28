@@ -983,16 +983,6 @@
   - data:
       entity_id: media_player.woonkamer
     action: linkplay.restore
-  - if:
-    - condition: state
-      entity_id: input_boolean.modus_gast
-      state: 'on'
-    then:
-    - action: input_boolean.turn_off
-      metadata: {}
-      data: {}
-      target:
-        entity_id: input_boolean.modus_gast
 - id: '1639682498630'
   alias: 'Melding: Batterij'
   description: ''
@@ -4769,3 +4759,45 @@
   actions:
   - action: shell_command.cleanup_audiobookshelf_logs
     data: {}
+- id: '1735398000000'
+  alias: 'Vakantie: Modus automatisch uit bij thuiskomst'
+  description: Schakelt vakantie modus automatisch uit wanneer bewoners thuiskomen
+  triggers:
+  - trigger: state
+    entity_id:
+    - group.bewoners
+    to: home
+  conditions:
+  - condition: state
+    entity_id: input_boolean.vakantie_modus
+    state: 'on'
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.vakantie_modus
+    data: {}
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      title: Welkom thuis!
+      message: Vakantie modus is automatisch uitgeschakeld. De airco werkt weer normaal.
+- id: '1735398100000'
+  alias: 'Gast: Modus automatisch uit bij thuiskomst'
+  description: Schakelt gast modus automatisch uit wanneer bewoners thuiskomen
+  triggers:
+  - trigger: state
+    entity_id:
+    - group.bewoners
+    to: home
+  conditions:
+  - condition: state
+    entity_id: input_boolean.modus_gast
+    state: 'on'
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.modus_gast
+    data: {}
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      title: Welkom thuis!
+      message: Gast modus is automatisch uitgeschakeld.
