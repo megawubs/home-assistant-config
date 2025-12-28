@@ -3070,6 +3070,12 @@
       hours: 0
       minutes: 0
       seconds: 0
+  - entity_id:
+    - binary_sensor.airco_woonkamer_mag_ventileren
+    to: 'off'
+    id: Ventileren Uit
+    trigger: state
+    enabled: true
   - trigger: time_pattern
     hours: '*'
     minutes: /5
@@ -3094,6 +3100,10 @@
     - input_boolean.airco_woonkamer_moet_verwarmen
     id: moet verwarmen gaat aan
     to: 'on'
+  - trigger: state
+    entity_id:
+    - input_boolean.vakantie_modus
+    id: Vakantie Modus Veranderd
   conditions: []
   actions:
   - choose:
