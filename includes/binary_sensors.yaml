@@ -107,11 +107,12 @@
       friendly_name: "Airco woonkamer mag ventileren"
       value_template: >
         {{
-          is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') and  
+          is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') and
           is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'off') and
           is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
           is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off') and
-          is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
+          is_state('binary_sensor.airco_woonkamer_mag_aan', 'on') and
+          is_state('input_boolean.vakantie_modus', 'off')
         }}
 
     airco_woonkamer_mag_aan:
