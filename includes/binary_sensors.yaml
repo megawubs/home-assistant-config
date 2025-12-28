@@ -211,9 +211,17 @@
       friendly_name: "Radiator Kraan Badkamer Mag Aan"
       value_template: >-
         {{
-         is_state('group.bewoners', 'home') and
-         is_state('binary_sensor.open_verbinding_naar_buiten_badkamer', 'off') and
-         is_state('schedule.verwarming_badkamer', 'on')
+          (
+            (
+              is_state('group.bewoners', 'home')
+              and is_state('schedule.verwarming_badkamer', 'on')
+            )
+            or (
+              is_state('input_boolean.vakantie_modus', 'on')
+              and states('sensor.badkamer_multisensor_temperatuur') | float(99) < 5
+            )
+          )
+          and is_state('binary_sensor.open_verbinding_naar_buiten_badkamer', 'off')
         }}
 
     bureau_zolder_bezet:

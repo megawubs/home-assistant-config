@@ -3743,6 +3743,14 @@
   - trigger: state
     entity_id:
     - schedule.verwarming_badkamer
+  - trigger: state
+    entity_id:
+    - input_boolean.vakantie_modus
+    id: vakantie_modus_veranderd
+  - trigger: state
+    entity_id:
+    - binary_sensor.radiatorkraan_badkamer_mag_aan
+    id: mag_aan_veranderd
   conditions: []
   actions:
   - if:
@@ -3754,7 +3762,12 @@
       metadata: {}
       data:
         hvac_mode: heat
-        temperature: '{{ states("input_number.badkamer_temperatuur_hoog")| float }}'
+        temperature: >
+          {% if is_state('input_boolean.vakantie_modus', 'on') %}
+            {{ states('input_number.badkamer_vakantie_temperatuur') | float }}
+          {% else %}
+            {{ states('input_number.badkamer_temperatuur_hoog') | float }}
+          {% endif %}
       target:
         entity_id:
         - climate.badkamer_verwarming
