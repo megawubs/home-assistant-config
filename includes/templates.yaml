@@ -108,3 +108,9 @@
           0
         {% endif %}
       icon: mdi:percent
+
+- light:
+    - name: "Woonkamer"
+      unique_id: woonkamer
+      lights: >
+        {{ area_entities('woonkamer') | select('search', '^light') | list }}
