@@ -2494,13 +2494,19 @@
       - data:
           brightness_pct: 60
         target:
-          entity_id: light.woonkamer
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - keuken
+          - eettafel
         action: light.toggle
       button_single_press_right:
       - data:
           brightness_pct: 60
         target:
-          entity_id: light.woonkamer
+          area_id:
+          - 3baf8165348041e1b29208776b5bf03d
+          - keuken
+          - eettafel
         action: light.toggle
       button_single_press_both:
       - parallel:
@@ -3762,12 +3768,10 @@
       metadata: {}
       data:
         hvac_mode: heat
-        temperature: >
-          {% if is_state('input_boolean.vakantie_modus', 'on') %}
-            {{ states('input_number.badkamer_vakantie_temperatuur') | float }}
-          {% else %}
-            {{ states('input_number.badkamer_temperatuur_hoog') | float }}
-          {% endif %}
+        temperature: "{% if is_state('input_boolean.vakantie_modus', 'on') %}\n  {{
+          states('input_number.badkamer_vakantie_temperatuur') | float }}\n{% else
+          %}\n  {{ states('input_number.badkamer_temperatuur_hoog') | float }}\n{%
+          endif %}\n"
       target:
         entity_id:
         - climate.badkamer_verwarming
@@ -4795,7 +4799,7 @@
   description: Verwijdert automatisch Audiobookshelf scan logs ouder dan 7 dagen
   triggers:
   - trigger: time
-    at: '03:00:00'
+    at: 03:00:00
   conditions: []
   actions:
   - action: shell_command.cleanup_audiobookshelf_logs
@@ -4844,7 +4848,8 @@
       message: Gast modus is automatisch uitgeschakeld.
 - id: '1735398300000'
   alias: 'Vakantie: Automatisch aan bij vakantie in agenda'
-  description: Schakelt vakantie modus automatisch aan wanneer een vakantie event in de gezinsagenda start
+  description: Schakelt vakantie modus automatisch aan wanneer een vakantie event
+    in de gezinsagenda start
   triggers:
   - trigger: state
     entity_id:
@@ -4852,7 +4857,8 @@
     to: 'on'
   conditions:
   - condition: template
-    value_template: "{{ 'vakantie' in state_attr('calendar.gezin', 'message') | lower }}"
+    value_template: '{{ ''vakantie'' in state_attr(''calendar.gezin'', ''message'')
+      | lower }}'
   - condition: state
     entity_id: input_boolean.vakantie_modus
     state: 'off'
@@ -4864,10 +4870,12 @@
   - action: notify.mobile_app_iphone_van_bram
     data:
       title: Vakantie modus geactiveerd
-      message: "Vakantie modus is automatisch aangezet voor: {{ state_attr('calendar.gezin', 'message') }}"
+      message: 'Vakantie modus is automatisch aangezet voor: {{ state_attr(''calendar.gezin'',
+        ''message'') }}'
 - id: '1735398400000'
   alias: 'Vakantie: Automatisch uit voor thuiskomst'
-  description: Schakelt vakantie modus uit 4 uur voor einde van vakantie event zodat huis kan opwarmen
+  description: Schakelt vakantie modus uit 4 uur voor einde van vakantie event zodat
+    huis kan opwarmen
   triggers:
   - trigger: time_pattern
     hours: '*'
@@ -4880,15 +4888,12 @@
     entity_id: calendar.gezin
     state: 'on'
   - condition: template
-    value_template: "{{ 'vakantie' in state_attr('calendar.gezin', 'message') | lower }}"
+    value_template: '{{ ''vakantie'' in state_attr(''calendar.gezin'', ''message'')
+      | lower }}'
   - condition: template
-    value_template: >
-      {% set end_time = state_attr('calendar.gezin', 'end_time') %}
-      {% if end_time %}
-        {{ now() >= (end_time | as_datetime | as_local) - timedelta(hours=4) }}
-      {% else %}
-        false
-      {% endif %}
+    value_template: "{% set end_time = state_attr('calendar.gezin', 'end_time') %}
+      {% if end_time %}\n  {{ now() >= (end_time | as_datetime | as_local) - timedelta(hours=4)
+      }}\n{% else %}\n  false\n{% endif %}\n"
   actions:
   - action: input_boolean.turn_off
     target:
@@ -4900,7 +4905,8 @@
       message: Het huis wordt voorverwarmd voor jullie thuiskomst over ~4 uur!
 - id: '1735398500000'
   alias: 'Vakantie: Backup detectie lange afwezigheid'
-  description: Vraagt of vakantie modus aan moet als jullie lang weg zijn zonder agenda event
+  description: Vraagt of vakantie modus aan moet als jullie lang weg zijn zonder agenda
+    event
   triggers:
   - trigger: state
     entity_id:
@@ -4913,10 +4919,9 @@
     entity_id: input_boolean.vakantie_modus
     state: 'off'
   - condition: template
-    value_template: >
-      {% set is_vakantie = state_attr('calendar.gezin', 'message') and
-                          'vakantie' in state_attr('calendar.gezin', 'message') | lower %}
-      {{ not is_vakantie or is_state('calendar.gezin', 'off') }}
+    value_template: "{% set is_vakantie = state_attr('calendar.gezin', 'message')
+      and\n                    'vakantie' in state_attr('calendar.gezin', 'message')
+      | lower %}\n{{ not is_vakantie or is_state('calendar.gezin', 'off') }}\n"
   actions:
   - action: notify.mobile_app_iphone_van_bram
     data:
@@ -4932,7 +4937,8 @@
           icon: sfsymbols:house
 - id: '1735398600000'
   alias: 'Vakantie: Actie op notificatie antwoord'
-  description: Schakelt vakantie modus aan of stuurt bevestiging op basis van notificatie actie
+  description: Schakelt vakantie modus aan of stuurt bevestiging op basis van notificatie
+    actie
   triggers:
   - trigger: event
     event_type: ios.notification_action_fired

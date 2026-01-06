@@ -145,11 +145,13 @@ pauze_woonkamer:
 woonkamer_aan:
   alias: woonkamer aan
   sequence:
-  - service: light.turn_on
-    data:
+  - data:
       brightness_pct: 60
     target:
-      entity_id: light.woonkamer
+      area_id:
+      - 3baf8165348041e1b29208776b5bf03d
+      - keuken
+    action: light.turn_on
   mode: single
   icon: mdi:sofa
 media_groepeer_woonkamer:
