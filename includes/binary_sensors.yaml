@@ -1,21 +1,5 @@
 - platform: template
   sensors:
-    woonkamer_daglicht:
-      friendly_name: Woonkamer Daglicht
-      value_template: >
-        {{
-          states('sensor.lichtintensiteit_benedenverdieping') | int >= 300
-        }}
-      delay_off: "00:05:00"
-
-    woonkamer_dark:
-      friendly_name: Woonkamer Donker
-      value_template: >
-        {{
-          states('sensor.lichtintensiteit_benedenverdieping')  | int <= 10
-        }}
-      delay_off: "00:05:00"
-
     #Badkamer
     luchtvochtigheid_boven_ingestelde_waarde_in_de_badkamer:
       friendly_name: Luchtvochtigheid boven instestelde waarde in de badkamer

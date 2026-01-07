@@ -108,3 +108,16 @@
           0
         {% endif %}
       icon: mdi:percent
+
+- binary_sensor:
+    - name: Woonkamer Daglicht
+      unique_id: woonkamer_daglicht
+      delay_off: "00:05:00"
+      state: >
+        {{ states('sensor.lichtintensiteit_benedenverdieping') | int >= 300 }}
+
+    - name: Woonkamer Donker
+      unique_id: woonkamer_dark
+      delay_off: "00:05:00"
+      state: >
+        {{ states('sensor.lichtintensiteit_benedenverdieping') | int <= 10 }}
