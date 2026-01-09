@@ -1822,9 +1822,24 @@
     trigger: state
   - entity_id:
     - binary_sensor.activiteit_op_de_overloop
-    to: 'off'
+    to:
+    - 'off'
     id: inactiviteit
     trigger: state
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+  - type: opened
+    device_id: f753d4bffa87a210ed5e67e6af2d28f0
+    entity_id: 0464805fa473716b015ad1d67ae7e433
+    domain: binary_sensor
+    trigger: device
+    for:
+      hours: 0
+      minutes: 2
+      seconds: 0
+    id: inactiviteit
   conditions:
   - condition: or
     conditions:
@@ -1841,9 +1856,6 @@
       - condition: state
         entity_id: sun.sun
         state: below_horizon
-      - condition: time
-        after: 07:00:00
-        enabled: false
     then:
     - target:
         entity_id:
@@ -1868,7 +1880,8 @@
       action: light.turn_on
   - if:
     - condition: trigger
-      id: inaciviteit
+      id:
+      - inactiviteit
     then:
     - data: {}
       target:
@@ -1890,7 +1903,7 @@
         target:
           entity_id: light.overloop_licht
         action: light.turn_off
-    enabled: true
+    enabled: false
   mode: restart
   max: 10
 - id: '1674910294791'
@@ -2686,7 +2699,8 @@
             entity_id: input_boolean.zolder_automatiche_verlichting
           action: input_boolean.turn_off
         else:
-        - data: {}
+        - data:
+            brightness_pct: 23
           target:
             entity_id: light.kantoor_lamp
           action: light.turn_on
@@ -2709,7 +2723,8 @@
             entity_id: input_boolean.zolder_automatiche_verlichting
           action: input_boolean.turn_off
         else:
-        - data: {}
+        - data:
+            brightness_pct: 23
           action: light.turn_on
           target:
             entity_id: light.nachtkastjes_zolder
@@ -2849,6 +2864,32 @@
       integration: ZHA
       button_up_double_press: true
       button_down_double_press: true
+      action_button_up_double:
+      - if:
+        - condition: and
+          conditions:
+          - condition: state
+            entity_id: light.kantoor_lamp
+            state: 'off'
+        then:
+        - action: light.turn_on
+          metadata: {}
+          data:
+            brightness_pct: 100
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+        else:
+        - action: light.turn_off
+          metadata: {}
+          target:
+            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
+          data: {}
+      action_button_down_double:
+      - action: switch.toggle
+        metadata: {}
+        data: {}
+        target:
+          entity_id: switch.stekkerdoos_bureau_zolder
 - id: '1713989923973'
   alias: 'Klimaat & Verlichting: Zolder'
   description: ''
@@ -3672,13 +3713,13 @@
       - action: climate.set_fan_mode
         metadata: {}
         data:
-          fan_mode: 1 Lowest
+          fan_mode: 3 High
         target:
           entity_id: climate.airco_zolder
       - action: climate.set_swing_mode
         metadata: {}
         data:
-          swing_mode: Lowest
+          swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
       - action: notify.mobile_app_iphone_van_bram
@@ -3738,6 +3779,7 @@
       entity_id: select.airco_zolder_horizontal_swing_direction
     data:
       option: Center-Center
+    enabled: false
   mode: single
 - id: '1733782066889'
   alias: 'Klimaat: Badkamer'
