@@ -65,10 +65,26 @@
       friendly_name: "Airco Zolder Ideale Temperatuur"
       unit_of_measurement: "°C"
       value_template: >-
-        {% if states('sensor.airco_zolder_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco_zolder') | int < (states('input_number.airco_zolder_drempelwaarde_koelen') | int) or states('sensor.airco_zolder_indoor') | int - states('input_number.maximaal_temperatuurverschil_airco_zolder') | int < (states('input_number.airco_zolder_drempelwaarde_koelen') | int)  %}
-         {{ states('input_number.airco_zolder_drempelwaarde_koelen') }}
+        {% set extern = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set intern = states('sensor.airco_zolder_indoor') | float(none) %}
+        {% set drempel_koelen = states('input_number.airco_zolder_drempelwaarde_koelen') | float(22) %}
+        {% set drempel_verwarmen = states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18) %}
+
+        {% if extern is none or intern is none %}
+          {{ none }}
         {% else %}
-         {{ states('sensor.airco_zolder_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco_zolder') | int }}
+          {% set compensatie = intern - extern %}
+        
+          {% if extern >= drempel_koelen %}
+            {# Te warm - koelen naar net onder de drempel #}
+            {{ (drempel_koelen - 1 + compensatie) | round(1) }}
+          {% elif extern <= drempel_verwarmen %}
+            {# Te koud - verwarmen naar de drempel #}
+            {{ (drempel_verwarmen + compensatie) | round(1) }}
+          {% else %}
+            {# Binnen comfort zone - houd huidige temperatuur aan #}
+            {{ (extern + compensatie) | round(1) }}
+          {% endif %}
         {% endif %}
 
 - platform: time_date
