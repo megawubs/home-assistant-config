@@ -942,23 +942,16 @@
       temperature: '{{ states(''input_number.verwarming_laag'') }}'
     enabled: false
     action: climate.set_temperature
-  - target:
-      entity_id: climate.kantoor_2
-    data:
-      temperature: '{{ states(''input_number.verwarming_kantoor_laag'') }}'
-    action: climate.set_temperature
   - data:
       title: Home Assistant
       message: Ik heb door dat jullie weg zijn, have fun! De muziek is uit, lampen
         zijn uit en de verwarming is laag gezet
     action: notify.bram
+    enabled: false
   - target:
       entity_id:
-      - light.kantoor
-      - light.badkamer
       - switch.slaapkamer
       - switch.bijkeuken_lamp
-      - switch.zoned_heating
       area_id: 290ef374526c47d1beb8cbe09186fe0c
     data: {}
     action: homeassistant.turn_off
@@ -1456,7 +1449,7 @@
       alias: Iemand is thuis
     then:
     - data:
-        temperature: 17
+        temperature: 19
       action: climate.set_temperature
       target:
         entity_id:
@@ -3654,6 +3647,7 @@
         metadata: {}
         data:
           message: 'Airco zolder is gaan koelen '
+        enabled: false
       alias: Mag afkoelen
     - conditions:
       - condition: and
@@ -3691,9 +3685,19 @@
         - condition: state
           entity_id: binary_sensor.airco_zolder_mag_verwarmen
           state: 'on'
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: 'off'
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: climate.airco_zolder
+            state: 'off'
+          - condition: numeric_state
+            entity_id: climate.airco_zolder
+            above: sensor.airco_woonkamer_ideale_temperatuur
+            attribute: temperature
+          - condition: numeric_state
+            entity_id: climate.airco_zolder
+            below: sensor.airco_zolder_ideale_temperatuur
+            attribute: temperature
       sequence:
       - target:
           entity_id: climate.airco_zolder
@@ -3706,7 +3710,8 @@
           entity_id: climate.airco_zolder
         action: climate.set_hvac_mode
       - data:
-          temperature: 20
+          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
+            }}'
         target:
           entity_id: climate.airco_zolder
         action: climate.set_temperature
@@ -3726,6 +3731,7 @@
         metadata: {}
         data:
           message: Airco zolder is gaan verwarmen
+        enabled: false
       alias: Mag verwarmen
     - conditions:
       - condition: and
