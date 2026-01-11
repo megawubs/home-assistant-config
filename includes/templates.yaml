@@ -121,3 +121,290 @@
       delay_off: "00:05:00"
       state: >
         {{ states('sensor.lichtintensiteit_benedenverdieping') | int <= 10 }}
+    
+
+    - luchtvochtigheid_boven_ingestelde_waarde_in_de_badkamer:
+      friendly_name: Luchtvochtigheid boven instestelde waarde in de badkamer
+      value_template: >
+        {{ states('sensor.badkamer_multisensor_luchtvochtigheid')|float >= states('input_number.maximale_luchtvochtigheid_douche')|float }}
+
+    - activiteit_ergens_in_huis:
+      friendly_name: Activiteit ergens in huis
+      value_template: >
+        {{ is_state("binary_sensor.activiteit_in_de_badkamer", "on")
+            or is_state("binary_sensor.activiteit_in_de_bijkeuken", "on")
+            or is_state("binary_sensor.activiteit_bij_de_trap", "on")
+            or is_state("binary_sensor.activiteit_bij_de_voordeur", "on")
+            or is_state("binary_sensor.activiteit_op_de_overloop", "on")
+            or is_state("binary_sensor.beweging_op_zolder", "on")
+            or is_state("binary_sensor.activiteit_in_de_woonkamer", "on")
+        }}
+
+    - activiteit_in_huis_voor_het_afgelopen_uur:
+      friendly_name: Activiteit in huis afgelopen uur
+      value_template: >
+        {{ is_state("binary_sensor.activiteit_ergens_in_huis", "on") }}
+      delay_off: "01:00:00"
+
+    - activiteit_op_zolder_voor_afgelopen_6_minuten:
+      friendly_name: Activiteit op zolder voor afgelopen 6 minuten
+      value_template: >
+        {{ is_state("binary_sensor.beweging_op_zolder", "on")}}
+      delay_off: 00:06:00
+
+    - iemand_thuis_voor_het_afgelopen_uur:
+      friendly_name: Iemand thuis voor het afgelopen uur
+      value_template: >
+        {{ is_state("binary_sensor.activiteit_in_huis_voor_het_afgelopen_uur", "on")
+            or is_state("group.bewoners", "home") }}
+
+    - niemand_thuis:
+      friendly_name: Niemand is thuis
+      value_template: >
+        {{ not is_state("person.bram_wubs", "home")
+            and not is_state("person.maninne_wubs", "home") }}
+
+    - bram_slaapt:
+      value_template: >
+        {{
+          is_state('input_text.focus_bram', 'Slaap') 
+        }}
+
+    - temperatuur_woonkamer_is_boven_drempel_waarden:
+      friendly_name: "Binnen temperatuur woonkamer is boven drempel waarde voor koelen"
+      value_template: >-
+        {{ states('sensor.tstat_9d4027_current_temperature') | float >= (states('input_number.airco_woonkamer_drempelwaarde_koelen') | float) }}
+
+    - airco_woonkamer_mag_afkoelen:
+      friendly_name: "Airco woonkamer mag afkoelen"
+      value_template: >
+        {{
+            ( 
+              is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'on') and 
+              is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') 
+            ) 
+            or
+            (
+              is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') and
+              is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'on') and
+              is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off') and
+              is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
+            )
+        }}
+
+    - airco_woonkamer_mag_verwarmen:
+      friendly_name: "Airco woonkamer mag verwarmen"
+      value_template: >
+        {{
+          ( 
+            is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'on') and 
+            is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'off') 
+          ) 
+          or 
+          (
+            is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'off')  and
+            is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
+            is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'on') and
+            is_state('binary_sensor.airco_woonkamer_mag_aan', 'on')
+          )
+        }}
+
+    - airco_woonkamer_mag_ventileren:
+      friendly_name: "Airco woonkamer mag ventileren"
+      value_template: >
+        {{
+          is_state('input_boolean.airco_woonkamer_moet_verwarmen', 'off') and
+          is_state('input_boolean.airco_woonkamer_moet_afkoelen', 'off') and
+          is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
+          is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off') and
+          is_state('binary_sensor.airco_woonkamer_mag_aan', 'on') and
+          is_state('input_boolean.vakantie_modus', 'off')
+        }}
+
+    - airco_woonkamer_mag_aan:
+      friendly_name: "Airco woonkamer mag aan"
+      value_template: >
+        {{
+          is_state('input_boolean.airco_woonkamer_moet_uit', 'off') and
+          (
+            (is_state('input_boolean.modus_gast', 'on') or is_state('input_boolean.airco_woonkamer_moet_aan', 'on'))
+            or (
+              (
+                is_state('group.bewoners', 'home')
+                or is_state('group.bewoners', 'Ommen')
+                or (is_state('input_boolean.vakantie_modus', 'on') and states('sensor.airco_woonkamer_outdoor') | float(99) < 5)
+              )
+              and is_state('binary_sensor.open_verbinding_naar_buiten', 'off')
+              and is_state('schedule.airco_woonkamer', 'on')
+            )
+          )
+         }}
+
+    - open_verbinding_naar_buiten:
+      friendly_name: "Open Verbinding Naar Buiten"
+      value_template: >
+        {{
+          is_state('binary_sensor.ramen_woonkamer', 'on')
+          or ( is_state('binary_sensor.deur_hal_openen', 'on') and is_state('binary_sensor.voordeur', 'on'))
+          or (is_state('binary_sensor.achterdeur_openen', 'on') and is_state('binary_sensor.keuken_deur_openen', 'on'))
+        }}
+      delay_on: 00:00:10
+
+    - temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen:
+      friendly_name: "Binnen Temperatuur Woonkamer Is Onder Drempel Waarde Voor Verwarmen"
+      value_template: >-
+        {{ states('sensor.tstat_9d4027_current_temperature') | float <= (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float) }}
+
+    - airco_zolder_mag_afkoelen:
+      friendly_name: "Airco zolder mag afkoelen"
+      value_template: >
+        {{
+          is_state('binary_sensor.temperatuur_zolder_is_boven_drempel_waarden', 'on')
+          and is_state('binary_sensor.temperatuur_zolder_is_onder_drempel_waarden_verwarmen', 'off')
+          and is_state('binary_sensor.airco_zolder_mag_aan', 'on')
+        }}
+
+    - airco_zolder_mag_verwarmen:
+      friendly_name: "Airco zolder mag verwarmen"
+      value_template: >
+        {{
+           is_state('binary_sensor.airco_zolder_mag_aan', 'on')
+        }}
+
+    - airco_zolder_mag_ventileren:
+      friendly_name: "Airco zolder mag ventileren"
+      value_template: >
+        {{
+          is_state('binary_sensor.arco_woonkamer_mag_verwarmen', 'on')
+          and is_state('binary_sensor.airco_zolder_mag_aan', 'on')
+
+        }}
+
+    - airco_zolder_mag_aan:
+      friendly_name: "Airco zolder mag aan"
+      value_template: >
+        {{
+            is_state('input_boolean.thuiswerkdag', 'on') and
+            is_state('schedule.verwarming_zolder', 'on') and
+            is_state('binary_sensor.open_verbinding_naar_buiten_zolder', 'off')
+        }}
+
+    - open_verbinding_naar_buiten_zolder:
+      friendly_name: "Open Verbinding Naar Buiten Zolder"
+      value_template: >
+        {{
+          is_state('binary_sensor.zolder_raam_openen', 'on')
+        }}
+
+    - temperatuur_zolder_is_boven_drempel_waarden:
+      friendly_name: "Binnen Temperatuur Zolder Is Boven Drempelwaarde Voor Koelen"
+      value_template: >-
+        {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | int >= (states('input_number.airco_zolder_drempelwaarde_koelen') | int) }}
+
+    - temperatuur_zolder_is_onder_drempel_waarden_verwarmen:
+      friendly_name: "Binnen Temperatuur Zolder Is Onder Drempel Waarde Voor Verwarmen"
+      value_template: >-
+        {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float <= (states('input_number.airco_zolder_drempelwaarde_verwarmen') | float) }}
+
+    - open_verbinding_naar_buiten_badkamer:
+      friendly_name: "Open Verbinding Naar Buiten Badkamer"
+      value_template: >
+        {{
+          is_state('binary_sensor.raam_badkamer_openen', 'on')
+        }}
+
+    - radiatorkraan_badkamer_mag_aan:
+      friendly_name: "Radiator Kraan Badkamer Mag Aan"
+      value_template: >-
+        {{
+          (
+            (
+              is_state('group.bewoners', 'home')
+              and is_state('schedule.verwarming_badkamer', 'on')
+            )
+            or (
+              is_state('input_boolean.vakantie_modus', 'on')
+              and states('sensor.badkamer_multisensor_temperatuur') | float(99) < 5
+            )
+          )
+          and is_state('binary_sensor.open_verbinding_naar_buiten_badkamer', 'off')
+        }}
+
+    - bureau_zolder_bezet:
+      friendly_name: "Bureau Zolder Bezet"
+      unique_id: bureau_zolder_bezet
+      value_template: >
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 2.0
+           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 4.0 }}
+      delay_on:
+        seconds: 2
+      delay_off:
+        seconds: 30
+
+    - bed_zolder_bezet:
+      friendly_name: "Bed Zolder Bezet"
+      unique_id: bed_zolder_bezet
+      value_template: >
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 3.5
+           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) <= 7.0 }}
+      delay_on:
+        seconds: 10
+      delay_off:
+        minutes: 10
+
+    # Test sensoren voor afstandsbereiken
+    - zolder_zone_0_2m:
+      friendly_name: "Test: Zolder Zone 0-2m"
+      unique_id: zolder_zone_0_2m
+      value_template: >
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) > 0.1
+           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 2.0 }}
+
+    - zolder_zone_2_4m:
+      friendly_name: "Test: Zolder Zone 2-4m"
+      unique_id: zolder_zone_2_4m
+      value_template: >
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 2.0
+           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 4.0 }}
+
+    - zolder_zone_4_6m:
+      friendly_name: "Test: Zolder Zone 4-6m"
+      unique_id: zolder_zone_4_6m
+      value_template: >
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 4.0
+           and states('sensor.aanwezigheid_zolder_target_distance') | float(0) < 6.0 }}
+
+    - zolder_zone_6plus:
+      friendly_name: "Test: Zolder Zone 6m+"
+      unique_id: zolder_zone_6plus
+      value_template: >
+        {{ states('sensor.aanwezigheid_zolder_target_distance') | float(0) >= 6.0 }}
+
+    # Energie optimalisatie
+    - stroomtarief_onder_gemiddelde:
+      friendly_name: "Stroomtarief onder Gemiddelde"
+      unique_id: stroomtarief_onder_gemiddelde
+      value_template: >
+        {% set current = states('sensor.current_tariff') | float(0) %}
+        {% set average = states('sensor.gemiddeld_stroomtarief_vandaag') | float(0) %}
+        {{ current < average }}
+      delay_on:
+        minutes: 2
+      delay_off:
+        minutes: 2
+
+    - stroomtarief_goedkoop:
+      friendly_name: "Stroomtarief Goedkoop (>10% onder gemiddelde)"
+      unique_id: stroomtarief_goedkoop
+      value_template: >
+        {% set current = states('sensor.current_tariff') | float(0) %}
+        {% set average = states('sensor.gemiddeld_stroomtarief_vandaag') | float(0) %}
+        {% if average > 0 %}
+          {{ current < (average * 0.9) }}
+        {% else %}
+          false
+        {% endif %}
+      delay_on:
+        minutes: 2
+      delay_off:
+        minutes: 2

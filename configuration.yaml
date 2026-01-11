@@ -22,7 +22,6 @@ logger:
   default: warning
 
 # Sensors
-binary_sensor: !include includes/binary_sensors.yaml
 sensor: !include includes/sensors.yaml
 template: !include includes/templates.yaml
 switch: !include includes/switches.yaml
