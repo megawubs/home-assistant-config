@@ -150,7 +150,7 @@
 
     - unique_id: temperatuur_woonkamer_is_boven_drempel_waarden
       name: "Binnen temperatuur woonkamer is boven drempel waarde voor koelen"
-      state: >-
+      state: >
         {{ states('sensor.tstat_9d4027_current_temperature') | float >= (states('input_number.airco_woonkamer_drempelwaarde_koelen') | float) }}
 
     - unique_id: airco_woonkamer_mag_afkoelen
@@ -230,7 +230,7 @@
 
     - unique_id: temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen
       name: "Binnen Temperatuur Woonkamer Is Onder Drempel Waarde Voor Verwarmen"
-      state: >-
+      state: >
         {{ states('sensor.tstat_9d4027_current_temperature') | float <= (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float) }}
 
     - unique_id: airco_zolder_mag_afkoelen
@@ -275,12 +275,12 @@
 
     - unique_id: temperatuur_zolder_is_boven_drempel_waarden
       name: "Binnen Temperatuur Zolder Is Boven Drempelwaarde Voor Koelen"
-      state: >-
+      state: >
         {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | int >= (states('input_number.airco_zolder_drempelwaarde_koelen') | int) }}
 
     - unique_id: temperatuur_zolder_is_onder_drempel_waarden_verwarmen
       name: "Binnen Temperatuur Zolder Is Onder Drempel Waarde Voor Verwarmen"
-      state: >-
+      state: >
         {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float <= (states('input_number.airco_zolder_drempelwaarde_verwarmen') | float) }}
 
     - unique_id: open_verbinding_naar_buiten_badkamer
@@ -292,7 +292,7 @@
 
     - unique_id: radiatorkraan_badkamer_mag_aan
       name: "Radiator Kraan Badkamer Mag Aan"
-      state: >-
+      state: >
         {{
           (
             (
