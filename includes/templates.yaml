@@ -143,7 +143,8 @@
         {{ not is_state("person.bram_wubs", "home")
             and not is_state("person.maninne_wubs", "home") }}
 
-    - bram_slaapt:
+    - unique_id: bram_slaapt
+      name: Bram slaapt
       state: >
         {{
           is_state('input_text.focus_bram', 'Slaap') 
