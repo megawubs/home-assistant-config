@@ -4423,12 +4423,14 @@
     entity_id:
     - sensor.kwh_meter_id_5_vermogen
     above: 1
-    id: Laden
+    id: standby
+    enabled: true
   - trigger: numeric_state
     entity_id:
     - sensor.kwh_meter_id_5_vermogen
     id: Nul op de meter
     below: 1
+    enabled: true
   - trigger: state
     entity_id:
     - binary_sensor.ariston_is_heating
@@ -4468,7 +4470,8 @@
     id: Nul op de meter
   conditions: []
   actions:
-  - if:
+  - alias: Standby
+    if:
     - condition: trigger
       id:
       - standby
@@ -4476,8 +4479,12 @@
     - action: rest_command.mode_standby
       metadata: {}
       data: {}
-    alias: Standby
-  - if:
+    - type: turn_off
+      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+      entity_id: d1b071a27d769061708eed2a10e73c69
+      domain: switch
+  - alias: Nul op de meter
+    if:
     - condition: trigger
       id:
       - Nul op de meter
@@ -4485,8 +4492,12 @@
     - action: rest_command.mode_zero
       metadata: {}
       data: {}
-    alias: Nul op de meter
-  - if:
+    - type: turn_off
+      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+      entity_id: d1b071a27d769061708eed2a10e73c69
+      domain: switch
+  - alias: Laden
+    if:
     - condition: trigger
       id:
       - Laden
@@ -4494,7 +4505,17 @@
     - action: rest_command.mode_to_full
       metadata: {}
       data: {}
-    alias: Laden
+    - action: switch.turn_on
+      metadata: {}
+      target:
+        entity_id: switch.power_block_socket
+      data: {}
+    - action: number.set_value
+      metadata: {}
+      target:
+        entity_id: number.power_block_potential_charge
+      data:
+        value: '660'
   mode: single
 - id: '1758048541867'
   alias: Cover Control Automation (CCA)
