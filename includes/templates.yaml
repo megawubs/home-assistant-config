@@ -2,10 +2,8 @@
     - alias: Triggers on home assistant startup
       platform: homeassistant
       event: start
-    - platform: state
-      entity_id: input_number.ariston_vastgezette_opwarmduur
-    - platform: state
-      entity_id: sensor.current_tariff
+    - platform: time
+      at: 13:10
   sensor:
     - unique_id: 0F824D26-3489-45C7-83CD-2E831B3643E8
       name: Boiler opwarmen
