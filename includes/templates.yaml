@@ -87,6 +87,48 @@
           0
         {% endif %}
       icon: mdi:percent
+    - unique_id: Oplaadtijd HomeWizard Accu
+      name: Oplaadtijd HomeWiazrd Accu
+      state: >
+        {# Totale capaciteit van de batterij in kWh #}
+        {% set capacity = 5.4 %}
+        
+        {# Huidig laadpercentage in % (0-100) #}
+        {% set charge_pct = states('sensor.plug_in_battery_laadpercentage') | int(0) %}
+        
+        
+        {# Huidig laadvermogen in Watt.
+           De | abs wordt gebruikt om zeker te zijn van een positief getal (laden). #}
+        {% set power_kw =  1.6 | float(0) | abs %}
+        
+        {# --- BEREKENING --- #}
+        
+        {# Controleer of er geladen wordt om delen door nul te voorkomen #}
+        {% if power_kw > 0 %}
+        
+          {# Bereken hoeveel kWh er nog geladen moet worden #}
+          {% set charge_missing_pct = 100 - charge_pct %}
+        
+          {% set kwh_missing = capacity * charge_missing_pct / 100 %}
+        
+        
+          {# Bereken de resterende laadtijd in uren (decimaal) #}
+          {% set remaining_hours = kwh_missing / power_kw %}
+          {%- set sensor = 'sensor.current_tariff' -%}
+          {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+          {{ cheapest_energy_hours(
+                   sensor=sensor,
+                   time_key='datetime',
+                   hours=remaining_hours,
+                   start=now(),
+                   include_tomorrow=True
+                   )
+          }}
+        {% else %}
+          {# Geef een duidelijke melding of een standaardwaarde als er niet geladen wordt #}
+          False
+        {% endif %}
+
 - binary_sensor:
     - name: Woonkamer Daglicht
       unique_id: woonkamer_daglicht
