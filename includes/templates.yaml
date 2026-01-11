@@ -89,7 +89,7 @@
           0
         {% endif %}
       icon: mdi:percent
-  binary_sensor:
+- binary_sensor:
     - name: Woonkamer Daglicht
       unique_id: woonkamer_daglicht
       delay_off: "00:05:00"
