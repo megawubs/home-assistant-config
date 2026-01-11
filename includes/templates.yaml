@@ -353,3 +353,51 @@
         minutes: 2
       delay_off:
         minutes: 2
+
+- sensor:
+    - unique_id: airco_geschatte_cop
+      name: "Airco geschatte COP"
+      unit_of_measurement: ""
+      state: >
+        {% set temp = states('sensor.airco_woonkamer_outdoor') | float(0) %}
+        {% set cop = 3.635 + (temp * 0.095) %}
+        {{ [2.0, [5.0, cop] | min] | max | round(2) }}
+      icon: mdi:heat-pump
+
+    - unique_id: airco_kosten_per_kwh_warmte
+      name: "Airco kosten per kWh warmte"
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: >
+        {% set stroomprijs = states('sensor.current_tariff') | float(0.25) %}
+        {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
+        {{ (stroomprijs / cop) | round(4) }}
+      icon: mdi:cash
+
+    # Gas kosten per kWh warmte (CV-ketel)
+    # 9.77 kWh per m³ gas, 88.8% seizoensrendement Intergas HRE
+    - unique_id: gas_kosten_per_kwh_warmte
+      name: "Gas kosten per kWh warmte"
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: >
+        {% set gasprijs = states('sensor.zonneplan_current_gas_tariff') | float(1.20) %}
+        {% set energie_per_m3 = 9.77 %}
+        {% set rendement = 0.888 %}
+        {{ (gasprijs / (energie_per_m3 * rendement)) | round(4) }}
+      icon: mdi:gas-burner
+
+  binary_sensor:
+    # Vergelijking: is airco goedkoper dan gas?
+    - unique_id: airco_goedkoper_dan_gas
+      name: "Airco goedkoper dan gas"
+      state: >
+        {% set airco = states('sensor.airco_kosten_per_kwh_warmte') | float(0.10) %}
+        {% set gas = states('sensor.gas_kosten_per_kwh_warmte') | float(0.15) %}
+        {{ airco < gas }}
+      icon: >
+        {% if is_state('binary_sensor.airco_goedkoper_dan_gas', 'on') %}
+          mdi:heat-pump
+        {% else %}
+          mdi:gas-burner
+        {% endif %}
