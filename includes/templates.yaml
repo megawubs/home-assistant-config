@@ -102,7 +102,7 @@
       state: >
         {{ states('sensor.lichtintensiteit_benedenverdieping') | int <= 10 }}
     
-    - name: : Luchtvochtigheid boven instestelde waarde in de badkamer
+    - name: Luchtvochtigheid boven instestelde waarde in de badkamer
       unique_id: luchtvochtigheid_boven_ingestelde_waarde_in_de_badkamerk
       state: >
         {{ states('sensor.badkamer_multisensor_luchtvochtigheid')|float >= states('input_number.maximale_luchtvochtigheid_douche')|float }}
