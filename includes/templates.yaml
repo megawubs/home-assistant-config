@@ -387,6 +387,43 @@
         {{ (gasprijs / (energie_per_m3 * rendement)) | round(4) }}
       icon: mdi:gas-burner
 
+    # COP omslagpunt: bij welke COP is gas even duur als airco?
+    # Formule: COP = stroomprijs × 9.77 × 0.888 / gasprijs
+    - unique_id: cop_omslagpunt
+      name: "COP omslagpunt"
+      unit_of_measurement: ""
+      state: >
+        {% set stroomprijs = states('sensor.current_tariff') | float(0.25) %}
+        {% set gasprijs = states('sensor.zonneplan_current_gas_tariff') | float(1.20) %}
+        {% set energie_per_m3 = 9.77 %}
+        {% set rendement = 0.888 %}
+        {{ (stroomprijs * energie_per_m3 * rendement / gasprijs) | round(2) }}
+      icon: mdi:swap-horizontal
+
+    # Aanbevolen verwarming op basis van huidige prijzen en COP
+    - unique_id: aanbevolen_verwarming
+      name: "Aanbevolen verwarming"
+      state: >
+        {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
+        {% set cop_omslagpunt = states('sensor.cop_omslagpunt') | float(2.0) %}
+        {% set marge = 0.3 %}
+        {% if cop > cop_omslagpunt + marge %}
+          airco
+        {% elif cop < cop_omslagpunt - marge %}
+          gas
+        {% else %}
+          hybride
+        {% endif %}
+      icon: >
+        {% set aanbeveling = states('sensor.aanbevolen_verwarming') %}
+        {% if aanbeveling == 'airco' %}
+          mdi:heat-pump
+        {% elif aanbeveling == 'gas' %}
+          mdi:gas-burner
+        {% else %}
+          mdi:home-thermometer
+        {% endif %}
+
   binary_sensor:
     # Vergelijking: is airco goedkoper dan gas?
     - unique_id: airco_goedkoper_dan_gas
@@ -401,3 +438,12 @@
         {% else %}
           mdi:gas-burner
         {% endif %}
+
+    # Moet gas gebruikt worden in plaats van airco?
+    - unique_id: gebruik_gas_ipv_airco
+      name: "Gebruik gas ipv airco"
+      state: >
+        {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
+        {% set cop_omslagpunt = states('sensor.cop_omslagpunt') | float(2.0) %}
+        {{ cop < cop_omslagpunt }}
+      icon: mdi:gas-burner
