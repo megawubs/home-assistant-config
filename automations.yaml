@@ -4417,8 +4417,8 @@
   mode: restart
 - id: '1757710929956'
   alias: HomeWizard Batterij Beheer
-  description: 'Beheert de batterij modus: laadt op goedkoopste moment, schakelt naar
-    standby als auto laadt, en nul op de meter als laden klaar is.'
+  description: 'Beheert de batterij modus: laadt op goedkoopste moment, ontlaadt (nul
+    op de meter) bij dure stroom, en schakelt naar standby als auto laadt.'
   triggers:
   - trigger: numeric_state
     entity_id:
@@ -4465,6 +4465,11 @@
   - trigger: time
     at: sensor.eind_oplaadtijd_homewizard_accu
     id: Laden_einde
+  - trigger: state
+    entity_id:
+    - binary_sensor.stroomtarief_duur
+    to: 'on'
+    id: Stroom_duur
   conditions: []
   actions:
   - alias: Standby
@@ -4487,6 +4492,26 @@
       - Nul op de meter
       - Laden_einde
     then:
+    - action: rest_command.mode_zero
+      metadata: {}
+      data: {}
+    - type: turn_off
+      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+      entity_id: d1b071a27d769061708eed2a10e73c69
+      domain: switch
+  - alias: Ontladen bij dure stroom
+    if:
+    - condition: trigger
+      id:
+      - Stroom_duur
+    then:
+    - alias: Alleen ontladen als auto niet laadt
+      if:
+      - condition: numeric_state
+        entity_id: sensor.kwh_meter_id_5_vermogen
+        above: 1
+      then:
+      - stop: Auto laadt, batterij niet naar nul op de meter
     - action: rest_command.mode_zero
       metadata: {}
       data: {}
