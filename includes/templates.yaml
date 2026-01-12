@@ -87,48 +87,6 @@
           0
         {% endif %}
       icon: mdi:percent
-    - unique_id: Oplaadtijd HomeWizard Accu
-      name: Oplaadtijd HomeWiazrd Accu
-      device_class: timestamp
-      state: >
-        {# Totale capaciteit van de batterij in kWh #}
-        {% set capacity = 5.4 %}
-        
-        {# Huidig laadpercentage in % (0-100) #}
-        {% set charge_pct = states('sensor.plug_in_battery_laadpercentage') | int(0) %}
-        
-        
-        {# Huidig laadvermogen in Watt.
-           De | abs wordt gebruikt om zeker te zijn van een positief getal (laden). #}
-        {% set power_kw =  1.6 | float(0) | abs %}
-        
-        {# --- BEREKENING --- #}
-        
-        {# Controleer of er geladen wordt om delen door nul te voorkomen #}
-        {% if power_kw > 0 %}
-        
-          {# Bereken hoeveel kWh er nog geladen moet worden #}
-          {% set charge_missing_pct = 100 - charge_pct %}
-        
-          {% set kwh_missing = capacity * charge_missing_pct / 100 %}
-        
-        
-          {# Bereken de resterende laadtijd in uren (decimaal) #}
-          {% set remaining_hours = kwh_missing / power_kw %}
-          {%- set sensor = 'sensor.current_tariff' -%}
-          {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
-          {{ cheapest_energy_hours(
-                   sensor=sensor,
-                   time_key='datetime',
-                   hours=remaining_hours,
-                   start=now(),
-                   include_tomorrow=True
-                   )
-          }}
-        {% else %}
-          {# Geef een duidelijke melding of een standaardwaarde als er niet geladen wordt #}
-          None
-        {% endif %}
 
 - binary_sensor:
     - name: Woonkamer Daglicht
@@ -490,3 +448,81 @@
         {% set cop_omslagpunt = states('sensor.cop_omslagpunt') | float(2.0) %}
         {{ cop < cop_omslagpunt }}
       icon: mdi:gas-burner
+
+# HomeWizard Batterij Laden - Trigger-based templates
+# Deze sensoren worden bijgewerkt wanneer het batterijpercentage verandert
+- trigger:
+    - alias: Batterij percentage verandert
+      platform: state
+      entity_id: sensor.plug_in_battery_laadpercentage
+    - alias: Periodieke update (elk uur)
+      platform: time_pattern
+      hours: "/1"
+    - alias: Home Assistant start
+      platform: homeassistant
+      event: start
+    - alias: Stroomtarief forecast update (rond het uur)
+      platform: time_pattern
+      minutes: "5"
+  sensor:
+    - unique_id: oplaadtijd_homewizard_accu
+      name: "Oplaadtijd HomeWizard Accu"
+      device_class: timestamp
+      state: >
+        {# Totale capaciteit van de batterij in kWh #}
+        {% set capacity = 5.4 %}
+
+        {# Huidig laadpercentage in % (0-100) #}
+        {% set charge_pct = states('sensor.plug_in_battery_laadpercentage') | int(0) %}
+
+        {# Laadvermogen in kW #}
+        {% set power_kw = 1.6 %}
+
+        {# Bereken hoeveel kWh er nog geladen moet worden #}
+        {% set charge_missing_pct = 100 - charge_pct %}
+        {% set kwh_missing = capacity * charge_missing_pct / 100 %}
+
+        {# Bereken de benodigde laadtijd in uren #}
+        {% set remaining_hours = kwh_missing / power_kw %}
+
+        {# Alleen berekenen als er nog geladen moet worden #}
+        {% if remaining_hours > 0.1 %}
+          {%- set sensor = 'sensor.current_tariff' -%}
+          {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+          {{ cheapest_energy_hours(
+                   sensor=sensor,
+                   time_key='datetime',
+                   hours=remaining_hours,
+                   start=now(),
+                   include_tomorrow=True
+                   )
+          }}
+        {% else %}
+          {{ None }}
+        {% endif %}
+      attributes:
+        laadpercentage: "{{ states('sensor.plug_in_battery_laadpercentage') | int(0) }}"
+        benodigde_uren: >
+          {% set capacity = 5.4 %}
+          {% set charge_pct = states('sensor.plug_in_battery_laadpercentage') | int(0) %}
+          {% set power_kw = 1.6 %}
+          {% set charge_missing_pct = 100 - charge_pct %}
+          {% set kwh_missing = capacity * charge_missing_pct / 100 %}
+          {{ (kwh_missing / power_kw) | round(2) }}
+
+    - unique_id: eind_oplaadtijd_homewizard_accu
+      name: "Eindtijd Laden HomeWizard Accu"
+      device_class: timestamp
+      state: >
+        {% set start = states('sensor.oplaadtijd_homewizard_accu') %}
+        {% if start not in ['unknown', 'unavailable', 'None', ''] %}
+          {% set capacity = 5.4 %}
+          {% set charge_pct = states('sensor.plug_in_battery_laadpercentage') | int(0) %}
+          {% set power_kw = 1.6 %}
+          {% set charge_missing_pct = 100 - charge_pct %}
+          {% set kwh_missing = capacity * charge_missing_pct / 100 %}
+          {% set remaining_hours = kwh_missing / power_kw %}
+          {{ (start | as_datetime + timedelta(hours=remaining_hours)).isoformat() }}
+        {% else %}
+          {{ None }}
+        {% endif %}

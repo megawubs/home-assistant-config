@@ -4416,8 +4416,9 @@
     enabled: false
   mode: restart
 - id: '1757710929956'
-  alias: Batterij niet ontladen als auto geladen wordt
-  description: ''
+  alias: HomeWizard Batterij Beheer
+  description: 'Beheert de batterij modus: laadt op goedkoopste moment, schakelt naar
+    standby als auto laadt, en nul op de meter als laden klaar is.'
   triggers:
   - trigger: numeric_state
     entity_id:
@@ -4458,16 +4459,12 @@
     - input_select.homewizard_battery_group_mode
     to: Nul op de meter
     id: Nul op de meter
-  - trigger: state
-    entity_id:
-    - binary_sensor.stroomtarief_onder_gemiddelde
-    to: 'on'
-    id: Laden
-  - trigger: state
-    entity_id:
-    - binary_sensor.stroomtarief_onder_gemiddelde
-    to: 'off'
-    id: Nul op de meter
+  - trigger: time
+    at: sensor.oplaadtijd_homewizard_accu
+    id: Laden_gepland
+  - trigger: time
+    at: sensor.eind_oplaadtijd_homewizard_accu
+    id: Laden_einde
   conditions: []
   actions:
   - alias: Standby
@@ -4488,6 +4485,7 @@
     - condition: trigger
       id:
       - Nul op de meter
+      - Laden_einde
     then:
     - action: rest_command.mode_zero
       metadata: {}
@@ -4501,7 +4499,15 @@
     - condition: trigger
       id:
       - Laden
+      - Laden_gepland
     then:
+    - alias: Controleer of auto niet laadt voordat batterij gaat laden
+      if:
+      - condition: numeric_state
+        entity_id: sensor.kwh_meter_id_5_vermogen
+        above: 1
+      then:
+      - stop: Auto laadt, batterij niet starten
     - action: rest_command.mode_to_full
       metadata: {}
       data: {}
