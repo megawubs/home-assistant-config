@@ -355,6 +355,21 @@
       delay_off:
         minutes: 2
 
+    - name: "Stroomtarief Duur (>10% boven gemiddelde)"
+      unique_id: stroomtarief_duur
+      state: >
+        {% set current = states('sensor.current_tariff') | float(0) %}
+        {% set average = states('sensor.gemiddeld_stroomtarief_vandaag') | float(0) %}
+        {% if average > 0 %}
+          {{ current > (average * 1.1) }}
+        {% else %}
+          false
+        {% endif %}
+      delay_on:
+        minutes: 2
+      delay_off:
+        minutes: 2
+
 - sensor:
     - unique_id: airco_geschatte_cop
       name: "Airco geschatte COP"
