@@ -89,6 +89,7 @@
       icon: mdi:percent
     - unique_id: Oplaadtijd HomeWizard Accu
       name: Oplaadtijd HomeWiazrd Accu
+      device_class: timestamp
       state: >
         {# Totale capaciteit van de batterij in kWh #}
         {% set capacity = 5.4 %}
@@ -126,7 +127,7 @@
           }}
         {% else %}
           {# Geef een duidelijke melding of een standaardwaarde als er niet geladen wordt #}
-          False
+          None
         {% endif %}
 
 - binary_sensor:
