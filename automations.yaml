@@ -2497,23 +2497,51 @@
     input:
       aqara_mini_switch: 10d916a2e9ea842e5ecf0ea27e1af14b
       button_single_press_left:
-      - data:
-          brightness_pct: 60
-        target:
-          area_id:
-          - 3baf8165348041e1b29208776b5bf03d
-          - keuken
-          - eettafel
-        action: light.toggle
+      - if:
+        - condition: template
+          value_template: >-
+            {{ is_state('light.woonkamer', 'off') and
+               expand(area_entities('keuken')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 and
+               expand(area_entities('eettafel')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 }}
+        then:
+        - data:
+            brightness_pct: 60
+          target:
+            area_id:
+            - 3baf8165348041e1b29208776b5bf03d
+            - keuken
+            - eettafel
+          action: light.turn_on
+        else:
+        - target:
+            area_id:
+            - 3baf8165348041e1b29208776b5bf03d
+            - keuken
+            - eettafel
+          action: light.turn_off
       button_single_press_right:
-      - data:
-          brightness_pct: 60
-        target:
-          area_id:
-          - 3baf8165348041e1b29208776b5bf03d
-          - keuken
-          - eettafel
-        action: light.toggle
+      - if:
+        - condition: template
+          value_template: >-
+            {{ is_state('light.woonkamer', 'off') and
+               expand(area_entities('keuken')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 and
+               expand(area_entities('eettafel')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 }}
+        then:
+        - data:
+            brightness_pct: 60
+          target:
+            area_id:
+            - 3baf8165348041e1b29208776b5bf03d
+            - keuken
+            - eettafel
+          action: light.turn_on
+        else:
+        - target:
+            area_id:
+            - 3baf8165348041e1b29208776b5bf03d
+            - keuken
+            - eettafel
+          action: light.turn_off
       button_single_press_both:
       - parallel:
         - data: {}
