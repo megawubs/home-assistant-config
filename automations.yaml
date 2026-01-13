@@ -4520,7 +4520,7 @@
         entity_id: number.power_block_potential_charge
       data:
         value: '660'
-  - alias: Automatisch Nul op de meter (na laden of auto stopt)
+  - alias: Automatisch na laden of auto stopt
     if:
     - condition: trigger
       id:
@@ -4534,6 +4534,20 @@
         above: 1
       then:
       - stop: Auto laadt, batterij niet ontladen
+    - alias: Als stroom goedkoop is, wacht met ontladen (standby)
+      if:
+      - condition: state
+        entity_id: binary_sensor.stroomtarief_onder_gemiddelde
+        state: 'on'
+      then:
+      - action: rest_command.mode_standby
+        metadata: {}
+        data: {}
+      - type: turn_off
+        device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+        entity_id: d1b071a27d769061708eed2a10e73c69
+        domain: switch
+      - stop: Stroom nog goedkoop, wacht met ontladen
     - action: rest_command.mode_zero
       metadata: {}
       data: {}
