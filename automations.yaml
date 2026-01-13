@@ -4418,13 +4418,14 @@
 - id: '1757710929956'
   alias: HomeWizard Batterij Beheer
   description: 'Beheert de batterij modus: laadt op goedkoopste moment, ontlaadt (nul
-    op de meter) bij dure stroom, en schakelt naar standby als auto laadt.'
+    op de meter) bij dure stroom. Accu en auto mogen tegelijk laden, maar accu mag
+    niet ontladen naar auto. Handmatige overrides werken altijd.'
   triggers:
   - trigger: numeric_state
     entity_id:
     - sensor.kwh_meter_id_5_vermogen
     above: 1
-    id: standby
+    id: auto_laadt
     enabled: true
   - trigger: numeric_state
     entity_id:
@@ -4448,17 +4449,17 @@
     entity_id:
     - input_select.homewizard_battery_group_mode
     to: Uit
-    id: standby
+    id: handmatig_standby
   - trigger: state
     entity_id:
     - input_select.homewizard_battery_group_mode
     to: Laden
-    id: Laden
+    id: handmatig_laden
   - trigger: state
     entity_id:
     - input_select.homewizard_battery_group_mode
     to: Nul op de meter
-    id: Nul op de meter
+    id: handmatig_nul_op_meter
   - trigger: time
     at: sensor.oplaadtijd_homewizard_accu
     id: Laden_gepland
@@ -4472,11 +4473,12 @@
     id: Stroom_duur
   conditions: []
   actions:
-  - alias: Standby
+  - alias: Handmatig Standby
     if:
     - condition: trigger
       id:
       - standby
+      - handmatig_standby
     then:
     - action: rest_command.mode_standby
       metadata: {}
@@ -4485,12 +4487,11 @@
       device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
       entity_id: d1b071a27d769061708eed2a10e73c69
       domain: switch
-  - alias: Nul op de meter
+  - alias: Handmatig Nul op de meter
     if:
     - condition: trigger
       id:
-      - Nul op de meter
-      - Laden_einde
+      - handmatig_nul_op_meter
     then:
     - action: rest_command.mode_zero
       metadata: {}
@@ -4499,40 +4500,12 @@
       device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
       entity_id: d1b071a27d769061708eed2a10e73c69
       domain: switch
-  - alias: Ontladen bij dure stroom
+  - alias: Handmatig Laden
     if:
     - condition: trigger
       id:
-      - Stroom_duur
+      - handmatig_laden
     then:
-    - alias: Alleen ontladen als auto niet laadt
-      if:
-      - condition: numeric_state
-        entity_id: sensor.kwh_meter_id_5_vermogen
-        above: 1
-      then:
-      - stop: Auto laadt, batterij niet naar nul op de meter
-    - action: rest_command.mode_zero
-      metadata: {}
-      data: {}
-    - type: turn_off
-      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
-      entity_id: d1b071a27d769061708eed2a10e73c69
-      domain: switch
-  - alias: Laden
-    if:
-    - condition: trigger
-      id:
-      - Laden
-      - Laden_gepland
-    then:
-    - alias: Controleer of auto niet laadt voordat batterij gaat laden
-      if:
-      - condition: numeric_state
-        entity_id: sensor.kwh_meter_id_5_vermogen
-        above: 1
-      then:
-      - stop: Auto laadt, batterij niet starten
     - action: rest_command.mode_to_full
       metadata: {}
       data: {}
@@ -4547,6 +4520,108 @@
         entity_id: number.power_block_potential_charge
       data:
         value: '660'
+  - alias: Automatisch Nul op de meter (na laden of auto stopt)
+    if:
+    - condition: trigger
+      id:
+      - Nul op de meter
+      - Laden_einde
+    then:
+    - alias: Niet ontladen als auto laadt (voorkomt accu -> auto)
+      if:
+      - condition: numeric_state
+        entity_id: sensor.kwh_meter_id_5_vermogen
+        above: 1
+      then:
+      - stop: Auto laadt, batterij niet ontladen
+    - action: rest_command.mode_zero
+      metadata: {}
+      data: {}
+    - type: turn_off
+      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+      entity_id: d1b071a27d769061708eed2a10e73c69
+      domain: switch
+  - alias: Ontladen bij dure stroom
+    if:
+    - condition: trigger
+      id:
+      - Stroom_duur
+    then:
+    - alias: Alleen ontladen als auto niet laadt (voorkomt accu -> auto)
+      if:
+      - condition: numeric_state
+        entity_id: sensor.kwh_meter_id_5_vermogen
+        above: 1
+      then:
+      - stop: Auto laadt, batterij niet naar nul op de meter
+    - action: rest_command.mode_zero
+      metadata: {}
+      data: {}
+    - type: turn_off
+      device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+      entity_id: d1b071a27d769061708eed2a10e73c69
+      domain: switch
+  - alias: Automatisch Laden (gepland moment)
+    if:
+    - condition: trigger
+      id:
+      - Laden_gepland
+    then:
+    - action: rest_command.mode_to_full
+      metadata: {}
+      data: {}
+    - action: switch.turn_on
+      metadata: {}
+      target:
+        entity_id: switch.power_block_socket
+      data: {}
+    - action: number.set_value
+      metadata: {}
+      target:
+        entity_id: number.power_block_potential_charge
+      data:
+        value: '660'
+  - alias: Auto start met laden (stop ontladen, voorkom accu -> auto)
+    if:
+    - condition: trigger
+      id:
+      - auto_laadt
+    then:
+    - alias: Als batterij gepland is om te laden, laat hem laden
+      if:
+      - condition: template
+        value_template: >
+          {% set start = states('sensor.oplaadtijd_homewizard_accu') %}
+          {% set end = states('sensor.eind_oplaadtijd_homewizard_accu') %}
+          {% if start not in ['unknown', 'unavailable', 'None', '']
+             and end not in ['unknown', 'unavailable', 'None', ''] %}
+            {{ start | as_datetime <= now() <= end | as_datetime }}
+          {% else %}
+            false
+          {% endif %}
+      then:
+      - action: rest_command.mode_to_full
+        metadata: {}
+        data: {}
+      - action: switch.turn_on
+        metadata: {}
+        target:
+          entity_id: switch.power_block_socket
+        data: {}
+      - action: number.set_value
+        metadata: {}
+        target:
+          entity_id: number.power_block_potential_charge
+        data:
+          value: '660'
+      else:
+      - action: rest_command.mode_standby
+        metadata: {}
+        data: {}
+      - type: turn_off
+        device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+        entity_id: d1b071a27d769061708eed2a10e73c69
+        domain: switch
   mode: single
 - id: '1758048541867'
   alias: Cover Control Automation (CCA)
