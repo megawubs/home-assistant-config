@@ -1,0 +1,4 @@
+airco_woonkamer_laatste_automatische_wijziging:
+  name: Airco Woonkamer Laatste Automatische Wijziging
+  has_date: true
+  has_time: true
