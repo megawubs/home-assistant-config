@@ -4,3 +4,6 @@ automatische_temperatuur:
 wekker:
   name: Wekker is aan
   icon: mdi:alarm
+airco_woonkamer_manual_override:
+  name: Airco Woonkamer Manual Override
+  icon: mdi:remote
