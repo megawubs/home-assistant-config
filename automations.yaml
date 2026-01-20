@@ -5219,8 +5219,8 @@
           title: Vakantie modus niet aangezet
           message: Oké, ik hou het huis op normale stand. Veel plezier!
 - id: '1737381600001'
-  alias: 'Airco Woonkamer: Manual Override Reset om 00:00'
-  description: Reset de manual override voor de woonkamer airco elke nacht om 00:00
+  alias: 'Airco Beneden: Manual Override Reset om 00:00'
+  description: Reset de manual override voor de airco's beneden elke nacht om 00:00
   triggers:
   - trigger: time
     at: '00:00:00'
@@ -5232,11 +5232,11 @@
     data: {}
   - action: notify.mobile_app_iphone_van_bram
     data:
-      message: Airco woonkamer manual override is gereset - automatische bediening is weer actief
+      message: Airco beneden manual override is gereset - automatische bediening is weer actief
   mode: single
 - id: '1737381600002'
-  alias: 'Airco Woonkamer: Detecteer handmatige bediening'
-  description: Activeert manual override wanneer de airco via de remote wordt bediend
+  alias: 'Airco Beneden: Detecteer handmatige bediening'
+  description: Activeert manual override wanneer een airco beneden via de remote wordt bediend
   triggers:
   - trigger: state
     entity_id: climate.airco_woonkamer
@@ -5244,6 +5244,14 @@
       hours: 0
       minutes: 0
       seconds: 2
+    id: woonkamer
+  - trigger: state
+    entity_id: climate.airco_keuken
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 2
+    id: keuken
   conditions:
   - condition: state
     entity_id: input_boolean.airco_woonkamer_manual_override
@@ -5274,5 +5282,7 @@
     data: {}
   - action: notify.mobile_app_iphone_van_bram
     data:
-      message: 'Airco woonkamer manual override geactiveerd - handmatige bediening gedetecteerd'
+      message: >-
+        Airco beneden manual override geactiveerd - handmatige bediening gedetecteerd
+        ({{ 'woonkamer' if trigger.id == 'woonkamer' else 'keuken' }})
   mode: single
