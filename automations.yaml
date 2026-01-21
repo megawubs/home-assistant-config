@@ -1833,13 +1833,7 @@
       minutes: 2
       seconds: 0
     id: inactiviteit
-  conditions:
-  - condition: or
-    conditions:
-    - condition: time
-      before: 05:00:00
-    - condition: time
-      after: 07:00:00
+  conditions: []
   actions:
   - if:
     - condition: and
@@ -1849,6 +1843,12 @@
       - condition: state
         entity_id: sun.sun
         state: below_horizon
+      - condition: or
+        conditions:
+        - condition: time
+          before: 05:00:00
+        - condition: time
+          after: 07:00:00
     then:
     - target:
         entity_id:
@@ -1864,6 +1864,12 @@
       - condition: state
         entity_id: sun.sun
         state: above_horizon
+      - condition: or
+        conditions:
+        - condition: time
+          before: 05:00:00
+        - condition: time
+          after: 07:00:00
     then:
     - data:
         brightness_pct: 1
