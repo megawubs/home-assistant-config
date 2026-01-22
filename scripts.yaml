@@ -147,6 +147,7 @@ woonkamer_aan:
   sequence:
   - data:
       brightness_pct: 60
+      transition: 30
     target:
       area_id:
       - 3baf8165348041e1b29208776b5bf03d
@@ -184,10 +185,11 @@ media_groepeer_woonkamer:
 woonkamer_uit:
   alias: woonkamer uit
   sequence:
-  - service: light.turn_off
-    data: {}
+  - data:
+      transition: 30
     target:
-      entity_id: light.woonkamer
+      floor_id: beneden
+    action: light.turn_off
   mode: single
   icon: mdi:sofa-outline
 volume_benedenverdieping_laag:

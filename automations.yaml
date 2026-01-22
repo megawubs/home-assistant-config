@@ -399,7 +399,9 @@
     then:
     - data: {}
       action: script.woonkamer_uit
-  - if:
+  - alias: Nacht modus wanneer beweging in de woonkamer in de nacht. Automatisch uit
+      gaan wanneer er geen beweging meer is
+    if:
     - condition: and
       conditions:
       - condition: trigger
@@ -414,12 +416,9 @@
       target:
         entity_id:
         - light.eettafel
-        - light.texas_instruments_cc2531_z_stack_home_1_2_build_20211115_keuken_zha_group_0x0003
         - light.box_links
         - light.box_rechtss
       action: light.turn_on
-    alias: Nacht modus wanneer beweging in de woonkamer in de nacht. Automatisch uit
-      gaan wanneer er geen beweging meer is
   - if:
     - condition: and
       conditions:
@@ -429,8 +428,13 @@
         entity_id: light.woonkamer
         state: 'on'
       - condition: state
-        entity_id: binary_sensor.activiteit_in_de_woonkamer_voor_afgelopen_half_uur
-        state: 'on'
+        entity_id: binary_sensor.activiteit_in_de_woonkamer
+        state:
+        - 'on'
+        for:
+          hours: 0
+          minutes: 30
+          seconds: 0
     then:
     - wait_for_trigger:
       - entity_id:
@@ -444,6 +448,7 @@
       action: notify.bram
     - data: {}
       action: script.woonkamer_uit
+    enabled: false
   - if:
     - condition: and
       conditions:
@@ -1821,7 +1826,7 @@
     trigger: state
     for:
       hours: 0
-      minutes: 3
+      minutes: 1
       seconds: 0
   - type: opened
     device_id: f753d4bffa87a210ed5e67e6af2d28f0
@@ -2505,10 +2510,11 @@
       button_single_press_left:
       - if:
         - condition: template
-          value_template: >-
-            {{ is_state('light.woonkamer', 'off') and
-               expand(area_entities('keuken')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 and
-               expand(area_entities('eettafel')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 }}
+          value_template: "{{ is_state('light.woonkamer', 'off') and\n   expand(area_entities('keuken'))
+            | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq',
+            'on') | list | count == 0 and\n   expand(area_entities('eettafel')) |
+            selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq',
+            'on') | list | count == 0 }}"
         then:
         - data:
             brightness_pct: 60
@@ -2528,10 +2534,11 @@
       button_single_press_right:
       - if:
         - condition: template
-          value_template: >-
-            {{ is_state('light.woonkamer', 'off') and
-               expand(area_entities('keuken')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 and
-               expand(area_entities('eettafel')) | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq', 'on') | list | count == 0 }}
+          value_template: "{{ is_state('light.woonkamer', 'off') and\n   expand(area_entities('keuken'))
+            | selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq',
+            'on') | list | count == 0 and\n   expand(area_entities('eettafel')) |
+            selectattr('domain', 'eq', 'light') | map(attribute='state') | select('eq',
+            'on') | list | count == 0 }}"
         then:
         - data:
             brightness_pct: 60
@@ -4502,8 +4509,9 @@
     id: Laden_einde
   - trigger: state
     entity_id:
-    - binary_sensor.stroomtarief_duur
-    to: 'on'
+    - binary_sensor.stroomtarief_duur_10_boven_gemiddelde
+    to:
+    - 'on'
     id: Stroom_duur
   conditions: []
   actions:
@@ -4638,15 +4646,11 @@
     - alias: Als batterij gepland is om te laden, laat hem laden
       if:
       - condition: template
-        value_template: >
-          {% set start = states('sensor.oplaadtijd_homewizard_accu') %}
-          {% set end = states('sensor.eind_oplaadtijd_homewizard_accu') %}
-          {% if start not in ['unknown', 'unavailable', 'None', '']
-             and end not in ['unknown', 'unavailable', 'None', ''] %}
-            {{ start | as_datetime <= now() <= end | as_datetime }}
-          {% else %}
-            false
-          {% endif %}
+        value_template: "{% set start = states('sensor.oplaadtijd_homewizard_accu')
+          %} {% set end = states('sensor.eind_oplaadtijd_homewizard_accu') %} {% if
+          start not in ['unknown', 'unavailable', 'None', '']\n   and end not in ['unknown',
+          'unavailable', 'None', ''] %}\n  {{ start | as_datetime <= now() <= end
+          | as_datetime }}\n{% else %}\n  false\n{% endif %}\n"
       then:
       - action: rest_command.mode_to_full
         metadata: {}
