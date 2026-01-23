@@ -510,7 +510,7 @@
   mode: single
 - id: '1609198231431'
   alias: 'Verlichting: Bijkeuken'
-  description: ''
+  description: 'Lamp aan bij beweging, altijd uit bij geen beweging (ook als automatische verlichting uit staat)'
   triggers:
   - entity_id:
     - binary_sensor.activiteit_in_de_bijkeuken
@@ -526,27 +526,23 @@
     to: 'on'
     id: Beweging
     trigger: state
-  conditions:
-  - condition: state
-    entity_id: input_boolean.automatische_verlichting_woonkamer
-    state: 'on'
+  conditions: []
   actions:
   - if:
     - condition: trigger
       id: Beweging
+    - condition: state
+      entity_id: input_boolean.automatische_verlichting_woonkamer
+      state: 'on'
     then:
-    - data: {}
+    - action: switch.turn_on
       entity_id: switch.bijkeuken_lamp
-      action: switch.turn_on
   - if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id: Geen beweging
+    - condition: trigger
+      id: Geen beweging
     then:
-    - data: {}
+    - action: switch.turn_off
       entity_id: switch.bijkeuken_lamp
-      action: switch.turn_off
   mode: restart
 - id: '1609198735337'
   alias: 'Verlichting: Keuken'
@@ -5394,4 +5390,75 @@
                   Boost modus uitgeschakeld -
                   {% if trigger.id == 'boost_timeout' %}timeout bereikt
                   {% else %}temperatuur bereikt{% endif %}
+  mode: restart
+- id: '1737667200000'
+  alias: 'Verlichting: Automatische verlichting lang uit reminder'
+  description: Stuurt elke 8 uur een herinnering als automatische verlichting uit staat
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.automatische_verlichting_woonkamer
+    to: 'off'
+    for:
+      hours: 3
+      minutes: 0
+      seconds: 0
+  conditions: []
+  actions:
+  - alias: Herhaal notificatie elke 8 uur zolang automatische verlichting uit staat
+    repeat:
+      while:
+      - condition: state
+        entity_id: input_boolean.automatische_verlichting_woonkamer
+        state: 'off'
+      sequence:
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          title: "🤖 Automatische verlichting staat uit"
+          message: "Automatische verlichting staat al {{ ((as_timestamp(now()) - as_timestamp(states.input_boolean.automatische_verlichting_woonkamer.last_changed)) / 3600) | round(0) }} uur uit. Weer aanzetten?"
+          data:
+            actions:
+            - action: AUTO_VERLICHTING_AAN
+              title: Ja, aanzetten
+              icon: sfsymbols:lightbulb.max
+            - action: AUTO_VERLICHTING_NEGEREN
+              title: Laat uit
+              icon: sfsymbols:hand.raised
+      - wait_for_trigger:
+        - trigger: event
+          event_type: mobile_app_notification_action
+          event_data:
+            action: AUTO_VERLICHTING_AAN
+        - trigger: event
+          event_type: mobile_app_notification_action
+          event_data:
+            action: AUTO_VERLICHTING_NEGEREN
+        - trigger: state
+          entity_id: input_boolean.automatische_verlichting_woonkamer
+          to: 'on'
+        timeout:
+          hours: 3
+          minutes: 0
+          seconds: 0
+        continue_on_timeout: true
+      - if:
+        - condition: template
+          value_template: "{{ wait.trigger and wait.trigger.event.data.action == 'AUTO_VERLICHTING_AAN' }}"
+        then:
+        - action: input_boolean.turn_on
+          entity_id: input_boolean.automatische_verlichting_woonkamer
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: "Automatische verlichting is weer aan ✓"
+        - stop: Automatische verlichting aangezet op verzoek
+      - if:
+        - condition: template
+          value_template: "{{ wait.trigger and wait.trigger.event.data.action == 'AUTO_VERLICHTING_NEGEREN' }}"
+        then:
+        - stop: Gebruiker wil automatische verlichting uit laten
+      - if:
+        - condition: state
+          entity_id: input_boolean.automatische_verlichting_woonkamer
+          state: 'on'
+        then:
+        - stop: Automatische verlichting is al aan
   mode: restart
