@@ -5305,13 +5305,19 @@
   alias: Airco Woonkamer Boost Modus Beheer
   description: 'Activeer boost bij grote temp delta, deactiveer na bereiken setpoint of timeout'
   triggers:
-    # Automatisch activeren bij grote delta in ochtend
+    # Automatisch activeren bij schema start met grote delta
+    - trigger: state
+      entity_id: schedule.airco_woonkamer
+      from: 'off'
+      to: 'on'
+      id: auto_boost_aan
+    # Ook activeren als delta groot wordt terwijl schema al aan staat
     - trigger: template
       value_template: >
         {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
             states('sensor.tstat_9d4027_current_temperature') | float) >= 2.5
            and is_state('binary_sensor.airco_woonkamer_mag_verwarmen', 'on')
-           and now().hour >= 6 and now().hour <= 9 }}
+           and is_state('schedule.airco_woonkamer', 'on') }}
       id: auto_boost_aan
       for:
         minutes: 2
@@ -5352,13 +5358,19 @@
             - condition: state
               entity_id: input_boolean.airco_woonkamer_boost_modus
               state: 'off'
+            - condition: template
+              value_template: >
+                {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
+                    states('sensor.tstat_9d4027_current_temperature') | float) >= 2.5 }}
           sequence:
             - action: input_boolean.turn_on
               target:
                 entity_id: input_boolean.airco_woonkamer_boost_modus
             - action: notify.mobile_app_iphone_van_bram
               data:
-                message: "Boost modus geactiveerd - grote temperatuur delta gedetecteerd"
+                message: >
+                  Boost modus geactiveerd - delta {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
+                  states('sensor.tstat_9d4027_current_temperature') | float) | round(1) }}°C
         # Manuele boost activatie
         - conditions:
             - condition: trigger
