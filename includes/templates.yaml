@@ -380,6 +380,48 @@
         {{ [2.0, [5.0, cop] | min] | max | round(2) }}
       icon: mdi:heat-pump
 
+    - unique_id: airco_woonkamer_dynamische_offset
+      name: "Airco Woonkamer Dynamische Offset"
+      unit_of_measurement: "°C"
+      state: >
+        {# Boost modus override #}
+        {% if is_state('input_boolean.airco_woonkamer_boost_modus', 'on') %}
+          5.0
+        {% else %}
+          {# Basis waarden #}
+          {% set basis_offset = 2.0 %}
+          {% set setpoint = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) %}
+          {% set huidige_temp = states('sensor.tstat_9d4027_current_temperature') | float(18) %}
+          {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
+          {% set handmatige_override = states('input_number.airco_woonkamer_temperatuur_offset') | float(0) %}
+
+          {# Delta correctie: hoe verder onder setpoint, hoe meer offset #}
+          {% set temp_delta = setpoint - huidige_temp %}
+          {% set delta_correctie = [[0, temp_delta * 0.5] | max, 2.0] | min %}
+
+          {# COP correctie: bij lage COP iets meer, bij hoge COP iets minder #}
+          {% set cop_correctie = [[-0.5, (3.5 - cop) * 0.3] | max, 1.0] | min %}
+
+          {# Handmatige override toevoegen als die != 0 #}
+          {% set override_adjustment = handmatige_override if handmatige_override != 0 else 0 %}
+
+          {# Totaal berekenen en begrenzen #}
+          {% set totaal = basis_offset + delta_correctie + cop_correctie + override_adjustment %}
+          {{ [[-5, totaal] | max, 5] | min | round(1) }}
+        {% endif %}
+      icon: mdi:thermometer-chevron-up
+      attributes:
+        basis_offset: 2.0
+        temp_delta: "{{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) - states('sensor.tstat_9d4027_current_temperature') | float(18)) | round(1) }}"
+        delta_correctie: >
+          {% set delta = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) - states('sensor.tstat_9d4027_current_temperature') | float(18) %}
+          {{ [[0, delta * 0.5] | max, 2.0] | min | round(2) }}
+        cop_correctie: >
+          {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
+          {{ [[-0.5, (3.5 - cop) * 0.3] | max, 1.0] | min | round(2) }}
+        handmatige_override: "{{ states('input_number.airco_woonkamer_temperatuur_offset') | float(0) }}"
+        boost_actief: "{{ is_state('input_boolean.airco_woonkamer_boost_modus', 'on') }}"
+
     - unique_id: airco_kosten_per_kwh_warmte
       name: "Airco kosten per kWh warmte"
       unit_of_measurement: "€/kWh"
@@ -467,6 +509,9 @@
 # HomeWizard Batterij Laden - Trigger-based templates
 # Deze sensoren worden bijgewerkt wanneer het batterijpercentage verandert
 - trigger:
+    - alias: Triggers on home assistant startup
+      platform: homeassistant
+      event: start
     - alias: Batterij percentage verandert
       platform: state
       entity_id: sensor.plug_in_battery_laadpercentage

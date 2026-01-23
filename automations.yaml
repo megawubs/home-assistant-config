@@ -3175,6 +3175,11 @@
     entity_id:
     - input_boolean.vakantie_modus
     id: Vakantie Modus Veranderd
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_woonkamer_boost_modus
+    for:
+      seconds: 5
   conditions:
   - condition: state
     entity_id: input_boolean.airco_woonkamer_manual_override
@@ -3366,7 +3371,7 @@
       - action: climate.set_fan_mode
         metadata: {}
         data:
-          fan_mode: 3 High
+          fan_mode: "{{ '3 High' if is_state('input_boolean.airco_woonkamer_boost_modus', 'on') else 'auto' }}"
         target:
           label_id: airco_beneden
       - action: climate.set_swing_mode
@@ -5296,3 +5301,85 @@
         Airco beneden manual override geactiveerd - handmatige bediening gedetecteerd
         ({{ 'woonkamer' if trigger.id == 'woonkamer' else 'keuken' }})
   mode: single
+- id: 'airco_woonkamer_boost_modus_auto'
+  alias: Airco Woonkamer Boost Modus Beheer
+  description: 'Activeer boost bij grote temp delta, deactiveer na bereiken setpoint of timeout'
+  triggers:
+    # Automatisch activeren bij grote delta in ochtend
+    - trigger: template
+      value_template: >
+        {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
+            states('sensor.tstat_9d4027_current_temperature') | float) >= 2.5
+           and is_state('binary_sensor.airco_woonkamer_mag_verwarmen', 'on')
+           and now().hour >= 6 and now().hour <= 9 }}
+      id: auto_boost_aan
+      for:
+        minutes: 2
+    # Deactiveren wanneer setpoint bijna bereikt
+    - trigger: template
+      value_template: >
+        {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
+            states('sensor.tstat_9d4027_current_temperature') | float) <= 0.5
+           and is_state('input_boolean.airco_woonkamer_boost_modus', 'on') }}
+      id: boost_uit_bereikt
+      for:
+        minutes: 1
+    # Timeout na 45 minuten
+    - trigger: state
+      entity_id: input_boolean.airco_woonkamer_boost_modus
+      to: 'on'
+      for:
+        minutes: 45
+      id: boost_timeout
+    # Manuele activatie van boost modus
+    - trigger: state
+      entity_id: input_boolean.airco_woonkamer_boost_modus
+      from: 'off'
+      to: 'on'
+      id: manual_boost_aan
+  conditions:
+    - condition: state
+      entity_id: input_boolean.airco_woonkamer_manual_override
+      state: 'off'
+    - condition: state
+      entity_id: binary_sensor.airco_woonkamer_mag_aan
+      state: 'on'
+  actions:
+    - choose:
+        - conditions:
+            - condition: trigger
+              id: auto_boost_aan
+            - condition: state
+              entity_id: input_boolean.airco_woonkamer_boost_modus
+              state: 'off'
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.airco_woonkamer_boost_modus
+            - action: notify.mobile_app_iphone_van_bram
+              data:
+                message: "Boost modus geactiveerd - grote temperatuur delta gedetecteerd"
+        # Manuele boost activatie
+        - conditions:
+            - condition: trigger
+              id: manual_boost_aan
+          sequence:
+            - action: notify.mobile_app_iphone_van_bram
+              data:
+                message: "Boost modus handmatig geactiveerd"
+        - conditions:
+            - condition: trigger
+              id:
+                - boost_uit_bereikt
+                - boost_timeout
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id: input_boolean.airco_woonkamer_boost_modus
+            - action: notify.mobile_app_iphone_van_bram
+              data:
+                message: >
+                  Boost modus uitgeschakeld -
+                  {% if trigger.id == 'boost_timeout' %}timeout bereikt
+                  {% else %}temperatuur bereikt{% endif %}
+  mode: restart

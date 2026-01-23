@@ -7,3 +7,7 @@ wekker:
 airco_woonkamer_manual_override:
   name: Airco Woonkamer Manual Override
   icon: mdi:remote
+
+airco_woonkamer_boost_modus:
+  name: Airco Woonkamer Boost Modus
+  icon: mdi:rocket-launch
