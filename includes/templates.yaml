@@ -210,7 +210,7 @@
             or (
               (
                 is_state('group.bewoners', 'home')
-                or is_state('group.bewoners', 'Ommen')
+                or expand('group.bewoners') | selectattr('state', 'eq', 'Ommen') | list | count > 0
                 or (is_state('input_boolean.vakantie_modus', 'on') and states('sensor.airco_woonkamer_outdoor') | float(99) < 5)
               )
               and is_state('binary_sensor.open_verbinding_naar_buiten', 'off')
