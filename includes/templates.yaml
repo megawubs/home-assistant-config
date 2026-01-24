@@ -197,7 +197,8 @@
           is_state('binary_sensor.temperatuur_woonkamer_is_boven_drempel_waarden', 'off') and
           is_state('binary_sensor.temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen', 'off') and
           is_state('binary_sensor.airco_woonkamer_mag_aan', 'on') and
-          is_state('input_boolean.vakantie_modus', 'off')
+          is_state('input_boolean.vakantie_modus', 'off') and
+          states('sensor.airco_woonkamer_outdoor') | float(0) > 15
         }}
 
     - unique_id: airco_woonkamer_mag_aan
@@ -256,6 +257,7 @@
         {{
           is_state('binary_sensor.arco_woonkamer_mag_verwarmen', 'on')
           and is_state('binary_sensor.airco_zolder_mag_aan', 'on')
+          and states('sensor.airco_woonkamer_outdoor') | float(0) > 15
         }}
 
     - unique_id: airco_zolder_mag_aan
