@@ -3062,20 +3062,19 @@
       - action: climate.set_swing_mode
         metadata: {}
         data:
-          swing_mode: Highest
+          swing_mode: Up/Down Auto
         target:
           label_id: airco_beneden
       - action: select.select_option
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
         data:
-          option: Right-Right
+          option: Left/Right Auto
       - action: select.select_option
         data:
-          option: Center-Center
+          option: Left/Right Auto
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
-        enabled: false
       - action: notify.mobile_app_iphone_van_bram
         metadata: {}
         data:
@@ -3183,23 +3182,20 @@
       - action: climate.set_swing_mode
         metadata: {}
         data:
-          swing_mode: Normal
+          swing_mode: Up/Down Auto
         target:
           label_id: airco_beneden
-        enabled: false
       - action: select.select_option
         metadata: {}
         data:
-          option: Right-Right
+          option: Left/Right Auto
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
-        enabled: false
       - action: select.select_option
         data:
-          option: Center-Center
+          option: Left/Right Auto
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
-        enabled: false
       alias: Verwarmen
     - conditions:
       - condition: state
@@ -3239,16 +3235,19 @@
       - action: climate.set_swing_mode
         metadata: {}
         data:
-          swing_mode: Normal
+          swing_mode: Up/Down Auto
         target:
-          entity_id: climate.airco_woonkamer
-        enabled: false
+          label_id: airco_beneden
       - action: select.select_option
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
         data:
-          option: Right-Right
-        enabled: false
+          option: Left/Right Auto
+      - action: select.select_option
+        target:
+          entity_id: select.airco_keuken_horizontal_swing_direction
+        data:
+          option: Left/Right Auto
       alias: Ventileren
     - conditions:
       - condition: trigger
@@ -3520,9 +3519,14 @@
       - action: climate.set_swing_mode
         metadata: {}
         data:
-          swing_mode: Highest
+          swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
+      - action: select.select_option
+        target:
+          entity_id: select.airco_zolder_horizontal_swing_direction
+        data:
+          option: Left/Right Auto
       - action: notify.mobile_app_iphone_van_bram
         metadata: {}
         data:
@@ -3607,6 +3611,11 @@
           swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
+      - action: select.select_option
+        target:
+          entity_id: select.airco_zolder_horizontal_swing_direction
+        data:
+          option: Left/Right Auto
       - action: notify.mobile_app_iphone_van_bram
         metadata: {}
         data:
@@ -3652,20 +3661,19 @@
       - action: climate.set_swing_mode
         metadata: {}
         data:
-          swing_mode: Lowest
+          swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
+      - action: select.select_option
+        target:
+          entity_id: select.airco_zolder_horizontal_swing_direction
+        data:
+          option: Left/Right Auto
       - action: notify.mobile_app_iphone_van_bram
         metadata: {}
         data:
           message: Airco zolder is gaan ventileren
       alias: Mag ventileren
-  - action: select.select_option
-    target:
-      entity_id: select.airco_zolder_horizontal_swing_direction
-    data:
-      option: Center-Center
-    enabled: false
   mode: single
 - id: '1733782066889'
   alias: 'Klimaat: Badkamer'
@@ -5030,7 +5038,7 @@
   mode: single
 - id: '1737381600002'
   alias: 'Airco Beneden: Detecteer handmatige bediening'
-  description: Activeert manual override wanneer een airco beneden via de remote wordt bediend
+  description: Activeert manual override wanneer een airco beneden via de fysieke remote wordt bediend (niet via HA UI)
   triggers:
   - trigger: state
     entity_id: climate.airco_woonkamer
@@ -5051,6 +5059,11 @@
     entity_id: input_boolean.airco_woonkamer_manual_override
     state: 'off'
   - condition: template
+    alias: "Wijziging niet via HA UI (geen user_id)"
+    value_template: >-
+      {{ trigger.to_state.context.user_id is none }}
+  - condition: template
+    alias: "Er was daadwerkelijk een wijziging"
     value_template: >-
       {% set old = trigger.from_state %}
       {% set new = trigger.to_state %}
@@ -5062,6 +5075,7 @@
         old.attributes.get('preset_mode') != new.attributes.get('preset_mode')
       }}
   - condition: template
+    alias: "Niet recent door automation gewijzigd"
     value_template: >-
       {% set last_auto = states('input_datetime.airco_woonkamer_laatste_automatische_wijziging') %}
       {% if last_auto in ['unknown', 'unavailable', 'none'] %}
