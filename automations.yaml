@@ -1,3 +1,25 @@
+- id: 'unavailable_entities_daily_check'
+  alias: 'Melding: Onbereikbare entiteiten (dagelijks)'
+  description: 'Dagelijkse check om 10:00 voor onbereikbare entiteiten. Vervangt alle losse unavailable automations.'
+  use_blueprint:
+    path: gmlupatelli/unavailable_entities_notification.yaml
+    input:
+      time: '10:00:00'
+      exclude:
+        entity_id:
+        - sensor.iphone_van_bram_battery_level
+        - sensor.iphone_van_maninne_battery_level
+        - sensor.ipad_van_maninne_battery_level
+        - sensor.workhorse_internal_battery_level
+        - sensor.power_block_battery_level
+        - sensor.power_block_main_battery_level
+        - sensor.plug_in_battery_laadpercentage
+        - sensor.plug_in_battery_laadpercentage_2
+      actions:
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          title: "\U0001F6A8 Onbereikbare entiteiten"
+          message: "De volgende entiteiten zijn niet beschikbaar: {{entities}}"
 - id: '1607111315472'
   alias: 'Verlichting: Badkamer'
   description: ''
@@ -126,16 +148,29 @@
   mode: single
 - id: '1608665574967'
   alias: 'Melding: lage batterij voor sensoren'
-  description: ''
+  description: 'Dagelijkse check voor sensoren met lage batterij (< 20%). Exclusief telefoons, tablets en HomeWizard accu''s.'
   use_blueprint:
     path: sbyx/low-battery-level-detection-notification-for-all-battery-sensors.yaml
     input:
       day: '0'
-      actions:
-      - data:
-          message: "{{sensors}} hebben laag batterij niveau \U0001F50B"
-        action: notify.bram
       threshold: 20
+      actions:
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          title: "\U0001F50B Lage batterij"
+          message: "{{sensors}} hebben laag batterij niveau"
+      exclude:
+        entity_id:
+        - sensor.iphone_van_bram_battery_level
+        - sensor.iphone_van_maninne_battery_level
+        - sensor.workhorse_internal_battery_level
+        - sensor.ipad_van_maninne_battery_level
+        - sensor.power_block_battery_level
+        - sensor.power_block_main_battery_level
+        - sensor.power_block_state_of_health
+        - sensor.plug_in_battery_laadpercentage
+        - sensor.plug_in_battery_laadpercentage_2
+        - sensor.id_5_battery_target_charge_level
 - id: '1608671800538'
   alias: 'Verlichting: Keuken - Blueprint (Remote)'
   description: ''
@@ -977,237 +1012,6 @@
   - data:
       entity_id: media_player.woonkamer
     action: linkplay.restore
-- id: '1639682498630'
-  alias: 'Melding: Batterij'
-  description: ''
-  use_blueprint:
-    path: sbyx/low-battery-level-detection-notification-for-all-battery-sensors.yaml
-    input:
-      threshold: 40
-      actions:
-      - service: notify.bram
-        data:
-          message: Batterij niveau voor {{sensors}} is laag. Vervang de batterijen
-            vandaag!
-      exclude:
-        entity_id:
-        - sensor.iphone_van_bram_battery_level
-        - sensor.iphone_van_maninne_battery_level
-        - sensor.workhorse_internal_battery_level
-        - sensor.ipad_van_maninne_battery_level
-      day: 1
-- id: '1654625424110'
-  alias: 'Melding: Deurbel is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - sensor.ts0211_21_battery_level
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: De deurbel is niet meer beschikbaar :(
-  mode: single
-- id: '1654625510578'
-  alias: 'Melding: Beweging woonkamer is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.beweging_bij_de_eettafel
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Beweging bij de eettafel is niet meer beschikbaar :(
-  mode: single
-- id: '1654625635564'
-  alias: 'Melding: Beweging keuken is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.beweging_in_de_keuken
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Beweging in de keuken is niet meer beschikbaar :(
-  mode: single
-- id: '1654625692353'
-  alias: 'Melding: Activiteit bij de trap is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.activiteit_bij_de_trap
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Activiteit bij de trap is niet meer beschikbaar :(
-  mode: single
-- id: '1654625736982'
-  alias: 'Melding: Beweging op de overloop is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.beweging_op_de_overloop
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Beweging op de overloop is niet meer beschikbaar :(
-  mode: single
-- id: '1654625774166'
-  alias: 'Melding: Beweging in de badkamer is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.beweging_in_de_badkamer
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Beweging in de badkamer is niet meer beschikbaar :(
-  mode: single
-- id: '1654625882768'
-  alias: 'Melding: Voordeur sensor is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.voordeur
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Voordeur sensor is niet meer beschikbaar :(
-  mode: single
-- id: '1654625935486'
-  alias: 'Melding: Kamer Jozua deur sensor is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.kamer_jozua_deur
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.mobile_app_iphone_van_bram
-    data: {}
-  mode: single
-- id: '1654625976419'
-  alias: 'Melding: Thermostaat beneden is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - climate.thermostaat
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Honeywell T6 is niet meer beschikbaar :(
-  mode: single
-- id: '1654626026655'
-  alias: 'Melding: RM PRO+ Remote is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - remote.rm_pro_remote
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: RM Pro+ Remote is niet meer beschikbaar :(
-  mode: single
-- id: '1654626399156'
-  alias: 'Melding: Keuken media speler is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - media_player.keuken
-    to: unavailable
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Keuken media player is niet meer beschikbaar :(
-  mode: single
-- id: '1654626432977'
-  alias: 'Melding: Eetkamer media speler is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - media_player.eettafel
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Eetkamer media player is niet meer beschikbaar :(
-  mode: single
-- id: '1654626601363'
-  alias: 'Melding: Afstandsbediening media speler keuken is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - sensor.afstands_bediening_licht_woonkamer_batterij_niveau
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Afstandsbediening media player keuken is niet meer beschikbaar :(
-  mode: single
-- id: '1654626720264'
-  alias: 'Melding: Schakelaar slaapkamer (bed) is onbereikbaar'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - sensor.schakelaar_slaapkamer_batterij_niveau
-    to: unavailable
-  condition: []
-  action:
-  - service: notify.bram
-    data:
-      title: "\U0001F3E1"
-      message: Schakelaar slaapkamer (bed) is niet meer beschikbaar :(
-  mode: single
 - id: '1661716351784'
   alias: Schakelaar rolgordijn eetkamer
   description: ''
@@ -1701,18 +1505,6 @@
         volume_level: 1
       target:
         entity_id: media_player.arcadyan
-  mode: single
-- id: '1669152289756'
-  alias: 'Melding: onbereikbare entiteiten'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - binary_sensor.beweging_bij_de_eettafel
-    to: unavailable
-    id: beweging-eettafel
-  condition: []
-  action: []
   mode: single
 - id: '1672482812086'
   alias: Aanewzigheid
@@ -4026,19 +3818,6 @@
         message: De wasmachine kan om {{     as_timestamp(states('sensor.droger_start_tijd'))
           |     timestamp_custom('%H:%M') }} automatisch gestart worden
   mode: single
-- id: '1739218743822'
-  alias: Batterij Notificatie
-  description: ''
-  use_blueprint:
-    path: sbyx/low-battery-level-detection-notification-for-all-battery-sensors.yaml
-    input:
-      day: 1
-      actions:
-      - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
-        data:
-          message: 'Lage batterij niveau voor: {{sensors}}'
-      threshold: 15
 - id: '1739633394772'
   alias: Tardis uit als Bram gaat slapen
   description: ''
