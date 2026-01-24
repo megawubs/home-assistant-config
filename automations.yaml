@@ -611,6 +611,8 @@
     - binary_sensor.activiteit_in_de_keuken
     from:
     to: 'off'
+    for:
+      minutes: 5
     id: geen beweging gedetecteerd
     trigger: state
   conditions:
