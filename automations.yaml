@@ -2637,24 +2637,6 @@
           - 290ef374526c47d1beb8cbe09186fe0c
           - 6d60dd9d13ff4ee4b715cf080394ac41
         data: {}
-- id: '1702816762033'
-  alias: IKEA Fyrtur State Update
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - cover.rolgordijn_eetkamer_links_zha
-    - cover.rolgordijn_eetkamertafel_midden_raambekleding
-    attribute: current_position
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 1
-  action:
-  - service: homeassistant.update_entity
-    target:
-      entity_id: '{{ trigger.entity_id }}'
-  mode: restart
 - id: '1713988326145'
   alias: 'Schakelaar: Zolder Bureau'
   description: ''
@@ -3844,25 +3826,6 @@
         message: De wasmachine kan om {{     as_timestamp(states('sensor.droger_start_tijd'))
           |     timestamp_custom('%H:%M') }} automatisch gestart worden
   mode: single
-- id: '1739633394772'
-  alias: Tardis uit als Bram gaat slapen
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.bram_slaapt
-    from: 'off'
-    to: 'on'
-  conditions:
-  - condition: state
-    entity_id: person.bram_wubs
-    state: home
-  actions:
-  - device_id: b2d69c0e09216b2e8c1368ffe89620b7
-    domain: button
-    entity_id: 877f99616e2c10f90eda2f02cb834413
-    type: press
-  mode: single
 - id: '1742760995362'
   alias: Tv uit wanneer kids naar beneden komen na 19:00
   description: ''
@@ -4031,62 +3994,6 @@
     id: Terugleveren
   conditions: []
   actions: []
-  mode: single
-- id: '1750614803586'
-  alias: Notificatie boiler
-  description: ''
-  triggers:
-  - trigger: state
-    entity_id:
-    - binary_sensor.ariston_is_heating
-  conditions: []
-  actions:
-  - if:
-    - condition: template
-      value_template: '{{ states("binary_sensor.ariston_is_heating") != "unavailable"
-        }}'
-    then:
-    - action: notify.bram
-      metadata: {}
-      data:
-        message: Boiler verwarming is {{ states('binary_sensor.ariston_is_heating')
-          }}
-  mode: single
-- id: '1752090338503'
-  alias: 'Rolluik: Zolder'
-  description: ''
-  triggers:
-  - event: sunset
-    offset: -000:30:00
-    trigger: sun
-  - event: sunrise
-    offset: +000:30:00
-    trigger: sun
-    enabled: false
-  conditions: []
-  actions:
-  - if:
-    - condition: device
-      device_id: 71f27134959e53d7a39ac2de181d2d00
-      domain: cover
-      entity_id: 243582ca6749d5c62f16dcd5aa320ee0
-      type: is_open
-    then:
-    - data: {}
-      action: cover.close_cover
-      target:
-        area_id: 6d60dd9d13ff4ee4b715cf080394ac41
-    else:
-    - if:
-      - condition: state
-        entity_id: group.bewoners
-        state: away
-      then:
-      - action: cover.open_cover
-        target:
-          area_id:
-          - 6d60dd9d13ff4ee4b715cf080394ac41
-        data: {}
   mode: single
 - id: '1752146866920'
   alias: 'ID.5: Laadkosten reset'
