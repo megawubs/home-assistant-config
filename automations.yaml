@@ -4978,17 +4978,16 @@
         old.state != new.state or
         old.attributes.temperature != new.attributes.temperature or
         old.attributes.get('fan_mode') != new.attributes.get('fan_mode') or
-        old.attributes.get('swing_mode') != new.attributes.get('swing_mode') or
         old.attributes.get('preset_mode') != new.attributes.get('preset_mode')
       }}
   - condition: template
-    alias: "Niet recent door automation gewijzigd"
+    alias: "Niet recent door automation gewijzigd (60 sec window voor label met meerdere devices)"
     value_template: >-
       {% set last_auto = states('input_datetime.airco_woonkamer_laatste_automatische_wijziging') %}
       {% if last_auto in ['unknown', 'unavailable', 'none'] %}
         true
       {% else %}
-        {{ (now().timestamp() - as_timestamp(last_auto)) > 15 }}
+        {{ (now().timestamp() - as_timestamp(last_auto)) > 60 }}
       {% endif %}
   actions:
   - action: input_boolean.turn_on
