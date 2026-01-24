@@ -4506,7 +4506,7 @@
       cover_status_options: cover_helper_enabled
       cover_status_helper: input_text.zolder_rolluik_helper
       ventilate_position: 15
-      time_control: time_control_disabled
+      time_control: time_control_enabled
       default_brightness_sensor: sensor.aanwezigheid_zolder_licht
       contact_window_tilted: binary_sensor.zolder_raam_openen
       shading_forecast_sensor: weather.home
@@ -4516,9 +4516,6 @@
       - partlycloudy
       - sunny
       - clear
-      resident_sensor: binary_sensor.aanwezigheid_zolder_bezetting
-      resident_config:
-      - resident_allow_ventilation
       ignore_after_manual_config: []
       reset_override_config: reset_disabled
       reset_override_time: 08:00:00
@@ -4532,8 +4529,8 @@
       shading_brightness_sensor: sensor.aanwezigheid_zolder_licht
       shading_sun_brightness_start: 17575
       shading_sun_brightness_end: 11131
-      time_up_late: '10:00:00'
-      time_up_late_non_workday: 08:30:00
+      time_up_late: '08:30:00'
+      time_up_late_non_workday: '10:00:00'
 - id: '1759521136361'
   alias: Boiler - Compleet Cyclus Management
   description: Herijkt de opwarmduur, start en stopt de boiler op het optimale moment,
