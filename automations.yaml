@@ -786,37 +786,55 @@
   mode: single
 - id: '1609966305056'
   alias: 'Schakelaar: Ventilatie Badkamer'
-  description: ''
-  trigger:
-  - platform: state
+  description: 'Automatisch aan bij hoge luchtvochtigheid, uit als het daalt. Handmatige activatie gaat na 30 min automatisch uit.'
+  triggers:
+  - trigger: state
     entity_id:
-    - binary_sensor.luchtvochtigheid_boven_ingestelde_waarde_in_de_badkamer
+    - binary_sensor.luchtvochtigheid_boven_instestelde_waarde_in_de_badkamer
     to: 'on'
-    from:
-    id: 'on'
-  - platform: state
-    entity_id: binary_sensor.luchtvochtigheid_boven_ingestelde_waarde_in_de_badkamer
+    from: 'off'
+    id: humidity_high
+  - trigger: state
+    entity_id:
+    - binary_sensor.luchtvochtigheid_boven_instestelde_waarde_in_de_badkamer
     to: 'off'
-    id: 'off'
-  condition: []
-  action:
-  - if:
-    - condition: trigger
-      id: 'on'
-    then:
-    - service: switch.turn_on
-      target:
-        entity_id: switch.afzuiging
-      data: {}
-  - if:
-    - condition: trigger
-      id: 'off'
-    then:
-    - service: switch.turn_off
-      target:
-        entity_id: switch.afzuiging
-      data: {}
-  mode: single
+    from: 'on'
+    id: humidity_normal
+  - trigger: state
+    entity_id:
+    - switch.afzuiging
+    to: 'on'
+    id: manual_on
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: humidity_high
+      sequence:
+      - action: switch.turn_on
+        target:
+          entity_id: switch.afzuiging
+    - conditions:
+      - condition: trigger
+        id: humidity_normal
+      sequence:
+      - action: switch.turn_off
+        target:
+          entity_id: switch.afzuiging
+    - conditions:
+      - condition: trigger
+        id: manual_on
+      - condition: state
+        entity_id: binary_sensor.luchtvochtigheid_boven_instestelde_waarde_in_de_badkamer
+        state: 'off'
+      sequence:
+      - delay:
+          minutes: 30
+      - action: switch.turn_off
+        target:
+          entity_id: switch.afzuiging
+  mode: restart
 - id: '1611217877955'
   alias: 'Verlichting: Benedenverdieping'
   description: Licht intensiteit in de woonkamer boven ingestelde waarde -> benedenverdieping
