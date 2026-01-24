@@ -3035,23 +3035,31 @@
         target:
           label_id: airco_beneden
         action: climate.set_hvac_mode
+      - delay:
+          seconds: 2
       - data:
           temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
         action: climate.set_temperature
+      - delay:
+          seconds: 2
       - action: climate.set_swing_mode
         metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
           label_id: airco_beneden
+      - delay:
+          seconds: 2
       - action: select.select_option
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
         data:
           option: Left/Right Auto
+      - delay:
+          seconds: 2
       - action: select.select_option
         data:
           option: Left/Right Auto
@@ -3149,30 +3157,40 @@
         target:
           label_id: airco_beneden
         action: climate.set_hvac_mode
+      - delay:
+          seconds: 2
       - data:
           temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
         action: climate.set_temperature
+      - delay:
+          seconds: 2
       - action: climate.set_fan_mode
         metadata: {}
         data:
           fan_mode: "{{ '3 High' if is_state('input_boolean.airco_woonkamer_boost_modus', 'on') else 'auto' }}"
         target:
           label_id: airco_beneden
+      - delay:
+          seconds: 2
       - action: climate.set_swing_mode
         metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
           label_id: airco_beneden
+      - delay:
+          seconds: 2
       - action: select.select_option
         metadata: {}
         data:
           option: Left/Right Auto
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
+      - delay:
+          seconds: 2
       - action: select.select_option
         data:
           option: Left/Right Auto
@@ -3194,6 +3212,8 @@
         data: {}
         action: climate.turn_on
         enabled: true
+      - delay:
+          seconds: 2
       - data:
           temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
             float }}'
@@ -3207,6 +3227,8 @@
           hvac_mode: fan_only
         target:
           label_id: airco_beneden
+      - delay:
+          seconds: 2
       - action: climate.set_fan_mode
         metadata: {}
         data:
@@ -3214,17 +3236,23 @@
         target:
           label_id: airco_beneden
         enabled: true
+      - delay:
+          seconds: 2
       - action: climate.set_swing_mode
         metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
           label_id: airco_beneden
+      - delay:
+          seconds: 2
       - action: select.select_option
         target:
           entity_id: select.airco_woonkamer_horizontal_swing_direction
         data:
           option: Left/Right Auto
+      - delay:
+          seconds: 2
       - action: select.select_option
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
@@ -3486,24 +3514,32 @@
         action: climate.turn_on
         target:
           entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
       - metadata: {}
         data:
           hvac_mode: cool
         target:
           entity_id: climate.airco_zolder
         action: climate.set_hvac_mode
+      - delay:
+          seconds: 2
       - data:
           temperature: '{{states(''sensor.airco_zolder_ideale_temperatuur'') | float
             }}'
         target:
           entity_id: climate.airco_zolder
         action: climate.set_temperature
+      - delay:
+          seconds: 2
       - action: climate.set_swing_mode
         metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
       - action: select.select_option
         target:
           entity_id: select.airco_zolder_horizontal_swing_direction
@@ -3569,30 +3605,40 @@
           entity_id: climate.airco_zolder
         data: {}
         action: climate.turn_on
+      - delay:
+          seconds: 2
       - metadata: {}
         data:
           hvac_mode: heat
         target:
           entity_id: climate.airco_zolder
         action: climate.set_hvac_mode
+      - delay:
+          seconds: 2
       - data:
           temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
             }}'
         target:
           entity_id: climate.airco_zolder
         action: climate.set_temperature
+      - delay:
+          seconds: 2
       - action: climate.set_fan_mode
         metadata: {}
         data:
           fan_mode: 3 High
         target:
           entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
       - action: climate.set_swing_mode
         metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
       - action: select.select_option
         target:
           entity_id: select.airco_zolder_horizontal_swing_direction
@@ -3628,24 +3674,32 @@
           entity_id: climate.airco_zolder
         data: {}
         action: climate.turn_on
+      - delay:
+          seconds: 2
       - metadata: {}
         data:
           hvac_mode: fan_only
         target:
           entity_id: climate.airco_zolder
         action: climate.set_hvac_mode
+      - delay:
+          seconds: 2
       - action: climate.set_fan_mode
         metadata: {}
         data:
           fan_mode: 1 Lowest
         target:
           entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
       - action: climate.set_swing_mode
         metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
           entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
       - action: select.select_option
         target:
           entity_id: select.airco_zolder_horizontal_swing_direction
