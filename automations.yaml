@@ -4672,30 +4672,19 @@
       id:
       - auto_laadt
     then:
-    - alias: Als batterij gepland is om te laden, laat hem laden
+    - alias: Als batterij al aan het laden is, laat hem doorgaan
       if:
-      - condition: template
-        value_template: "{% set start = states('sensor.oplaadtijd_homewizard_accu')
-          %} {% set end = states('sensor.eind_oplaadtijd_homewizard_accu') %} {% if
-          start not in ['unknown', 'unavailable', 'None', '']\n   and end not in ['unknown',
-          'unavailable', 'None', ''] %}\n  {{ start | as_datetime <= now() <= end
-          | as_datetime }}\n{% else %}\n  false\n{% endif %}\n"
+      - condition: state
+        entity_id: sensor.battery_group_mode
+        state: to_full
       then:
-      - action: rest_command.mode_to_full
-        metadata: {}
-        data: {}
-      - action: switch.turn_on
-        metadata: {}
-        target:
-          entity_id: switch.power_block_socket
-        data: {}
-      - action: number.set_value
-        metadata: {}
-        target:
-          entity_id: number.power_block_potential_charge
-        data:
-          value: '660'
-      else:
+      - stop: Batterij is al aan het laden, geen actie nodig
+    - alias: Als batterij aan het ontladen is, zet naar standby (voorkom accu -> auto)
+      if:
+      - condition: state
+        entity_id: sensor.battery_group_mode
+        state: zero
+      then:
       - action: rest_command.mode_standby
         metadata: {}
         data: {}
