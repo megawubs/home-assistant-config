@@ -44,8 +44,8 @@
         {{ (((states('sensor.self_used_energy') | float) /  (states('sensor.zonneplan_yield_today') | float)) * 100) | round }}
       unit_of_measurement: "%"
 
-    airco_woonkamer_ideale_temperatuur:
-      friendly_name: "Airco Woonkamer Ideale Temperatuur"
+    airco_woonkamer_target_temperatuur:
+      friendly_name: "Airco Woonkamer Target Temperatuur"
       unit_of_measurement: "°C"
       value_template: >-
         {% set huidige_temp = states('sensor.tstat_9d4027_current_temperature') | float(18) %}

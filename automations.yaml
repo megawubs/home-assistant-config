@@ -2887,7 +2887,7 @@
       seconds: 0
     trigger: state
   - entity_id:
-    - sensor.airco_woonkamer_ideale_temperatuur
+    - sensor.airco_woonkamer_target_temperatuur
     id: Temperatuur Veranderd
     trigger: state
   - entity_id:
@@ -2990,7 +2990,7 @@
         data:
           timestamp: '{{ now().timestamp() }}'
       - data:
-          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+          temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
@@ -3040,7 +3040,7 @@
       - delay:
           seconds: 2
       - data:
-          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+          temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
@@ -3162,7 +3162,7 @@
       - delay:
           seconds: 2
       - data:
-          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+          temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
@@ -3217,7 +3217,7 @@
       - delay:
           seconds: 2
       - data:
-          temperature: '{{states(''sensor.airco_woonkamer_ideale_temperatuur'') |
+          temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
@@ -3596,7 +3596,7 @@
             state: 'off'
           - condition: numeric_state
             entity_id: climate.airco_zolder
-            above: sensor.airco_woonkamer_ideale_temperatuur
+            above: sensor.airco_woonkamer_target_temperatuur
             attribute: temperature
           - condition: numeric_state
             entity_id: climate.airco_zolder
