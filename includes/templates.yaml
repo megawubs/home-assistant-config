@@ -397,9 +397,18 @@
           {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
           {% set handmatige_override = states('input_number.airco_woonkamer_temperatuur_offset') | float(0) %}
 
-          {# Delta correctie: hoe verder onder setpoint, hoe meer offset #}
-          {% set temp_delta = setpoint - huidige_temp %}
-          {% set delta_correctie = [[0, temp_delta * 0.5] | max, 2.0] | min %}
+          {# Delta correctie met vloeiende afname boven drempel #}
+          {% set overshoot = 0.5 %}
+          {% set effectieve_drempel = setpoint + overshoot %}
+          {% set temp_delta = effectieve_drempel - huidige_temp %}
+
+          {% if temp_delta > 0 %}
+            {# Onder drempel: positieve correctie (meer power) #}
+            {% set delta_correctie = [[0, temp_delta * 0.5] | max, 2.0] | min %}
+          {% else %}
+            {# Boven drempel: negatieve correctie (airco moduleert/stopt) #}
+            {% set delta_correctie = [[-3.0, temp_delta * 2.0] | max, 0] | min %}
+          {% endif %}
 
           {# COP correctie: bij lage COP iets meer, bij hoge COP iets minder #}
           {% set cop_correctie = [[-0.5, (3.5 - cop) * 0.3] | max, 1.0] | min %}
@@ -414,10 +423,18 @@
       icon: mdi:thermometer-chevron-up
       attributes:
         basis_offset: 2.0
-        temp_delta: "{{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) - states('sensor.tstat_9d4027_current_temperature') | float(18)) | round(1) }}"
+        temp_delta: >
+          {% set overshoot = 0.5 %}
+          {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) + overshoot - states('sensor.tstat_9d4027_current_temperature') | float(18)) | round(1) }}
         delta_correctie: >
-          {% set delta = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) - states('sensor.tstat_9d4027_current_temperature') | float(18) %}
-          {{ [[0, delta * 0.5] | max, 2.0] | min | round(2) }}
+          {% set overshoot = 0.5 %}
+          {% set effectieve_drempel = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) + overshoot %}
+          {% set temp_delta = effectieve_drempel - states('sensor.tstat_9d4027_current_temperature') | float(18) %}
+          {% if temp_delta > 0 %}
+            {{ [[0, temp_delta * 0.5] | max, 2.0] | min | round(2) }}
+          {% else %}
+            {{ [[-3.0, temp_delta * 2.0] | max, 0] | min | round(2) }}
+          {% endif %}
         cop_correctie: >
           {% set cop = states('sensor.airco_geschatte_cop') | float(3.5) %}
           {{ [[-0.5, (3.5 - cop) * 0.3] | max, 1.0] | min | round(2) }}

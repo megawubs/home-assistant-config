@@ -48,17 +48,28 @@
       friendly_name: "Airco Woonkamer Ideale Temperatuur"
       unit_of_measurement: "°C"
       value_template: >-
+        {% set huidige_temp = states('sensor.tstat_9d4027_current_temperature') | float(18) %}
+        {% set drempel_verwarmen = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) %}
+        {% set drempel_koelen = states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(23) %}
+        {% set offset = states('sensor.airco_woonkamer_dynamische_offset') | float(4.0) %}
+        {% set overshoot = 0.5 %}
+
         {% if is_state('input_boolean.vakantie_modus', 'on') %}
           {{ states('input_number.airco_vakantie_temperatuur') | float }}
-        {% elif states('binary_sensor.airco_woonkamer_mag_verwarmen') %}
-          {{ states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float + states('sensor.airco_woonkamer_dynamische_offset') | float(4.0) }}
-        {% else %}
-          {% if states('sensor.airco_woonkamer_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < (states('input_number.airco_woonkamer_drempelwaarde_koelen') | int)
-              and states('sensor.tstat_9d4027_current_temperature') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < (states('input_number.airco_woonkamer_drempelwaarde_koelen') | int)  %}
-            {{ states('input_number.airco_woonkamer_drempelwaarde_koelen') }}
+        {% elif huidige_temp < drempel_verwarmen + overshoot %}
+          {# Verwarmen zone: target = drempel + offset #}
+          {{ drempel_verwarmen + offset }}
+        {% elif huidige_temp > drempel_koelen %}
+          {# Koelen zone: bestaande logica #}
+          {% if states('sensor.airco_woonkamer_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco') | int < drempel_koelen | int
+              and huidige_temp | int - states('input_number.maximaal_temperatuurverschil_airco') | int < drempel_koelen | int %}
+            {{ drempel_koelen }}
           {% else %}
             {{ states('sensor.airco_woonkamer_outdoor') | int - states('input_number.maximaal_temperatuurverschil_airco') | int }}
           {% endif %}
+        {% else %}
+          {# Comfort zone: target = huidige temp (airco doet niets) #}
+          {{ huidige_temp | round(1) }}
         {% endif %}
 
     airco_zolder_ideale_temperatuur:
