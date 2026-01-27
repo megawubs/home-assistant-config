@@ -11,3 +11,11 @@ airco_woonkamer_manual_override:
 airco_woonkamer_boost_modus:
   name: Airco Woonkamer Boost Modus
   icon: mdi:rocket-launch
+
+ochtend_briefing_aan:
+  name: "Ochtend briefing aan"
+  icon: mdi:weather-sunny
+
+avond_briefing_aan:
+  name: "Avond briefing aan"
+  icon: mdi:weather-night

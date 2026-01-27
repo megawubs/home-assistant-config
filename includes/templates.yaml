@@ -373,6 +373,102 @@
         minutes: 2
 
 - sensor:
+    - unique_id: tarief_voorspelling_vandaag
+      name: "Tarief Voorspelling Vandaag"
+      state: >
+        {% set forecast = state_attr('sensor.current_tariff', 'forecast') | default([]) %}
+        {% set now_ts = now() %}
+        {% set today_start = now_ts.replace(hour=0, minute=0, second=0, microsecond=0) %}
+        {% set today_end = today_start + timedelta(days=1) %}
+        {% set prices = [] %}
+        {% for item in forecast %}
+          {% if item.datetime is defined %}
+            {% set dt = item.datetime | as_datetime %}
+            {% if dt >= today_start and dt < today_end and item.electricity_price is defined %}
+              {% set prices = prices + [{'hour': dt.hour, 'price': item.electricity_price / 10000000}] %}
+            {% endif %}
+          {% endif %}
+        {% endfor %}
+        {% if prices | length >= 3 %}
+          {% set sorted_prices = prices | sort(attribute='price') %}
+          {% set cheapest = sorted_prices[:3] %}
+          {% set most_expensive = sorted_prices[-3:] | reverse | list %}
+          Goedkoopst: {% for p in cheapest %}{{ p.hour }}:00{% if not loop.last %}, {% endif %}{% endfor %}. Duurst: {% for p in most_expensive %}{{ p.hour }}:00{% if not loop.last %}, {% endif %}{% endfor %}.
+        {% elif prices | length > 0 %}
+          Beperkte tariefdata ({{ prices | length }} uren beschikbaar)
+        {% else %}
+          Geen tariefdata beschikbaar
+        {% endif %}
+      icon: mdi:chart-timeline-variant
+
+    - unique_id: apparaten_tip
+      name: "Apparaten Tip"
+      state: >
+        {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+        {% set sensor = 'sensor.current_tariff' %}
+        {% set search_start = now() %}
+        {% set search_end = today_at("23:59") %}
+        {% set best_time = cheapest_energy_hours(
+            sensor=sensor,
+            time_key='datetime',
+            hours=1,
+            start=search_start,
+            end=search_end,
+            include_tomorrow=false
+          ) %}
+        {% if best_time %}
+          {% set best_hour = (best_time | as_datetime).hour %}
+          {% set forecast = state_attr(sensor, 'forecast') | default([]) %}
+          {% set price = namespace(value=none) %}
+          {% for item in forecast %}
+            {% if item.datetime is defined and (item.datetime | as_datetime).hour == best_hour %}
+              {% set price.value = item.electricity_price / 10000000 %}
+            {% endif %}
+          {% endfor %}
+          {% if price.value is not none %}
+            Beste moment voor zware apparaten: {{ best_hour }}:00 (€{{ price.value | round(2) }}/kWh)
+          {% else %}
+            Beste moment voor zware apparaten: {{ best_hour }}:00
+          {% endif %}
+        {% else %}
+          Geen tariefdata voor vandaag
+        {% endif %}
+      icon: mdi:washing-machine
+
+    - unique_id: auto_laadadvies
+      name: "Auto Laadadvies"
+      state: >
+        {% set charging_power = states('sensor.kwh_meter_id_5_vermogen') | float(0) %}
+        {% set goedkope_stroom = is_state('binary_sensor.stroomtarief_onder_gemiddelde', 'on') %}
+        {% set range_km = states('sensor.id_5_bram_battery_cruising_range') | float(-1) %}
+        {% set extra_gereden = states('sensor.extra_gereden') | float(0) %}
+        {% set battery_level = states('sensor.id_5_bram_battery_level') | float(-1) %}
+        {% set is_charging = charging_power > 100 %}
+        {% if is_charging %}
+          Auto laadt ({{ (charging_power / 1000) | round(1) }} kW)
+        {% elif range_km >= 0 and range_km < 50 %}
+          {% if goedkope_stroom %}
+            Laad nu! Bereik laag ({{ range_km | int }} km) en stroom is goedkoop
+          {% else %}
+            Bereik laag ({{ range_km | int }} km) - wacht op goedkope stroom
+          {% endif %}
+        {% elif range_km >= 0 %}
+          {% set lease_info = '' %}
+          {% if extra_gereden > 0 %}
+            {% set lease_info = ' (' ~ (extra_gereden | int) ~ ' km over lease)' %}
+          {% endif %}
+          Auto: {{ range_km | int }} km{% if battery_level >= 0 %} ({{ battery_level | int }}%){% endif %}{{ lease_info }}
+        {% else %}
+          Auto status onbekend
+        {% endif %}
+      icon: mdi:car-electric
+      attributes:
+        is_laden: "{{ states('sensor.kwh_meter_id_5_vermogen') | float(0) > 100 }}"
+        laadvermogen_kw: "{{ (states('sensor.kwh_meter_id_5_vermogen') | float(0) / 1000) | round(2) }}"
+        bereik_km: "{{ states('sensor.id_5_bram_battery_cruising_range') | float(0) | int }}"
+        batterij_pct: "{{ states('sensor.id_5_bram_battery_level') | float(0) | int }}"
+        lease_km_over: "{{ states('sensor.extra_gereden') | float(0) | int }}"
+
     - unique_id: airco_geschatte_cop
       name: "Airco geschatte COP"
       unit_of_measurement: ""
@@ -605,3 +701,57 @@
         {% else %}
           {{ None }}
         {% endif %}
+
+# Dagelijkse Briefing - Pre-midnight capture (23:59:58)
+# Captures today's values BEFORE utility meters reset at midnight
+- trigger:
+    - alias: "HA startup - herstel sensor waarden"
+      platform: homeassistant
+      event: start
+    - platform: time
+      at: "23:59:58"
+  sensor:
+    - unique_id: energie_verbruik_gisteren
+      name: "Energie Verbruik Gisteren"
+      unit_of_measurement: "kWh"
+      state: "{{ states('sensor.energy_consumed_today') | float(0) }}"
+      icon: mdi:flash
+
+    - unique_id: energie_productie_gisteren
+      name: "Energie Productie Gisteren"
+      unit_of_measurement: "kWh"
+      state: "{{ states('sensor.energy_produced_today') | float(0) }}"
+      icon: mdi:solar-power
+
+    - unique_id: gas_verbruik_gisteren
+      name: "Gas Verbruik Gisteren"
+      unit_of_measurement: "m³"
+      state: "{{ states('sensor.gas_consumed_today') | float(0) }}"
+      icon: mdi:gas-burner
+
+    - unique_id: gemiddeld_tarief_gisteren
+      name: "Gemiddeld Tarief Gisteren"
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: "{{ states('sensor.gemiddeld_stroomtarief_vandaag') | float(0.25) }}"
+      icon: mdi:currency-eur
+
+    - unique_id: energie_kosten_gisteren
+      name: "Energie Kosten Gisteren"
+      unit_of_measurement: "€"
+      device_class: monetary
+      state: >
+        {% set verbruik = states('sensor.energie_verbruik_gisteren') | float(0) %}
+        {% set productie = states('sensor.energie_productie_gisteren') | float(0) %}
+        {% set gemiddeld_tarief = states('sensor.gemiddeld_tarief_gisteren') | float(0.25) %}
+        {% set teruglever_tarief = states('sensor.zonneplan_terugleververgoeding') | float(0.07) %}
+        {% set netto = verbruik - productie %}
+        {% if netto > 0 %}
+          {{ (netto * gemiddeld_tarief) | round(2) }}
+        {% else %}
+          {{ (netto * teruglever_tarief) | round(2) }}
+        {% endif %}
+      icon: mdi:cash
+      attributes:
+        is_schatting: true
+        toelichting: "Geschat op basis van gemiddeld dagtarief"

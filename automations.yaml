@@ -5221,3 +5221,70 @@
         then:
         - stop: Automatische verlichting is al aan
   mode: restart
+- id: 'dagelijkse_ochtend_briefing'
+  alias: 'Melding: Dagelijkse Ochtend Briefing'
+  description: 'Dagelijkse briefing om 07:00 met energie, batterij, weer en tips'
+  triggers:
+  - trigger: time
+    at: "07:00:00"
+  conditions:
+  - condition: state
+    entity_id: input_boolean.ochtend_briefing_aan
+    state: 'on'
+  actions:
+  - variables:
+      verbruik: "{{ states('sensor.energie_verbruik_gisteren') | float(0) | round(1) }}"
+      productie: "{{ states('sensor.energie_productie_gisteren') | float(0) | round(1) }}"
+      gas: "{{ states('sensor.gas_verbruik_gisteren') | float(0) | round(2) }}"
+      kosten: "{{ states('sensor.energie_kosten_gisteren') | float(0) | round(2) }}"
+      batterij1: "{{ states('sensor.plug_in_battery_laadpercentage') | int(0) }}"
+      batterij2: "{{ states('sensor.plug_in_battery_laadpercentage_2') | int(0) }}"
+      batterij_modus: "{{ states('sensor.battery_group_mode') | default('onbekend') }}"
+      weer: "{{ states('weather.home') }}"
+      temp: "{{ state_attr('weather.home', 'temperature') | default('?') }}"
+      tarief_tip: "{{ states('sensor.tarief_voorspelling_vandaag') }}"
+      apparaat_tip: "{{ states('sensor.apparaten_tip') }}"
+      auto_tip: "{{ states('sensor.auto_laadadvies') }}"
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      title: "Goedemorgen!"
+      message: >
+        Gisteren: {{ verbruik }} kWh ↓ {{ productie }} kWh ↑ {{ gas }} m³ gas.
+        {% if kosten | float >= 0 %}€{{ kosten }}{% else %}+€{{ (kosten | float * -1) | round(2) }}{% endif %} (schatting).
+        Batterij: {{ batterij1 }}%/{{ batterij2 }}%.
+        Weer: {{ weer }}, {{ temp }}°C.
+        {{ tarief_tip }}
+        {{ apparaat_tip }}
+        {{ auto_tip if auto_tip != 'Auto status onbekend' else '' }}
+      data:
+        push:
+          interruption-level: passive
+          thread-id: "dagelijkse-briefing"
+  mode: single
+- id: 'dagelijkse_avond_recap'
+  alias: 'Melding: Dagelijkse Avond Recap'
+  description: 'Optionele samenvatting om 21:00 van de dag'
+  triggers:
+  - trigger: time
+    at: "21:00:00"
+  conditions:
+  - condition: state
+    entity_id: input_boolean.avond_briefing_aan
+    state: 'on'
+  actions:
+  - variables:
+      verbruik_vandaag: "{{ states('sensor.energy_consumed_today') | float(0) | round(1) }}"
+      productie_vandaag: "{{ states('sensor.energy_produced_today') | float(0) | round(1) }}"
+      batterij1: "{{ states('sensor.plug_in_battery_laadpercentage') | int(0) }}"
+      batterij2: "{{ states('sensor.plug_in_battery_laadpercentage_2') | int(0) }}"
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      title: "Dagrecap"
+      message: >
+        Vandaag: {{ verbruik_vandaag }} kWh ↓ {{ productie_vandaag }} kWh ↑.
+        Batterij: {{ batterij1 }}%/{{ batterij2 }}%.
+      data:
+        push:
+          interruption-level: passive
+          thread-id: "dagelijkse-briefing"
+  mode: single
