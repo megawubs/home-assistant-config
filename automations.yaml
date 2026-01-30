@@ -2254,7 +2254,7 @@
             num_repeats: 1
             delay_secs: 0.4
             hold_secs: 0
-            command: pause
+            command: select
           target:
             entity_id: remote.woonkamer_tv
           action: remote.send_command
