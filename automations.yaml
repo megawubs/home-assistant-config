@@ -40,7 +40,7 @@
     id: 'Beweging overloop '
     trigger: state
   - entity_id:
-    - binary_sensor.acitiviteit_in_de_badkamer
+    - binary_sensor.beweging_in_de_badkamer
     to: 'off'
     for:
       hours: 0
@@ -68,7 +68,7 @@
       action: script.badkamer_aan
     - wait_for_trigger:
       - entity_id:
-        - binary_sensor.acitiviteit_in_de_badkamer
+        - binary_sensor.beweging_in_de_badkamer
         to: 'off'
         for:
           hours: 0
@@ -115,7 +115,7 @@
           minutes: 1
           seconds: 30
         state: 'off'
-        entity_id: binary_sensor.activiteit_in_de_badkamer_nieuw
+        entity_id: binary_sensor.beweging_in_de_badkamer
     then:
     - target:
         entity_id: light.badkamer_leds
