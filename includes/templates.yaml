@@ -774,9 +774,10 @@
         {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
         {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
 
-        {# Zoekvenster: komende 24 uur #}
-        {% set search_start = now() %}
-        {% set search_end = now() + timedelta(hours=24) %}
+        {# Zoekvenster: vanaf nu tot 24 uur later #}
+        {% set current_hour = now().hour %}
+        {% set search_start = today_at(current_hour ~ ":00") %}
+        {% set search_end = search_start + timedelta(hours=24) %}
 
         {{ cheapest_energy_hours(
            sensor=sensor,
