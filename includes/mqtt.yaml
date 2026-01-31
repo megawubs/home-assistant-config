@@ -1,0 +1,13 @@
+sensor:
+  - name: "EV Laadmodus"
+    state_topic: "evcc/loadpoints/1/mode"
+
+  - name: "EV Laadvermogen"
+    state_topic: "evcc/loadpoints/1/chargePower"
+    unit_of_measurement: "W"
+    device_class: power
+
+  - name: "EV Geladen energie"
+    state_topic: "evcc/loadpoints/1/chargedEnergy"
+    unit_of_measurement: "kWh"
+    device_class: energy

@@ -59,3 +59,5 @@ zha:
   zigpy_config:
     ota:
       ikea_provider: true
+
+mqtt: !include includes/mqtt.yaml
