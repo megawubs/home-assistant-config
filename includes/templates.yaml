@@ -802,23 +802,10 @@
       device_class: monetary
       state: >
         {% set forecast = state_attr('sensor.current_tariff', 'forecast') %}
-        {% if forecast %}
-          {% set current_hour = now().hour %}
-          {% set search_start = today_at(current_hour ~ ":00") %}
-          {% set search_end = search_start + timedelta(hours=24) %}
-
-          {% set prices = [] %}
-          {% for item in forecast %}
-            {% if item.datetime is defined and item.electricity_price is defined %}
-              {% set dt = item.datetime | as_datetime %}
-              {% if dt >= search_start and dt < search_end %}
-                {% set prices = prices + [item.electricity_price / 10000000] %}
-              {% endif %}
-            {% endif %}
-          {% endfor %}
-
+        {% if forecast and forecast | length > 0 %}
+          {% set prices = forecast | map(attribute='electricity_price') | select('defined') | list %}
           {% if prices | length > 0 %}
-            {{ prices | min | round(4) }}
+            {{ (prices | min / 10000000) | round(4) }}
           {% else %}
             unknown
           {% endif %}
