@@ -5296,6 +5296,9 @@
       at: sensor.ev_goedkoopste_laadtijd
   conditions:
     - condition: state
+      entity_id: input_boolean.ev_goedkoop_laden_actief
+      state: 'on'
+    - condition: state
       entity_id: binary_sensor.ev_aangesloten
       state: 'on'
     - condition: state
@@ -5329,6 +5332,9 @@
       at: "21:00:00"
   conditions:
     - condition: state
+      entity_id: input_boolean.ev_goedkoop_laden_actief
+      state: 'on'
+    - condition: state
       entity_id: person.bram_wubs
       state: 'home'
     - condition: state
@@ -5354,6 +5360,9 @@
     - trigger: time
       at: sensor.ev_goedkoopste_laadtijd
   conditions:
+    - condition: state
+      entity_id: input_boolean.ev_goedkoop_laden_actief
+      state: 'on'
     - condition: state
       entity_id: person.bram_wubs
       state: 'home'
@@ -5385,9 +5394,13 @@
       to: 'on'
   conditions:
     - condition: state
+      entity_id: input_boolean.ev_goedkoop_laden_actief
+      state: 'on'
+    - condition: state
       entity_id: binary_sensor.evcc_plan_actief
       state: 'off'
     - condition: template
+      alias: "Binnen goedkoop window"
       value_template: >
         {% set start = states('sensor.ev_goedkoopste_laadtijd') %}
         {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}

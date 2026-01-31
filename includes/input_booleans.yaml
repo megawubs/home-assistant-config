@@ -19,3 +19,7 @@ ochtend_briefing_aan:
 avond_briefing_aan:
   name: "Avond briefing aan"
   icon: mdi:weather-night
+
+ev_goedkoop_laden_actief:
+  name: "EV Goedkoop Laden Actief"
+  icon: mdi:car-electric
