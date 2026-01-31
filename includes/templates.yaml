@@ -803,8 +803,9 @@
       state: >
         {% set forecast = state_attr('sensor.current_tariff', 'forecast') %}
         {% if forecast %}
-          {% set search_start = now() %}
-          {% set search_end = now() + timedelta(hours=24) %}
+          {% set current_hour = now().hour %}
+          {% set search_start = today_at(current_hour ~ ":00") %}
+          {% set search_end = search_start + timedelta(hours=24) %}
 
           {% set prices = [] %}
           {% for item in forecast %}
