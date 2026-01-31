@@ -5288,3 +5288,139 @@
           interruption-level: passive
           thread-id: "dagelijkse-briefing"
   mode: single
+- id: 'ev_laden_goedkoopste_uren'
+  alias: EV Laden op Goedkoopste Uren
+  description: Start EV laden tijdens de goedkoopste uren (alleen als evcc geen plan actief heeft)
+  triggers:
+    - trigger: time
+      at: sensor.ev_goedkoopste_laadtijd
+  conditions:
+    - condition: state
+      entity_id: binary_sensor.ev_aangesloten
+      state: 'on'
+    - condition: state
+      entity_id: binary_sensor.evcc_plan_actief
+      state: 'off'
+  actions:
+    - action: mqtt.publish
+      data:
+        topic: "evcc/loadpoints/1/mode/set"
+        payload: "now"
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        message: >
+          🔌 EV laden gestart (€{{ states('sensor.current_tariff') | round(3) }}/kWh).
+          Stopt om {{ (state_attr('sensor.ev_goedkoopste_laadtijd', 'eindtijd') | as_datetime | as_local).strftime('%H:%M') }}
+    - delay:
+        hours: "{{ states('input_number.ev_goedkoop_laden_uren') | int(2) }}"
+    - action: mqtt.publish
+      data:
+        topic: "evcc/loadpoints/1/mode/set"
+        payload: "off"
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        message: "🔋 EV laden gestopt na {{ states('input_number.ev_goedkoop_laden_uren') | int(2) }} uur"
+  mode: single
+- id: 'ev_avond_herinnering_inpluggen'
+  alias: 'EV: Avond herinnering inpluggen'
+  description: Herinnering om 21:00 als auto thuis maar niet aangesloten EN vannacht goedkoop
+  triggers:
+    - trigger: time
+      at: "21:00:00"
+  conditions:
+    - condition: state
+      entity_id: person.bram_wubs
+      state: 'home'
+    - condition: state
+      entity_id: binary_sensor.ev_aangesloten
+      state: 'off'
+    - condition: state
+      entity_id: binary_sensor.goedkoop_laden_beschikbaar
+      state: 'on'
+    - condition: state
+      entity_id: binary_sensor.evcc_plan_actief
+      state: 'off'
+  actions:
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        message: >
+          🚗 Auto nog niet aangesloten! Goedkoop laden mogelijk
+          (vanaf €{{ states('sensor.goedkoopste_tarief_komende_24u') | round(3) }}/kWh).
+  mode: single
+- id: 'ev_gemiste_kans_laden'
+  alias: 'EV: Gemiste kans goedkoop laden'
+  description: Notificatie als het nu goedkoop is maar auto niet aangesloten
+  triggers:
+    - trigger: time
+      at: sensor.ev_goedkoopste_laadtijd
+  conditions:
+    - condition: state
+      entity_id: person.bram_wubs
+      state: 'home'
+    - condition: state
+      entity_id: binary_sensor.ev_aangesloten
+      state: 'off'
+    - condition: state
+      entity_id: binary_sensor.goedkoop_laden_beschikbaar
+      state: 'on'
+    - condition: state
+      entity_id: binary_sensor.evcc_plan_actief
+      state: 'off'
+  actions:
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        message: >
+          ⚡ Goedkoopste uren zijn NU (€{{ states('sensor.current_tariff') | round(3) }}/kWh)!
+          Auto niet aangesloten.
+        data:
+          push:
+            critical: 1
+  mode: single
+- id: 'ev_laden_bij_aansluiten_in_goedkoop_window'
+  alias: 'EV: Start laden bij aansluiten tijdens goedkoop window'
+  description: Start laden wanneer auto wordt aangesloten en we nog binnen het goedkope laadwindow zitten
+  triggers:
+    - trigger: state
+      entity_id: binary_sensor.ev_aangesloten
+      to: 'on'
+  conditions:
+    - condition: state
+      entity_id: binary_sensor.evcc_plan_actief
+      state: 'off'
+    - condition: template
+      value_template: >
+        {% set start = states('sensor.ev_goedkoopste_laadtijd') %}
+        {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
+        {% if start not in ['unknown', 'unavailable', 'none', ''] %}
+          {% set start_dt = start | as_datetime %}
+          {% set end_dt = start_dt + timedelta(hours=hours) %}
+          {{ start_dt <= now() < end_dt }}
+        {% else %}
+          false
+        {% endif %}
+  actions:
+    - variables:
+        remaining_minutes: >
+          {% set start = states('sensor.ev_goedkoopste_laadtijd') | as_datetime %}
+          {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
+          {% set end_dt = start + timedelta(hours=hours) %}
+          {{ ((end_dt - now()).total_seconds() / 60) | int }}
+    - action: mqtt.publish
+      data:
+        topic: "evcc/loadpoints/1/mode/set"
+        payload: "now"
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        message: >
+          🔌 Auto aangesloten tijdens goedkoop window! Laden gestart (€{{ states('sensor.current_tariff') | round(3) }}/kWh).
+          Nog {{ remaining_minutes }} minuten goedkoop.
+    - delay:
+        minutes: "{{ remaining_minutes }}"
+    - action: mqtt.publish
+      data:
+        topic: "evcc/loadpoints/1/mode/set"
+        payload: "off"
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        message: "🔋 EV laden gestopt (goedkoop window voorbij)"
+  mode: single

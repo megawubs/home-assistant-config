@@ -755,3 +755,88 @@
       attributes:
         is_schatting: true
         toelichting: "Geschat op basis van gemiddeld dagtarief"
+
+# EV Goedkoopste Laadtijd - zoekt goedkoopste uren in komende 24 uur
+# Berekent eenmalig om 13:10 (na Zonneplan prijsupdate) om "schuivend window" te voorkomen
+- trigger:
+    - platform: homeassistant
+      event: start
+    - platform: time
+      at: "13:10"
+    - platform: state
+      entity_id: input_number.ev_goedkoop_laden_uren
+  sensor:
+    - unique_id: ev_goedkoopste_laadtijd
+      name: "EV Goedkoopste Laadtijd"
+      device_class: timestamp
+      state: >
+        {%- set sensor = 'sensor.current_tariff' -%}
+        {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+        {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
+
+        {# Zoekvenster: komende 24 uur #}
+        {% set search_start = now() %}
+        {% set search_end = now() + timedelta(hours=24) %}
+
+        {{ cheapest_energy_hours(
+           sensor=sensor,
+           time_key='datetime',
+           hours=hours,
+           start=search_start,
+           end=search_end,
+           include_tomorrow=true
+        ) }}
+      attributes:
+        laadduur_uren: "{{ states('input_number.ev_goedkoop_laden_uren') | int(2) }}"
+        eindtijd: >
+          {% set start = states('sensor.ev_goedkoopste_laadtijd') %}
+          {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
+          {% if start not in ['unknown', 'unavailable', 'none', ''] %}
+            {{ (start | as_datetime + timedelta(hours=hours)).isoformat() }}
+          {% endif %}
+
+    - unique_id: goedkoopste_tarief_komende_24u
+      name: "Goedkoopste Tarief Komende 24u"
+      unit_of_measurement: "€/kWh"
+      device_class: monetary
+      state: >
+        {% set forecast = state_attr('sensor.current_tariff', 'forecast') %}
+        {% if forecast %}
+          {% set search_start = now() %}
+          {% set search_end = now() + timedelta(hours=24) %}
+
+          {% set prices = [] %}
+          {% for item in forecast %}
+            {% if item.datetime is defined and item.electricity_price is defined %}
+              {% set dt = item.datetime | as_datetime %}
+              {% if dt >= search_start and dt < search_end %}
+                {% set prices = prices + [item.electricity_price / 10000000] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+
+          {% if prices | length > 0 %}
+            {{ prices | min | round(4) }}
+          {% else %}
+            unknown
+          {% endif %}
+        {% else %}
+          unknown
+        {% endif %}
+
+  binary_sensor:
+    - unique_id: goedkoop_laden_beschikbaar
+      name: "Goedkoop Laden Beschikbaar"
+      state: >
+        {% set min_price = states('sensor.goedkoopste_tarief_komende_24u') | float(1) %}
+        {% set drempel = states('input_number.ev_goedkoop_laden_drempel') | float(0.25) %}
+        {{ min_price < drempel }}
+      attributes:
+        minimum_tarief: "{{ states('sensor.goedkoopste_tarief_komende_24u') }}"
+        drempel: "€{{ states('input_number.ev_goedkoop_laden_drempel') | float(0.25) }}"
+
+    - unique_id: ev_thuis_niet_aangesloten
+      name: "EV Thuis Niet Aangesloten"
+      state: >
+        {{ is_state('person.bram_wubs', 'home')
+           and is_state('binary_sensor.ev_aangesloten', 'off') }}

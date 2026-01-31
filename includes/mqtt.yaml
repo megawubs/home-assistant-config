@@ -11,3 +11,14 @@ sensor:
     state_topic: "evcc/loadpoints/1/chargedEnergy"
     unit_of_measurement: "kWh"
     device_class: energy
+
+binary_sensor:
+  - name: "EV Aangesloten"
+    state_topic: "evcc/loadpoints/1/connected"
+    payload_on: "true"
+    payload_off: "false"
+
+  - name: "EVCC Plan Actief"
+    state_topic: "evcc/loadpoints/1/planActive"
+    payload_on: "true"
+    payload_off: "false"
