@@ -1381,12 +1381,11 @@
     to:
     - 'off'
     - stand-by
-    id: tv-off
-    trigger: state
-  - entity_id:
-    - media_player.arcadyan
-    - media_player.woonkamer_tv
-    to: standby
+    - standby
+    not_from:
+    - unavailable
+    - unknown
+    for: "00:00:05"
     id: tv-off
     trigger: state
   - entity_id:
@@ -5258,6 +5257,7 @@
 
         '
       data:
+        url: /dagelijkse-tips/overzicht
         push:
           interruption-level: passive
           thread-id: dagelijkse-briefing
@@ -5289,6 +5289,7 @@
 
         '
       data:
+        url: /dagelijkse-tips/overzicht
         push:
           interruption-level: passive
           thread-id: dagelijkse-briefing
