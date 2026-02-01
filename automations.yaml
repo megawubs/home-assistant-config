@@ -5437,3 +5437,22 @@
       data:
         message: "🔋 EV laden gestopt (goedkoop window voorbij)"
   mode: single
+- id: 'ev_update_evcc_charging_status'
+  alias: 'EV: Update evcc laadstatus via 3-fase meter'
+  description: Informeert evcc dat de auto aan het laden is op basis van de 3-fase meter
+  triggers:
+    - trigger: numeric_state
+      entity_id: sensor.kwh_meter_id_5_vermogen
+      above: 1000
+      for:
+        seconds: 10
+  conditions:
+    - condition: state
+      entity_id: binary_sensor.ev_aangesloten
+      state: 'on'
+  actions:
+    - action: mqtt.publish
+      data:
+        topic: "evcc/vehicles/id5/wakeup/set"
+        payload: "true"
+  mode: single
