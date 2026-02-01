@@ -256,6 +256,19 @@ apple_tv_aan:
       entity_id: media_player.woonkamer_tv
     data: {}
   description: ''
+welterusten:
+  alias: Welterusten
+  description: Zet alles uit voor de nacht
+  icon: mdi:weather-night
+  sequence:
+    - action: light.turn_off
+      target:
+        floor_id: beneden
+    - action: media_player.media_pause
+      target:
+        entity_id: media_player.benedenverdieping
+  mode: single
+
 airco_moet_omschakelen:
   sequence:
   - if:
