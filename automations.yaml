@@ -1,6 +1,7 @@
-- id: 'unavailable_entities_daily_check'
+- id: unavailable_entities_daily_check
   alias: 'Melding: Onbereikbare entiteiten (dagelijks)'
-  description: 'Dagelijkse check om 10:00 voor onbereikbare entiteiten. Vervangt alle losse unavailable automations.'
+  description: Dagelijkse check om 10:00 voor onbereikbare entiteiten. Vervangt alle
+    losse unavailable automations.
   use_blueprint:
     path: gmlupatelli/unavailable_entities_notification.yaml
     input:
@@ -19,7 +20,7 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           title: "\U0001F6A8 Onbereikbare entiteiten"
-          message: "De volgende entiteiten zijn niet beschikbaar: {{entities}}"
+          message: 'De volgende entiteiten zijn niet beschikbaar: {{entities}}'
 - id: '1607111315472'
   alias: 'Verlichting: Badkamer'
   description: ''
@@ -148,7 +149,8 @@
   mode: single
 - id: '1608665574967'
   alias: 'Melding: lage batterij voor sensoren'
-  description: 'Dagelijkse check voor sensoren met lage batterij (< 20%). Exclusief telefoons, tablets en HomeWizard accu''s.'
+  description: Dagelijkse check voor sensoren met lage batterij (< 20%). Exclusief
+    telefoons, tablets en HomeWizard accu's.
   use_blueprint:
     path: sbyx/low-battery-level-detection-notification-for-all-battery-sensors.yaml
     input:
@@ -158,7 +160,7 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           title: "\U0001F50B Lage batterij"
-          message: "{{sensors}} hebben laag batterij niveau"
+          message: '{{sensors}} hebben laag batterij niveau'
       exclude:
         entity_id:
         - sensor.iphone_van_bram_battery_level
@@ -545,7 +547,8 @@
   mode: single
 - id: '1609198231431'
   alias: 'Verlichting: Bijkeuken'
-  description: 'Lamp aan bij beweging, altijd uit bij geen beweging (ook als automatische verlichting uit staat)'
+  description: Lamp aan bij beweging, altijd uit bij geen beweging (ook als automatische
+    verlichting uit staat)
   triggers:
   - entity_id:
     - binary_sensor.activiteit_in_de_bijkeuken
@@ -788,7 +791,8 @@
   mode: single
 - id: '1609966305056'
   alias: 'Schakelaar: Ventilatie Badkamer'
-  description: 'Automatisch aan bij hoge luchtvochtigheid, uit als het daalt. Handmatige activatie gaat na 30 min automatisch uit.'
+  description: Automatisch aan bij hoge luchtvochtigheid, uit als het daalt. Handmatige
+    activatie gaat na 30 min automatisch uit.
   triggers:
   - trigger: state
     entity_id:
@@ -3172,7 +3176,8 @@
       - action: climate.set_fan_mode
         metadata: {}
         data:
-          fan_mode: "{{ '3 High' if is_state('input_boolean.airco_woonkamer_boost_modus', 'on') else 'auto' }}"
+          fan_mode: '{{ ''3 High'' if is_state(''input_boolean.airco_woonkamer_boost_modus'',
+            ''on'') else ''auto'' }}'
         target:
           label_id: airco_beneden
       - delay:
@@ -4500,7 +4505,7 @@
       shading_brightness_sensor: sensor.aanwezigheid_zolder_licht
       shading_sun_brightness_start: 17575
       shading_sun_brightness_end: 11131
-      time_up_late: '08:30:00'
+      time_up_late: 08:30:00
       time_up_late_non_workday: '10:00:00'
 - id: '1759521136361'
   alias: Boiler - Compleet Cyclus Management
@@ -4988,7 +4993,7 @@
   description: Reset de manual override voor de airco's beneden elke nacht om 00:00
   triggers:
   - trigger: time
-    at: '00:00:00'
+    at: 00:00:00
   conditions: []
   actions:
   - action: input_boolean.turn_off
@@ -4997,11 +5002,13 @@
     data: {}
   - action: notify.mobile_app_iphone_van_bram
     data:
-      message: Airco beneden manual override is gereset - automatische bediening is weer actief
+      message: Airco beneden manual override is gereset - automatische bediening is
+        weer actief
   mode: single
 - id: '1737381600002'
   alias: 'Airco Beneden: Detecteer handmatige bediening'
-  description: Activeert manual override wanneer een airco beneden via de fysieke remote wordt bediend (niet via HA UI)
+  description: Activeert manual override wanneer een airco beneden via de fysieke
+    remote wordt bediend (niet via HA UI)
   triggers:
   - trigger: state
     entity_id: climate.airco_woonkamer
@@ -5022,29 +5029,21 @@
     entity_id: input_boolean.airco_woonkamer_manual_override
     state: 'off'
   - condition: template
-    alias: "Wijziging niet via HA UI of automation (geen user_id EN geen parent_id)"
-    value_template: >-
-      {{ trigger.to_state.context.user_id is none and trigger.to_state.context.parent_id is none }}
+    alias: Wijziging niet via HA UI of automation (geen user_id EN geen parent_id)
+    value_template: '{{ trigger.to_state.context.user_id is none and trigger.to_state.context.parent_id
+      is none }}'
   - condition: template
-    alias: "Er was daadwerkelijk een wijziging"
-    value_template: >-
-      {% set old = trigger.from_state %}
-      {% set new = trigger.to_state %}
-      {{
-        old.state != new.state or
-        old.attributes.temperature != new.attributes.temperature or
-        old.attributes.get('fan_mode') != new.attributes.get('fan_mode') or
-        old.attributes.get('preset_mode') != new.attributes.get('preset_mode')
-      }}
+    alias: Er was daadwerkelijk een wijziging
+    value_template: "{% set old = trigger.from_state %} {% set new = trigger.to_state
+      %} {{\n  old.state != new.state or\n  old.attributes.temperature != new.attributes.temperature
+      or\n  old.attributes.get('fan_mode') != new.attributes.get('fan_mode') or\n
+      \ old.attributes.get('preset_mode') != new.attributes.get('preset_mode')\n}}"
   - condition: template
-    alias: "Niet recent door automation gewijzigd (60 sec window voor label met meerdere devices)"
-    value_template: >-
-      {% set last_auto = states('input_datetime.airco_woonkamer_laatste_automatische_wijziging') %}
-      {% if last_auto in ['unknown', 'unavailable', 'none'] %}
-        true
-      {% else %}
-        {{ (now().timestamp() - as_timestamp(last_auto)) > 60 }}
-      {% endif %}
+    alias: Niet recent door automation gewijzigd (60 sec window voor label met meerdere
+      devices)
+    value_template: "{% set last_auto = states('input_datetime.airco_woonkamer_laatste_automatische_wijziging')
+      %} {% if last_auto in ['unknown', 'unavailable', 'none'] %}\n  true\n{% else
+      %}\n  {{ (now().timestamp() - as_timestamp(last_auto)) > 60 }}\n{% endif %}"
   actions:
   - action: input_boolean.turn_on
     target:
@@ -5052,107 +5051,102 @@
     data: {}
   - action: notify.mobile_app_iphone_van_bram
     data:
-      message: >-
-        Airco beneden manual override geactiveerd - handmatige bediening gedetecteerd
+      message: Airco beneden manual override geactiveerd - handmatige bediening gedetecteerd
         ({{ 'woonkamer' if trigger.id == 'woonkamer' else 'keuken' }})
   mode: single
-- id: 'airco_woonkamer_boost_modus_auto'
+- id: airco_woonkamer_boost_modus_auto
   alias: Airco Woonkamer Boost Modus Beheer
-  description: 'Activeer boost bij grote temp delta, deactiveer na bereiken setpoint of timeout'
+  description: Activeer boost bij grote temp delta, deactiveer na bereiken setpoint
+    of timeout
   triggers:
-    # Automatisch activeren bij schema start met grote delta
-    - trigger: state
-      entity_id: schedule.airco_woonkamer
-      from: 'off'
-      to: 'on'
-      id: auto_boost_aan
-    # Ook activeren als delta groot wordt terwijl schema al aan staat
-    - trigger: template
-      value_template: >
-        {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
-            states('sensor.tstat_9d4027_current_temperature') | float) >= 2.5
-           and is_state('binary_sensor.airco_woonkamer_mag_verwarmen', 'on')
-           and is_state('schedule.airco_woonkamer', 'on') }}
-      id: auto_boost_aan
-      for:
-        minutes: 2
-    # Deactiveren wanneer setpoint bijna bereikt
-    - trigger: template
-      value_template: >
-        {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
-            states('sensor.tstat_9d4027_current_temperature') | float) <= 0.5
-           and is_state('input_boolean.airco_woonkamer_boost_modus', 'on') }}
-      id: boost_uit_bereikt
-      for:
-        minutes: 1
-    # Timeout na 45 minuten
-    - trigger: state
-      entity_id: input_boolean.airco_woonkamer_boost_modus
-      to: 'on'
-      for:
-        minutes: 45
-      id: boost_timeout
-    # Manuele activatie van boost modus
-    - trigger: state
-      entity_id: input_boolean.airco_woonkamer_boost_modus
-      from: 'off'
-      to: 'on'
-      id: manual_boost_aan
+  - trigger: state
+    entity_id: schedule.airco_woonkamer
+    from: 'off'
+    to: 'on'
+    id: auto_boost_aan
+  - trigger: template
+    value_template: "{{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen')
+      | float -\n    states('sensor.tstat_9d4027_current_temperature') | float) >=
+      2.5\n   and is_state('binary_sensor.airco_woonkamer_mag_verwarmen', 'on')\n
+      \  and is_state('schedule.airco_woonkamer', 'on') }}\n"
+    id: auto_boost_aan
+    for:
+      minutes: 2
+  - trigger: template
+    value_template: "{{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen')
+      | float -\n    states('sensor.tstat_9d4027_current_temperature') | float) <=
+      0.5\n   and is_state('input_boolean.airco_woonkamer_boost_modus', 'on') }}\n"
+    id: boost_uit_bereikt
+    for:
+      minutes: 1
+  - trigger: state
+    entity_id: input_boolean.airco_woonkamer_boost_modus
+    to: 'on'
+    for:
+      minutes: 45
+    id: boost_timeout
+  - trigger: state
+    entity_id: input_boolean.airco_woonkamer_boost_modus
+    from: 'off'
+    to: 'on'
+    id: manual_boost_aan
   conditions:
-    - condition: state
-      entity_id: input_boolean.airco_woonkamer_manual_override
-      state: 'off'
-    - condition: state
-      entity_id: binary_sensor.airco_woonkamer_mag_aan
-      state: 'on'
+  - condition: state
+    entity_id: input_boolean.airco_woonkamer_manual_override
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.airco_woonkamer_mag_aan
+    state: 'on'
   actions:
-    - choose:
-        - conditions:
-            - condition: trigger
-              id: auto_boost_aan
-            - condition: state
-              entity_id: input_boolean.airco_woonkamer_boost_modus
-              state: 'off'
-            - condition: template
-              value_template: >
-                {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
-                    states('sensor.tstat_9d4027_current_temperature') | float) >= 2.5 }}
-          sequence:
-            - action: input_boolean.turn_on
-              target:
-                entity_id: input_boolean.airco_woonkamer_boost_modus
-            - action: notify.mobile_app_iphone_van_bram
-              data:
-                message: >
-                  Boost modus geactiveerd - delta {{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float -
-                  states('sensor.tstat_9d4027_current_temperature') | float) | round(1) }}°C
-        # Manuele boost activatie
-        - conditions:
-            - condition: trigger
-              id: manual_boost_aan
-          sequence:
-            - action: notify.mobile_app_iphone_van_bram
-              data:
-                message: "Boost modus handmatig geactiveerd"
-        - conditions:
-            - condition: trigger
-              id:
-                - boost_uit_bereikt
-                - boost_timeout
-          sequence:
-            - action: input_boolean.turn_off
-              target:
-                entity_id: input_boolean.airco_woonkamer_boost_modus
-            - action: notify.mobile_app_iphone_van_bram
-              data:
-                message: >
-                  Boost modus uitgeschakeld -
-                  {% if trigger.id == 'boost_timeout' %}timeout bereikt
-                  {% else %}temperatuur bereikt{% endif %}
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: auto_boost_aan
+      - condition: state
+        entity_id: input_boolean.airco_woonkamer_boost_modus
+        state: 'off'
+      - condition: template
+        value_template: "{{ (states('input_number.airco_woonkamer_drempelwaarde_verwarmen')
+          | float -\n    states('sensor.tstat_9d4027_current_temperature') | float)
+          >= 2.5 }}\n"
+      sequence:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.airco_woonkamer_boost_modus
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: 'Boost modus geactiveerd - delta {{ (states(''input_number.airco_woonkamer_drempelwaarde_verwarmen'')
+            | float - states(''sensor.tstat_9d4027_current_temperature'') | float)
+            | round(1) }}°C
+
+            '
+    - conditions:
+      - condition: trigger
+        id: manual_boost_aan
+      sequence:
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Boost modus handmatig geactiveerd
+    - conditions:
+      - condition: trigger
+        id:
+        - boost_uit_bereikt
+        - boost_timeout
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_woonkamer_boost_modus
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: 'Boost modus uitgeschakeld - {% if trigger.id == ''boost_timeout''
+            %}timeout bereikt {% else %}temperatuur bereikt{% endif %}
+
+            '
   mode: restart
 - id: '1737667200000'
   alias: 'Verlichting: Automatische verlichting lang uit reminder'
-  description: Stuurt elke 8 uur een herinnering als automatische verlichting uit staat
+  description: Stuurt elke 8 uur een herinnering als automatische verlichting uit
+    staat
   triggers:
   - trigger: state
     entity_id: input_boolean.automatische_verlichting_woonkamer
@@ -5172,8 +5166,9 @@
       sequence:
       - action: notify.mobile_app_iphone_van_bram
         data:
-          title: "🤖 Automatische verlichting staat uit"
-          message: "Automatische verlichting staat al {{ ((as_timestamp(now()) - as_timestamp(states.input_boolean.automatische_verlichting_woonkamer.last_changed)) / 3600) | round(0) }} uur uit. Weer aanzetten?"
+          title: "\U0001F916 Automatische verlichting staat uit"
+          message: Automatische verlichting staat al {{ ((as_timestamp(now()) - as_timestamp(states.input_boolean.automatische_verlichting_woonkamer.last_changed))
+            / 3600) | round(0) }} uur uit. Weer aanzetten?
           data:
             actions:
             - action: AUTO_VERLICHTING_AAN
@@ -5201,17 +5196,19 @@
         continue_on_timeout: true
       - if:
         - condition: template
-          value_template: "{{ wait.trigger and wait.trigger.event.data.action == 'AUTO_VERLICHTING_AAN' }}"
+          value_template: '{{ wait.trigger and wait.trigger.event.data.action == ''AUTO_VERLICHTING_AAN''
+            }}'
         then:
         - action: input_boolean.turn_on
           entity_id: input_boolean.automatische_verlichting_woonkamer
         - action: notify.mobile_app_iphone_van_bram
           data:
-            message: "Automatische verlichting is weer aan ✓"
+            message: Automatische verlichting is weer aan ✓
         - stop: Automatische verlichting aangezet op verzoek
       - if:
         - condition: template
-          value_template: "{{ wait.trigger and wait.trigger.event.data.action == 'AUTO_VERLICHTING_NEGEREN' }}"
+          value_template: '{{ wait.trigger and wait.trigger.event.data.action == ''AUTO_VERLICHTING_NEGEREN''
+            }}'
         then:
         - stop: Gebruiker wil automatische verlichting uit laten
       - if:
@@ -5221,219 +5218,305 @@
         then:
         - stop: Automatische verlichting is al aan
   mode: restart
-- id: 'dagelijkse_ochtend_briefing'
+- id: dagelijkse_ochtend_briefing
   alias: 'Melding: Dagelijkse Ochtend Briefing'
-  description: 'Dagelijkse briefing om 07:00 met energie, batterij, weer en tips'
+  description: Dagelijkse briefing om 07:00 met energie, batterij, weer en tips
   triggers:
   - trigger: time
-    at: "07:00:00"
+    at: 07:00:00
   conditions:
   - condition: state
     entity_id: input_boolean.ochtend_briefing_aan
     state: 'on'
   actions:
   - variables:
-      verbruik: "{{ states('sensor.energie_verbruik_gisteren') | float(0) | round(1) }}"
-      productie: "{{ states('sensor.energie_productie_gisteren') | float(0) | round(1) }}"
-      gas: "{{ states('sensor.gas_verbruik_gisteren') | float(0) | round(2) }}"
-      kosten: "{{ states('sensor.energie_kosten_gisteren') | float(0) | round(2) }}"
-      batterij1: "{{ states('sensor.plug_in_battery_laadpercentage') | int(0) }}"
-      batterij2: "{{ states('sensor.plug_in_battery_laadpercentage_2') | int(0) }}"
-      batterij_modus: "{{ states('sensor.battery_group_mode') | default('onbekend') }}"
-      weer: "{{ states('weather.home') }}"
-      temp: "{{ state_attr('weather.home', 'temperature') | default('?') }}"
-      tarief_tip: "{{ states('sensor.tarief_voorspelling_vandaag') }}"
-      apparaat_tip: "{{ states('sensor.apparaten_tip') }}"
-      auto_tip: "{{ states('sensor.auto_laadadvies') }}"
+      verbruik: '{{ states(''sensor.energie_verbruik_gisteren'') | float(0) | round(1)
+        }}'
+      productie: '{{ states(''sensor.energie_productie_gisteren'') | float(0) | round(1)
+        }}'
+      gas: '{{ states(''sensor.gas_verbruik_gisteren'') | float(0) | round(2) }}'
+      kosten: '{{ states(''sensor.energie_kosten_gisteren'') | float(0) | round(2)
+        }}'
+      batterij1: '{{ states(''sensor.plug_in_battery_laadpercentage'') | int(0) }}'
+      batterij2: '{{ states(''sensor.plug_in_battery_laadpercentage_2'') | int(0)
+        }}'
+      batterij_modus: '{{ states(''sensor.battery_group_mode'') | default(''onbekend'')
+        }}'
+      weer: '{{ states(''weather.home'') }}'
+      temp: '{{ state_attr(''weather.home'', ''temperature'') | default(''?'') }}'
+      tarief_tip: '{{ states(''sensor.tarief_voorspelling_vandaag'') }}'
+      apparaat_tip: '{{ states(''sensor.apparaten_tip'') }}'
+      auto_tip: '{{ states(''sensor.auto_laadadvies'') }}'
   - action: notify.mobile_app_iphone_van_bram
     data:
-      title: "Goedemorgen!"
-      message: >
-        Gisteren: {{ verbruik }} kWh ↓ {{ productie }} kWh ↑ {{ gas }} m³ gas.
-        {% if kosten | float >= 0 %}€{{ kosten }}{% else %}+€{{ (kosten | float * -1) | round(2) }}{% endif %} (schatting).
-        Batterij: {{ batterij1 }}%/{{ batterij2 }}%.
-        Weer: {{ weer }}, {{ temp }}°C.
-        {{ tarief_tip }}
-        {{ apparaat_tip }}
-        {{ auto_tip if auto_tip != 'Auto status onbekend' else '' }}
+      title: Goedemorgen!
+      message: 'Gisteren: {{ verbruik }} kWh ↓ {{ productie }} kWh ↑ {{ gas }} m³
+        gas. {% if kosten | float >= 0 %}€{{ kosten }}{% else %}+€{{ (kosten | float
+        * -1) | round(2) }}{% endif %} (schatting). Batterij: {{ batterij1 }}%/{{
+        batterij2 }}%. Weer: {{ weer }}, {{ temp }}°C. {{ tarief_tip }} {{ apparaat_tip
+        }} {{ auto_tip if auto_tip != ''Auto status onbekend'' else '''' }}
+
+        '
       data:
         push:
           interruption-level: passive
-          thread-id: "dagelijkse-briefing"
+          thread-id: dagelijkse-briefing
   mode: single
-- id: 'dagelijkse_avond_recap'
+- id: dagelijkse_avond_recap
   alias: 'Melding: Dagelijkse Avond Recap'
-  description: 'Optionele samenvatting om 21:00 van de dag'
+  description: Optionele samenvatting om 21:00 van de dag
   triggers:
   - trigger: time
-    at: "21:00:00"
+    at: '21:00:00'
   conditions:
   - condition: state
     entity_id: input_boolean.avond_briefing_aan
     state: 'on'
   actions:
   - variables:
-      verbruik_vandaag: "{{ states('sensor.energy_consumed_today') | float(0) | round(1) }}"
-      productie_vandaag: "{{ states('sensor.energy_produced_today') | float(0) | round(1) }}"
-      batterij1: "{{ states('sensor.plug_in_battery_laadpercentage') | int(0) }}"
-      batterij2: "{{ states('sensor.plug_in_battery_laadpercentage_2') | int(0) }}"
+      verbruik_vandaag: '{{ states(''sensor.energy_consumed_today'') | float(0) |
+        round(1) }}'
+      productie_vandaag: '{{ states(''sensor.energy_produced_today'') | float(0) |
+        round(1) }}'
+      batterij1: '{{ states(''sensor.plug_in_battery_laadpercentage'') | int(0) }}'
+      batterij2: '{{ states(''sensor.plug_in_battery_laadpercentage_2'') | int(0)
+        }}'
   - action: notify.mobile_app_iphone_van_bram
     data:
-      title: "Dagrecap"
-      message: >
-        Vandaag: {{ verbruik_vandaag }} kWh ↓ {{ productie_vandaag }} kWh ↑.
-        Batterij: {{ batterij1 }}%/{{ batterij2 }}%.
+      title: Dagrecap
+      message: 'Vandaag: {{ verbruik_vandaag }} kWh ↓ {{ productie_vandaag }} kWh
+        ↑. Batterij: {{ batterij1 }}%/{{ batterij2 }}%.
+
+        '
       data:
         push:
           interruption-level: passive
-          thread-id: "dagelijkse-briefing"
+          thread-id: dagelijkse-briefing
   mode: single
-- id: 'ev_laden_goedkoopste_uren'
+- id: ev_laden_goedkoopste_uren
   alias: EV Laden op Goedkoopste Uren
-  description: Start EV laden tijdens de goedkoopste uren (alleen als evcc geen plan actief heeft)
+  description: Start EV laden tijdens de goedkoopste uren (alleen als evcc geen plan
+    actief heeft)
   triggers:
-    - trigger: time
-      at: sensor.ev_goedkoopste_laadtijd
+  - trigger: time
+    at: sensor.ev_goedkoopste_laadtijd
   conditions:
-    - condition: state
-      entity_id: input_boolean.ev_goedkoop_laden_actief
-      state: 'on'
-    - condition: state
-      entity_id: binary_sensor.ev_aangesloten
-      state: 'on'
-    - condition: state
-      entity_id: binary_sensor.evcc_plan_actief
-      state: 'off'
+  - condition: state
+    entity_id: input_boolean.ev_goedkoop_laden_actief
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.ev_aangesloten
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.evcc_plan_actief
+    state: 'off'
   actions:
-    - action: mqtt.publish
-      data:
-        topic: "evcc/loadpoints/1/mode/set"
-        payload: "now"
-    - action: notify.mobile_app_iphone_van_bram
-      data:
-        message: >
-          🔌 EV laden gestart (€{{ states('sensor.current_tariff') | round(3) }}/kWh).
-          Stopt om {{ (state_attr('sensor.ev_goedkoopste_laadtijd', 'eindtijd') | as_datetime | as_local).strftime('%H:%M') }}
-    - delay:
-        hours: "{{ states('input_number.ev_goedkoop_laden_uren') | int(2) }}"
-    - action: mqtt.publish
-      data:
-        topic: "evcc/loadpoints/1/mode/set"
-        payload: "off"
-    - action: notify.mobile_app_iphone_van_bram
-      data:
-        message: "🔋 EV laden gestopt na {{ states('input_number.ev_goedkoop_laden_uren') | int(2) }} uur"
+  - action: mqtt.publish
+    data:
+      topic: evcc/loadpoints/1/mode/set
+      payload: now
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: "\U0001F50C EV laden gestart (€{{ states('sensor.current_tariff') |
+        round(3) }}/kWh). Stopt om {{ (state_attr('sensor.ev_goedkoopste_laadtijd',
+        'eindtijd') | as_datetime | as_local).strftime('%H:%M') }}\n"
+  - delay:
+      hours: '{{ states(''input_number.ev_goedkoop_laden_uren'') | int(2) }}'
+  - action: mqtt.publish
+    data:
+      topic: evcc/loadpoints/1/mode/set
+      payload: 'off'
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: "\U0001F50B EV laden gestopt na {{ states('input_number.ev_goedkoop_laden_uren')
+        | int(2) }} uur"
   mode: single
-- id: 'ev_avond_herinnering_inpluggen'
+- id: ev_avond_herinnering_inpluggen
   alias: 'EV: Avond herinnering inpluggen'
-  description: Herinnering om 21:00 als auto thuis maar niet aangesloten EN vannacht goedkoop
+  description: Herinnering om 21:00 als auto thuis maar niet aangesloten EN vannacht
+    goedkoop
   triggers:
-    - trigger: time
-      at: "21:00:00"
+  - trigger: time
+    at: '21:00:00'
   conditions:
-    - condition: state
-      entity_id: input_boolean.ev_goedkoop_laden_actief
-      state: 'on'
-    - condition: state
-      entity_id: person.bram_wubs
-      state: 'home'
-    - condition: state
-      entity_id: binary_sensor.ev_aangesloten
-      state: 'off'
-    - condition: state
-      entity_id: binary_sensor.goedkoop_laden_beschikbaar
-      state: 'on'
-    - condition: state
-      entity_id: binary_sensor.evcc_plan_actief
-      state: 'off'
+  - condition: state
+    entity_id: input_boolean.ev_goedkoop_laden_actief
+    state: 'on'
+  - condition: state
+    entity_id: person.bram_wubs
+    state: home
+  - condition: state
+    entity_id: binary_sensor.ev_aangesloten
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.goedkoop_laden_beschikbaar
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.evcc_plan_actief
+    state: 'off'
   actions:
-    - action: notify.mobile_app_iphone_van_bram
-      data:
-        message: >
-          🚗 Auto nog niet aangesloten! Goedkoop laden mogelijk
-          (vanaf €{{ states('sensor.goedkoopste_tarief_komende_24u') | round(3) }}/kWh).
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: "\U0001F697 Auto nog niet aangesloten! Goedkoop laden mogelijk (vanaf
+        €{{ states('sensor.goedkoopste_tarief_komende_24u') | round(3) }}/kWh).\n"
   mode: single
-- id: 'ev_gemiste_kans_laden'
+- id: ev_gemiste_kans_laden
   alias: 'EV: Gemiste kans goedkoop laden'
   description: Notificatie als het nu goedkoop is maar auto niet aangesloten
   triggers:
-    - trigger: time
-      at: sensor.ev_goedkoopste_laadtijd
+  - trigger: time
+    at: sensor.ev_goedkoopste_laadtijd
   conditions:
-    - condition: state
-      entity_id: input_boolean.ev_goedkoop_laden_actief
-      state: 'on'
-    - condition: state
-      entity_id: person.bram_wubs
-      state: 'home'
-    - condition: state
-      entity_id: binary_sensor.ev_aangesloten
-      state: 'off'
-    - condition: state
-      entity_id: binary_sensor.goedkoop_laden_beschikbaar
-      state: 'on'
-    - condition: state
-      entity_id: binary_sensor.evcc_plan_actief
-      state: 'off'
+  - condition: state
+    entity_id: input_boolean.ev_goedkoop_laden_actief
+    state: 'on'
+  - condition: state
+    entity_id: person.bram_wubs
+    state: home
+  - condition: state
+    entity_id: binary_sensor.ev_aangesloten
+    state: 'off'
+  - condition: state
+    entity_id: binary_sensor.goedkoop_laden_beschikbaar
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.evcc_plan_actief
+    state: 'off'
   actions:
-    - action: notify.mobile_app_iphone_van_bram
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: '⚡ Goedkoopste uren zijn NU (€{{ states(''sensor.current_tariff'')
+        | round(3) }}/kWh)! Auto niet aangesloten.
+
+        '
       data:
-        message: >
-          ⚡ Goedkoopste uren zijn NU (€{{ states('sensor.current_tariff') | round(3) }}/kWh)!
-          Auto niet aangesloten.
-        data:
-          push:
-            critical: 1
+        push:
+          critical: 1
   mode: single
-- id: 'ev_laden_bij_aansluiten_in_goedkoop_window'
+- id: ev_laden_bij_aansluiten_in_goedkoop_window
   alias: 'EV: Start laden bij aansluiten tijdens goedkoop window'
-  description: Start laden wanneer auto wordt aangesloten en we nog binnen het goedkope laadwindow zitten
+  description: Start laden wanneer auto wordt aangesloten en we nog binnen het goedkope
+    laadwindow zitten
   triggers:
-    - trigger: state
-      entity_id: binary_sensor.ev_aangesloten
-      to: 'on'
+  - trigger: state
+    entity_id: binary_sensor.ev_aangesloten
+    to: 'on'
   conditions:
-    - condition: state
-      entity_id: input_boolean.ev_goedkoop_laden_actief
-      state: 'on'
-    - condition: state
-      entity_id: binary_sensor.evcc_plan_actief
-      state: 'off'
-    - condition: template
-      alias: "Binnen goedkoop window"
-      value_template: >
-        {% set start = states('sensor.ev_goedkoopste_laadtijd') %}
-        {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
-        {% if start not in ['unknown', 'unavailable', 'none', ''] %}
-          {% set start_dt = start | as_datetime %}
-          {% set end_dt = start_dt + timedelta(hours=hours) %}
-          {{ start_dt <= now() < end_dt }}
-        {% else %}
-          false
-        {% endif %}
+  - condition: state
+    entity_id: input_boolean.ev_goedkoop_laden_actief
+    state: 'on'
+  - condition: state
+    entity_id: binary_sensor.evcc_plan_actief
+    state: 'off'
+  - condition: template
+    alias: Binnen goedkoop window
+    value_template: "{% set start = states('sensor.ev_goedkoopste_laadtijd') %} {%
+      set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %} {% if
+      start not in ['unknown', 'unavailable', 'none', ''] %}\n  {% set start_dt =
+      start | as_datetime %}\n  {% set end_dt = start_dt + timedelta(hours=hours)
+      %}\n  {{ start_dt <= now() < end_dt }}\n{% else %}\n  false\n{% endif %}\n"
   actions:
-    - variables:
-        remaining_minutes: >
-          {% set start = states('sensor.ev_goedkoopste_laadtijd') | as_datetime %}
-          {% set hours = states('input_number.ev_goedkoop_laden_uren') | int(2) %}
-          {% set end_dt = start + timedelta(hours=hours) %}
-          {{ ((end_dt - now()).total_seconds() / 60) | int }}
-    - action: mqtt.publish
-      data:
-        topic: "evcc/loadpoints/1/mode/set"
-        payload: "now"
-    - action: notify.mobile_app_iphone_van_bram
-      data:
-        message: >
-          🔌 Auto aangesloten tijdens goedkoop window! Laden gestart (€{{ states('sensor.current_tariff') | round(3) }}/kWh).
-          Nog {{ remaining_minutes }} minuten goedkoop.
-    - delay:
-        minutes: "{{ remaining_minutes }}"
-    - action: mqtt.publish
-      data:
-        topic: "evcc/loadpoints/1/mode/set"
-        payload: "off"
-    - action: notify.mobile_app_iphone_van_bram
-      data:
-        message: "🔋 EV laden gestopt (goedkoop window voorbij)"
+  - variables:
+      remaining_minutes: '{% set start = states(''sensor.ev_goedkoopste_laadtijd'')
+        | as_datetime %} {% set hours = states(''input_number.ev_goedkoop_laden_uren'')
+        | int(2) %} {% set end_dt = start + timedelta(hours=hours) %} {{ ((end_dt
+        - now()).total_seconds() / 60) | int }}
+
+        '
+  - action: mqtt.publish
+    data:
+      topic: evcc/loadpoints/1/mode/set
+      payload: now
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: "\U0001F50C Auto aangesloten tijdens goedkoop window! Laden gestart
+        (€{{ states('sensor.current_tariff') | round(3) }}/kWh). Nog {{ remaining_minutes
+        }} minuten goedkoop.\n"
+  - delay:
+      minutes: '{{ remaining_minutes }}'
+  - action: mqtt.publish
+    data:
+      topic: evcc/loadpoints/1/mode/set
+      payload: 'off'
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: "\U0001F50B EV laden gestopt (goedkoop window voorbij)"
   mode: single
+- id: '1769940942020'
+  alias: 'Melding: Afval aan de weg'
+  description: Stuurt notificaties voor GFT en Plastic/PMD ophaaldag. Avond ervoor
+    om 19:00 en ochtend zelf om 07:00.
+  triggers:
+  - platform: time
+    at: '19:00:00'
+    id: avond_ervoor
+  - platform: time
+    at: 07:00:00
+    id: ochtend_zelf
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: avond_ervoor
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ (states(''sensor.7731xe_14_bio'') | as_datetime).date()
+            == (now() + timedelta(days=1)).date() }}'
+        then:
+        - data:
+            title: "\U0001F7E2 GFT morgen ophalen"
+            message: Vergeet niet de groene container aan de weg te zetten!
+          action: notify.mobile_app_iphone_van_bram
+        - data:
+            title: "\U0001F7E2 GFT morgen ophalen"
+            message: Vergeet niet de groene container aan de weg te zetten!
+          action: notify.mobile_app_iphone_van_maninne_1
+      - if:
+        - condition: template
+          value_template: '{{ (states(''sensor.7731xe_14_plastic'') | as_datetime).date()
+            == (now() + timedelta(days=1)).date() }}'
+        then:
+        - data:
+            title: "\U0001F7E0 Plastic/PMD morgen ophalen"
+            message: Vergeet niet de oranje container aan de weg te zetten!
+          action: notify.mobile_app_iphone_van_bram
+        - data:
+            title: "\U0001F7E0 Plastic/PMD morgen ophalen"
+            message: Vergeet niet de oranje container aan de weg te zetten!
+          action: notify.mobile_app_iphone_van_maninne_1
+    - conditions:
+      - condition: trigger
+        id: ochtend_zelf
+      sequence:
+      - if:
+        - condition: template
+          value_template: '{{ (states(''sensor.7731xe_14_bio'') | as_datetime).date()
+            == now().date() }}'
+        then:
+        - data:
+            title: "\U0001F7E2 GFT vandaag!"
+            message: De groene container wordt vandaag opgehaald. Staat ie al aan
+              de weg?
+          action: notify.mobile_app_iphone_van_bram
+        - data:
+            title: "\U0001F7E2 GFT vandaag!"
+            message: De groene container wordt vandaag opgehaald. Staat ie al aan
+              de weg?
+          action: notify.mobile_app_iphone_van_maninne_1
+      - if:
+        - condition: template
+          value_template: '{{ (states(''sensor.7731xe_14_plastic'') | as_datetime).date()
+            == now().date() }}'
+        then:
+        - data:
+            title: "\U0001F7E0 Plastic/PMD vandaag!"
+            message: De oranje container wordt vandaag opgehaald. Staat ie al aan
+              de weg?
+          action: notify.mobile_app_iphone_van_bram
+        - data:
+            title: "\U0001F7E0 Plastic/PMD vandaag!"
+            message: De oranje container wordt vandaag opgehaald. Staat ie al aan
+              de weg?
+          action: notify.mobile_app_iphone_van_maninne_1
+  mode: parallel
