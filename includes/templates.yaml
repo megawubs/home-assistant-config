@@ -286,6 +286,42 @@
       state: >
         {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float <= (states('input_number.airco_zolder_drempelwaarde_verwarmen') | float) }}
 
+    # Airco Boven Mag Afkoelen
+    - name: "Airco Boven Mag Afkoelen"
+      unique_id: airco_boven_mag_afkoelen
+      state: >
+        {{ is_state('input_boolean.airco_boven_aan', 'on') and
+           (is_state('input_boolean.airco_boven_moet_afkoelen', 'on') or
+            (states('sensor.airco_boven_indoor') | float(0) > states('input_number.airco_boven_drempelwaarde_koelen') | float(26))) }}
+      icon: mdi:snowflake
+
+    # Airco Boven Mag Verwarmen
+    - name: "Airco Boven Mag Verwarmen"
+      unique_id: airco_boven_mag_verwarmen
+      state: >
+        {{ is_state('input_boolean.airco_boven_aan', 'on') and
+           (is_state('input_boolean.airco_boven_moet_verwarmen', 'on') or
+            (states('sensor.airco_boven_indoor') | float(0) < states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18))) }}
+      icon: mdi:fire
+
+    # Airco Boven Mag Ventileren
+    - name: "Airco Boven Mag Ventileren"
+      unique_id: airco_boven_mag_ventileren
+      state: >
+        {{ is_state('input_boolean.airco_boven_aan', 'on') and
+           not is_state('input_boolean.airco_boven_moet_afkoelen', 'on') and
+           not is_state('input_boolean.airco_boven_moet_verwarmen', 'on') and
+           (states('sensor.airco_boven_indoor') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
+           (states('sensor.airco_boven_indoor') | float(0) <= states('input_number.airco_boven_drempelwaarde_koelen') | float(26)) }}
+      icon: mdi:fan
+
+    # Airco Boven Mag Aan
+    - name: "Airco Boven Mag Aan"
+      unique_id: airco_boven_mag_aan
+      state: >
+        {{ is_state('input_boolean.airco_boven_aan', 'on') }}
+      icon: mdi:air-conditioner
+
     - unique_id: open_verbinding_naar_buiten_badkamer
       name: "Open verbinding naar buiten badkamer"
       state: >
