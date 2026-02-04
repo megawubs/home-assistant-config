@@ -1385,7 +1385,7 @@
     not_from:
     - unavailable
     - unknown
-    for: "00:00:05"
+    for: 00:00:05
     id: tv-off
     trigger: state
   - entity_id:
@@ -5521,3 +5521,582 @@
               de weg?
           action: notify.mobile_app_iphone_van_maninne_1
   mode: parallel
+- id: '1770224369212'
+  alias: Airco Zolder Handmatig
+  description: Handmatige airco besturing zolder - automatisch koelen/verwarmen/ventileren
+    op basis van temperatuur wanneer handmatig aan gezet
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_zolder_aan
+    to: 'on'
+    id: Airco Aan
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_zolder_aan
+    to: 'off'
+    id: Airco Uit
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_zolder_mag_afkoelen
+    to: 'on'
+    id: Afkoelen
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_zolder_mag_verwarmen
+    to: 'on'
+    id: Verwarmen
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_zolder_mag_ventileren
+    to: 'on'
+    id: Ventileren
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_zolder_mag_ventileren
+    to: 'on'
+    for:
+      minutes: 30
+    id: Airco Moet Uit Na Ventileren
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_zolder_mag_ventileren
+    to: 'off'
+    id: Ventileren Uit
+  - trigger: state
+    entity_id:
+    - sensor.airco_zolder_ideale_temperatuur
+    id: Temperatuur Veranderd
+  - trigger: state
+    entity_id:
+    - climate.airco_zolder
+    from: unavailable
+    id: Beschikbaar
+  - trigger: time_pattern
+    hours: '*'
+    minutes: /5
+    seconds: '0'
+  - trigger: state
+    entity_id:
+    - input_number.airco_zolder_drempelwaarde_verwarmen
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_zolder_moet_afkoelen
+    to: 'on'
+    id: moet afkoelen gaat aan
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_zolder_moet_verwarmen
+    to: 'on'
+    id: moet verwarmen gaat aan
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_zolder_boost_modus
+    for:
+      seconds: 5
+  conditions:
+  - condition: state
+    entity_id: input_boolean.airco_zolder_aan
+    state: 'on'
+  actions:
+  - choose:
+    - alias: Temperatuur Veranderd
+      conditions:
+      - condition: trigger
+        id:
+        - Temperatuur Veranderd
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: heat
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: cool
+      sequence:
+      - action: climate.set_temperature
+        data:
+          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
+            }}'
+        target:
+          entity_id: climate.airco_zolder
+    - alias: Afkoelen
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_zolder_mag_afkoelen
+        state: 'on'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: heat
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: dry
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: auto
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: 'off'
+      sequence:
+      - action: climate.set_hvac_mode
+        data:
+          hvac_mode: cool
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_temperature
+        data:
+          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
+            }}'
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_swing_mode
+        data:
+          swing_mode: Up/Down Auto
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_zolder_horizontal_swing_direction
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Airco zolder is gaan koelen
+    - alias: Uitschakelen
+      conditions:
+      - condition: state
+        entity_id: input_boolean.airco_zolder_aan
+        state: 'off'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: cool
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: heat
+      sequence:
+      - action: climate.turn_off
+        target:
+          entity_id: climate.airco_zolder
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Airco zolder is uitgezet
+    - alias: Verwarmen
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_zolder_mag_verwarmen
+        state: 'on'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: cool
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: 'off'
+      sequence:
+      - action: climate.set_hvac_mode
+        data:
+          hvac_mode: heat
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_temperature
+        data:
+          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
+            }}'
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_fan_mode
+        data:
+          fan_mode: '{{ ''3 High'' if is_state(''input_boolean.airco_zolder_boost_modus'',
+            ''on'') else ''auto'' }}'
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_swing_mode
+        data:
+          swing_mode: Up/Down Auto
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_zolder_horizontal_swing_direction
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Airco zolder is gaan verwarmen
+    - alias: Ventileren
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_zolder_mag_ventileren
+        state: 'on'
+      sequence:
+      - action: climate.turn_on
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_hvac_mode
+        data:
+          hvac_mode: fan_only
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_fan_mode
+        data:
+          fan_mode: 2 Low
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: climate.set_swing_mode
+        data:
+          swing_mode: Up/Down Auto
+        target:
+          entity_id: climate.airco_zolder
+      - delay:
+          seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_zolder_horizontal_swing_direction
+  - if:
+    - condition: trigger
+      id:
+      - moet afkoelen gaat aan
+    - condition: state
+      entity_id: input_boolean.airco_zolder_moet_afkoelen
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.airco_zolder_moet_verwarmen
+      state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.airco_zolder_moet_verwarmen
+  - if:
+    - condition: trigger
+      id:
+      - moet verwarmen gaat aan
+    - condition: state
+      entity_id: input_boolean.airco_zolder_moet_afkoelen
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.airco_zolder_moet_verwarmen
+      state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.airco_zolder_moet_afkoelen
+  mode: queued
+  max: 10
+- id: '1770224379163'
+  alias: Airco Zolder Uitzetten
+  description: Zet de airco zolder uit wanneer de handmatige schakelaar uit gaat
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_zolder_aan
+    to: 'off'
+    id: Airco Uit
+  conditions: []
+  actions:
+  - action: climate.turn_off
+    target:
+      entity_id: climate.airco_zolder
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: Airco zolder is uitgezet
+  mode: single
+- id: '1770224411482'
+  alias: Airco Boven Handmatig
+  description: Handmatige airco besturing eerste verdieping - automatisch koelen/verwarmen/ventileren
+    op basis van temperatuur wanneer handmatig aan gezet
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_boven_aan
+    to: 'on'
+    id: Airco Aan
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_boven_aan
+    to: 'off'
+    id: Airco Uit
+  - trigger: state
+    entity_id:
+    - sensor.airco_boven_indoor
+    id: Temperatuur Veranderd
+  - trigger: state
+    entity_id:
+    - climate.airco_boven
+    from: unavailable
+    id: Beschikbaar
+  - trigger: time_pattern
+    hours: '*'
+    minutes: /5
+    seconds: '0'
+  - trigger: state
+    entity_id:
+    - input_number.airco_boven_drempelwaarde_verwarmen
+  - trigger: state
+    entity_id:
+    - input_number.airco_boven_drempelwaarde_koelen
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_boven_moet_afkoelen
+    to: 'on'
+    id: moet afkoelen gaat aan
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_boven_moet_verwarmen
+    to: 'on'
+    id: moet verwarmen gaat aan
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_boven_boost_modus
+    for:
+      seconds: 5
+  conditions:
+  - condition: state
+    entity_id: input_boolean.airco_boven_aan
+    state: 'on'
+  actions:
+  - choose:
+    - alias: Moet Afkoelen
+      conditions:
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: input_boolean.airco_boven_moet_afkoelen
+          state: 'on'
+        - condition: template
+          value_template: '{{ states(''sensor.airco_boven_indoor'') | float > states(''input_number.airco_boven_drempelwaarde_koelen'')
+            | float }}'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_boven
+          state: heat
+        - condition: state
+          entity_id: climate.airco_boven
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_boven
+          state: 'off'
+      sequence:
+      - action: climate.set_hvac_mode
+        data:
+          hvac_mode: cool
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_temperature
+        data:
+          temperature: '{{ states(''input_number.airco_boven_drempelwaarde_koelen'')
+            | float - states(''input_number.airco_boven_temperatuur_offset'') | float
+            }}'
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_swing_mode
+        data:
+          swing_mode: Up/Down Auto
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_boven_horizontal_swing_direction
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Airco boven is gaan koelen
+    - alias: Moet Verwarmen
+      conditions:
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: input_boolean.airco_boven_moet_verwarmen
+          state: 'on'
+        - condition: template
+          value_template: '{{ states(''sensor.airco_boven_indoor'') | float < states(''input_number.airco_boven_drempelwaarde_verwarmen'')
+            | float }}'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_boven
+          state: cool
+        - condition: state
+          entity_id: climate.airco_boven
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_boven
+          state: 'off'
+      sequence:
+      - action: climate.set_hvac_mode
+        data:
+          hvac_mode: heat
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_temperature
+        data:
+          temperature: '{{ states(''input_number.airco_boven_drempelwaarde_verwarmen'')
+            | float + states(''input_number.airco_boven_temperatuur_offset'') | float
+            }}'
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_fan_mode
+        data:
+          fan_mode: '{{ ''3 High'' if is_state(''input_boolean.airco_boven_boost_modus'',
+            ''on'') else ''auto'' }}'
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_swing_mode
+        data:
+          swing_mode: Up/Down Auto
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_boven_horizontal_swing_direction
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Airco boven is gaan verwarmen
+    - alias: Ventileren - temperatuur binnen bereik
+      conditions:
+      - condition: template
+        value_template: '{{ states(''sensor.airco_boven_indoor'') | float >= states(''input_number.airco_boven_drempelwaarde_verwarmen'')
+          | float and states(''sensor.airco_boven_indoor'') | float <= states(''input_number.airco_boven_drempelwaarde_koelen'')
+          | float }}'
+      - condition: state
+        entity_id: input_boolean.airco_boven_moet_afkoelen
+        state: 'off'
+      - condition: state
+        entity_id: input_boolean.airco_boven_moet_verwarmen
+        state: 'off'
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_boven
+          state: heat
+        - condition: state
+          entity_id: climate.airco_boven
+          state: cool
+      sequence:
+      - action: climate.set_hvac_mode
+        data:
+          hvac_mode: fan_only
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_fan_mode
+        data:
+          fan_mode: 2 Low
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: climate.set_swing_mode
+        data:
+          swing_mode: Up/Down Auto
+        target:
+          entity_id: climate.airco_boven
+      - delay:
+          seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_boven_horizontal_swing_direction
+  - if:
+    - condition: trigger
+      id:
+      - moet afkoelen gaat aan
+    - condition: state
+      entity_id: input_boolean.airco_boven_moet_afkoelen
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.airco_boven_moet_verwarmen
+      state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.airco_boven_moet_verwarmen
+  - if:
+    - condition: trigger
+      id:
+      - moet verwarmen gaat aan
+    - condition: state
+      entity_id: input_boolean.airco_boven_moet_afkoelen
+      state: 'on'
+    - condition: state
+      entity_id: input_boolean.airco_boven_moet_verwarmen
+      state: 'on'
+    then:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.airco_boven_moet_afkoelen
+  mode: queued
+  max: 10
+- id: '1770224420136'
+  alias: Airco Boven Uitzetten
+  description: Zet de airco boven uit wanneer de handmatige schakelaar uit gaat
+  triggers:
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_boven_aan
+    to: 'off'
+    id: Airco Uit
+  conditions: []
+  actions:
+  - action: climate.turn_off
+    target:
+      entity_id: climate.airco_boven
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: Airco boven is uitgezet
+  mode: single
