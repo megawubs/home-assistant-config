@@ -290,7 +290,7 @@
     - name: "Airco Boven Mag Afkoelen"
       unique_id: airco_boven_mag_afkoelen
       state: >
-        {{ is_state('input_boolean.airco_boven_aan', 'on') and
+        {{ not is_state('climate.airco_boven', 'off') and
            (is_state('input_boolean.airco_boven_moet_afkoelen', 'on') or
             (states('sensor.airco_boven_indoor') | float(0) > states('input_number.airco_boven_drempelwaarde_koelen') | float(26))) }}
       icon: mdi:snowflake
@@ -299,7 +299,7 @@
     - name: "Airco Boven Mag Verwarmen"
       unique_id: airco_boven_mag_verwarmen
       state: >
-        {{ is_state('input_boolean.airco_boven_aan', 'on') and
+        {{ not is_state('climate.airco_boven', 'off') and
            (is_state('input_boolean.airco_boven_moet_verwarmen', 'on') or
             (states('sensor.airco_boven_indoor') | float(0) < states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18))) }}
       icon: mdi:fire
@@ -308,7 +308,7 @@
     - name: "Airco Boven Mag Ventileren"
       unique_id: airco_boven_mag_ventileren
       state: >
-        {{ is_state('input_boolean.airco_boven_aan', 'on') and
+        {{ not is_state('climate.airco_boven', 'off') and
            not is_state('input_boolean.airco_boven_moet_afkoelen', 'on') and
            not is_state('input_boolean.airco_boven_moet_verwarmen', 'on') and
            (states('sensor.airco_boven_indoor') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
@@ -319,7 +319,7 @@
     - name: "Airco Boven Mag Aan"
       unique_id: airco_boven_mag_aan
       state: >
-        {{ is_state('input_boolean.airco_boven_aan', 'on') }}
+        {{ not is_state('climate.airco_boven', 'off') }}
       icon: mdi:air-conditioner
 
     - unique_id: open_verbinding_naar_buiten_badkamer
