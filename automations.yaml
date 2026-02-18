@@ -282,22 +282,26 @@
   mode: single
 - id: '1609076575583'
   alias: 'Verlichting: Hal'
-  description: ''
+  description: 'Hal lamp aan bij beweging, uit na 30 seconden. Failsafe: lamp uit
+    als deze langer dan 10 minuten aan staat zonder activiteit.'
   triggers:
   - entity_id:
     - binary_sensor.activiteit_in_de_hal
     to: 'on'
-    trigger: state
     id: aan
+    platform: state
   - entity_id:
     - binary_sensor.activiteit_in_de_hal
     to: 'off'
-    trigger: state
     id: uit
     for:
       hours: 0
       minutes: 0
       seconds: 30
+    platform: state
+  - platform: time_pattern
+    minutes: /15
+    id: failsafe
   conditions: []
   actions:
   - if:
@@ -321,6 +325,26 @@
     - condition: trigger
       id:
       - uit
+    then:
+    - data: {}
+      target:
+        entity_id:
+        - light.lamp_hal_licht
+      action: light.turn_off
+  - if:
+    - condition: and
+      conditions:
+      - condition: trigger
+        id:
+        - failsafe
+      - condition: state
+        entity_id: light.lamp_hal_licht
+        state: 'on'
+        for:
+          minutes: 10
+      - condition: state
+        entity_id: binary_sensor.activiteit_in_de_hal
+        state: 'off'
     then:
     - data: {}
       target:
@@ -973,7 +997,7 @@
     from: home
     to: not_home
     for: 00:10:00
-    trigger: state
+    platform: state
   conditions:
   - condition: state
     entity_id: input_boolean.modus_gast
@@ -984,6 +1008,7 @@
       snapshot_entities:
       - climate.thermostaat
       - climate.kantoor_2
+      - climate.kachel
       - light.woonkamer
       - switch.buffetkast
       - light.kantoor_lamp
@@ -1015,6 +1040,9 @@
       area_id: 290ef374526c47d1beb8cbe09186fe0c
     data: {}
     action: homeassistant.turn_off
+  - action: climate.turn_off
+    target:
+      entity_id: climate.kachel
 - id: e279cbdb-3235-4657-8e2f-77521884ae50
   alias: 'Aanwezigheid: Herstel alles van voordat we weg waren'
   triggers:
@@ -1622,33 +1650,22 @@
   mode: single
 - id: '1674759135103'
   alias: 'Verlichting: Overloop'
-  description: Nieuw
+  description: Licht op de overloop bij aanwezigheid (mmWave)
   triggers:
   - entity_id:
-    - binary_sensor.activiteit_op_de_overloop
+    - binary_sensor.aanwezigheid_overloop
     to: 'on'
     id: activiteit
     trigger: state
   - entity_id:
-    - binary_sensor.activiteit_op_de_overloop
-    to:
-    - 'off'
+    - binary_sensor.aanwezigheid_overloop
+    to: 'off'
     id: inactiviteit
     trigger: state
     for:
       hours: 0
       minutes: 1
       seconds: 0
-  - type: opened
-    device_id: f753d4bffa87a210ed5e67e6af2d28f0
-    entity_id: 0464805fa473716b015ad1d67ae7e433
-    domain: binary_sensor
-    trigger: device
-    for:
-      hours: 0
-      minutes: 2
-      seconds: 0
-    id: inactiviteit
   conditions: []
   actions:
   - if:
@@ -1703,22 +1720,6 @@
         entity_id:
         - light.overloop_licht
       action: light.turn_off
-    enabled: true
-  - if:
-    - condition: trigger
-      id:
-      - inactiviteit
-    then:
-    - if:
-      - condition: state
-        entity_id: binary_sensor.beweging_overloop_motion
-        state: 'off'
-      then:
-      - data: {}
-        target:
-          entity_id: light.overloop_licht
-        action: light.turn_off
-    enabled: false
   mode: restart
   max: 10
 - id: '1674910294791'
@@ -4263,57 +4264,63 @@
     op de meter) bij dure stroom. Accu en auto mogen tegelijk laden, maar accu mag
     niet ontladen naar auto. Handmatige overrides werken altijd.'
   triggers:
-  - trigger: numeric_state
+  - platform: numeric_state
     entity_id:
     - sensor.kwh_meter_id_5_vermogen
     above: 1
     id: auto_laadt
     enabled: true
-  - trigger: numeric_state
+  - platform: numeric_state
     entity_id:
     - sensor.kwh_meter_id_5_vermogen
     id: Nul op de meter
     below: 1
     enabled: true
-  - trigger: state
+  - platform: state
     entity_id:
     - binary_sensor.ariston_is_heating
     to: 'off'
-    id: Nul op de meter
+    id: Nul op de meter_ariston
     enabled: false
-  - trigger: state
+  - platform: state
     entity_id:
     - binary_sensor.ariston_is_heating
     to: 'on'
     id: standby
     enabled: false
-  - trigger: state
+  - platform: state
     entity_id:
     - input_select.homewizard_battery_group_mode
     to: Uit
     id: handmatig_standby
-  - trigger: state
+  - platform: state
     entity_id:
     - input_select.homewizard_battery_group_mode
     to: Laden
     id: handmatig_laden
-  - trigger: state
+  - platform: state
     entity_id:
     - input_select.homewizard_battery_group_mode
     to: Nul op de meter
     id: handmatig_nul_op_meter
-  - trigger: time
+  - platform: time
     at: sensor.oplaadtijd_homewizard_accu
     id: Laden_gepland
-  - trigger: time
+  - platform: time
     at: sensor.eind_oplaadtijd_homewizard_accu
     id: Laden_einde
-  - trigger: state
+  - platform: state
     entity_id:
     - binary_sensor.stroomtarief_duur_10_boven_gemiddelde
     to:
     - 'on'
     id: Stroom_duur
+  - platform: state
+    entity_id:
+    - binary_sensor.stroomtarief_onder_gemiddelde
+    to: 'off'
+    from: 'on'
+    id: Stroom_niet_meer_goedkoop
   conditions: []
   actions:
   - alias: Handmatig Standby
@@ -4418,6 +4425,32 @@
       device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
       entity_id: d1b071a27d769061708eed2a10e73c69
       domain: switch
+  - alias: Stroom niet meer goedkoop - standby naar ontladen
+    if:
+    - condition: trigger
+      id:
+      - Stroom_niet_meer_goedkoop
+    then:
+    - alias: Alleen als accu in standby staat (was aan het wachten op duurder tarief)
+      if:
+      - condition: state
+        entity_id: sensor.battery_group_mode
+        state: standby
+      then:
+      - alias: Niet ontladen als auto laadt (voorkomt accu -> auto)
+        if:
+        - condition: numeric_state
+          entity_id: sensor.kwh_meter_id_5_vermogen
+          above: 1
+        then:
+        - stop: Auto laadt, batterij niet ontladen
+      - action: rest_command.mode_zero
+        metadata: {}
+        data: {}
+      - type: turn_off
+        device_id: 6a8ea11bac3c28d2ab6d3085b41f1745
+        entity_id: d1b071a27d769061708eed2a10e73c69
+        domain: switch
   - alias: Automatisch Laden (gepland moment)
     if:
     - condition: trigger
@@ -5593,19 +5626,14 @@
   mode: parallel
 - id: '1770224369212'
   alias: Airco Zolder Handmatig
-  description: Handmatige airco besturing zolder - automatisch koelen/verwarmen/ventileren
-    op basis van temperatuur wanneer handmatig aan gezet
+  description: Automatisch koelen/verwarmen/ventileren op basis van temperatuur wanneer
+    de airco aan staat
   triggers:
   - trigger: state
     entity_id:
-    - input_boolean.airco_zolder_aan
-    to: 'on'
+    - climate.airco_zolder
+    from: 'off'
     id: Airco Aan
-  - trigger: state
-    entity_id:
-    - input_boolean.airco_zolder_aan
-    to: 'off'
-    id: Airco Uit
   - trigger: state
     entity_id:
     - binary_sensor.airco_zolder_mag_afkoelen
@@ -5623,18 +5651,6 @@
     id: Ventileren
   - trigger: state
     entity_id:
-    - binary_sensor.airco_zolder_mag_ventileren
-    to: 'on'
-    for:
-      minutes: 30
-    id: Airco Moet Uit Na Ventileren
-  - trigger: state
-    entity_id:
-    - binary_sensor.airco_zolder_mag_ventileren
-    to: 'off'
-    id: Ventileren Uit
-  - trigger: state
-    entity_id:
     - sensor.airco_zolder_ideale_temperatuur
     id: Temperatuur Veranderd
   - trigger: state
@@ -5646,9 +5662,6 @@
     hours: '*'
     minutes: /5
     seconds: '0'
-  - trigger: state
-    entity_id:
-    - input_number.airco_zolder_drempelwaarde_verwarmen
   - trigger: state
     entity_id:
     - input_boolean.airco_zolder_moet_afkoelen
@@ -5665,9 +5678,11 @@
     for:
       seconds: 5
   conditions:
-  - condition: state
-    entity_id: input_boolean.airco_zolder_aan
-    state: 'on'
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: climate.airco_zolder
+      state: 'off'
   actions:
   - choose:
     - alias: Temperatuur Veranderd
@@ -5709,9 +5724,6 @@
         - condition: state
           entity_id: climate.airco_zolder
           state: auto
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: 'off'
       sequence:
       - action: climate.set_hvac_mode
         data:
@@ -5743,29 +5755,6 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: Airco zolder is gaan koelen
-    - alias: Uitschakelen
-      conditions:
-      - condition: state
-        entity_id: input_boolean.airco_zolder_aan
-        state: 'off'
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: cool
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: fan_only
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: heat
-      sequence:
-      - action: climate.turn_off
-        target:
-          entity_id: climate.airco_zolder
-      - action: notify.mobile_app_iphone_van_bram
-        data:
-          message: Airco zolder is uitgezet
     - alias: Verwarmen
       conditions:
       - condition: state
@@ -5779,9 +5768,6 @@
         - condition: state
           entity_id: climate.airco_zolder
           state: fan_only
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: 'off'
       sequence:
       - action: climate.set_hvac_mode
         data:
@@ -5826,12 +5812,15 @@
       - condition: state
         entity_id: binary_sensor.airco_zolder_mag_ventileren
         state: 'on'
-      sequence:
-      - action: climate.turn_on
-        target:
+      - condition: or
+        conditions:
+        - condition: state
           entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
+          state: heat
+        - condition: state
+          entity_id: climate.airco_zolder
+          state: cool
+      sequence:
       - action: climate.set_hvac_mode
         data:
           hvac_mode: fan_only
@@ -5908,19 +5897,29 @@
   mode: single
 - id: '1770224411482'
   alias: Airco Boven Handmatig
-  description: Handmatige airco besturing eerste verdieping - automatisch koelen/verwarmen/ventileren
-    op basis van temperatuur wanneer handmatig aan gezet
+  description: Automatisch koelen/verwarmen/ventileren op basis van temperatuur wanneer
+    de airco aan staat
   triggers:
   - trigger: state
     entity_id:
-    - input_boolean.airco_boven_aan
-    to: 'on'
+    - climate.airco_boven
+    from: 'off'
     id: Airco Aan
   - trigger: state
     entity_id:
-    - input_boolean.airco_boven_aan
-    to: 'off'
-    id: Airco Uit
+    - binary_sensor.airco_boven_mag_afkoelen
+    to: 'on'
+    id: Afkoelen
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_boven_mag_verwarmen
+    to: 'on'
+    id: Verwarmen
+  - trigger: state
+    entity_id:
+    - binary_sensor.airco_boven_mag_ventileren
+    to: 'on'
+    id: Ventileren
   - trigger: state
     entity_id:
     - sensor.airco_boven_indoor
@@ -5934,12 +5933,6 @@
     hours: '*'
     minutes: /5
     seconds: '0'
-  - trigger: state
-    entity_id:
-    - input_number.airco_boven_drempelwaarde_verwarmen
-  - trigger: state
-    entity_id:
-    - input_number.airco_boven_drempelwaarde_koelen
   - trigger: state
     entity_id:
     - input_boolean.airco_boven_moet_afkoelen
@@ -5956,21 +5949,41 @@
     for:
       seconds: 5
   conditions:
-  - condition: state
-    entity_id: input_boolean.airco_boven_aan
-    state: 'on'
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: climate.airco_boven
+      state: 'off'
   actions:
   - choose:
-    - alias: Moet Afkoelen
+    - alias: Temperatuur Veranderd
       conditions:
+      - condition: trigger
+        id:
+        - Temperatuur Veranderd
       - condition: or
         conditions:
         - condition: state
-          entity_id: input_boolean.airco_boven_moet_afkoelen
-          state: 'on'
-        - condition: template
-          value_template: '{{ states(''sensor.airco_boven_indoor'') | float > states(''input_number.airco_boven_drempelwaarde_koelen'')
-            | float }}'
+          entity_id: climate.airco_boven
+          state: heat
+        - condition: state
+          entity_id: climate.airco_boven
+          state: cool
+      sequence:
+      - action: climate.set_temperature
+        data:
+          temperature: '{{ states(''input_number.airco_boven_drempelwaarde_koelen'')
+            | float - states(''input_number.airco_boven_temperatuur_offset'') | float
+            if is_state(''climate.airco_boven'', ''cool'') else states(''input_number.airco_boven_drempelwaarde_verwarmen'')
+            | float + states(''input_number.airco_boven_temperatuur_offset'') | float
+            }}'
+        target:
+          entity_id: climate.airco_boven
+    - alias: Afkoelen
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_boven_mag_afkoelen
+        state: 'on'
       - condition: or
         conditions:
         - condition: state
@@ -5981,7 +5994,10 @@
           state: fan_only
         - condition: state
           entity_id: climate.airco_boven
-          state: 'off'
+          state: dry
+        - condition: state
+          entity_id: climate.airco_boven
+          state: auto
       sequence:
       - action: climate.set_hvac_mode
         data:
@@ -6014,16 +6030,11 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: Airco boven is gaan koelen
-    - alias: Moet Verwarmen
+    - alias: Verwarmen
       conditions:
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: input_boolean.airco_boven_moet_verwarmen
-          state: 'on'
-        - condition: template
-          value_template: '{{ states(''sensor.airco_boven_indoor'') | float < states(''input_number.airco_boven_drempelwaarde_verwarmen'')
-            | float }}'
+      - condition: state
+        entity_id: binary_sensor.airco_boven_mag_verwarmen
+        state: 'on'
       - condition: or
         conditions:
         - condition: state
@@ -6032,9 +6043,6 @@
         - condition: state
           entity_id: climate.airco_boven
           state: fan_only
-        - condition: state
-          entity_id: climate.airco_boven
-          state: 'off'
       sequence:
       - action: climate.set_hvac_mode
         data:
@@ -6075,18 +6083,11 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: Airco boven is gaan verwarmen
-    - alias: Ventileren - temperatuur binnen bereik
+    - alias: Ventileren
       conditions:
-      - condition: template
-        value_template: '{{ states(''sensor.airco_boven_indoor'') | float >= states(''input_number.airco_boven_drempelwaarde_verwarmen'')
-          | float and states(''sensor.airco_boven_indoor'') | float <= states(''input_number.airco_boven_drempelwaarde_koelen'')
-          | float }}'
       - condition: state
-        entity_id: input_boolean.airco_boven_moet_afkoelen
-        state: 'off'
-      - condition: state
-        entity_id: input_boolean.airco_boven_moet_verwarmen
-        state: 'off'
+        entity_id: binary_sensor.airco_boven_mag_ventileren
+        state: 'on'
       - condition: or
         conditions:
         - condition: state
@@ -6170,3 +6171,314 @@
     data:
       message: Airco boven is uitgezet
   mode: single
+- id: '1770410243172'
+  alias: 'Kachel Jozua: Raam open → uit'
+  description: 'Zet de Mill kachel uit als het raam van Jozua open staat. Bevat een
+    waakhond: als de kachel wordt aangezet terwijl het raam open staat, wordt hij
+    direct weer uitgezet. Vervang input_boolean.raam_jozua_open_placeholder later
+    door de echte raamsensor.'
+  triggers:
+  - platform: state
+    entity_id: input_boolean.raam_jozua_open_placeholder
+    to: 'on'
+    id: raam_open
+  - platform: state
+    entity_id: climate.kachel
+    to: heat
+    id: kachel_aangezet
+  conditions:
+  - condition: state
+    entity_id: input_boolean.raam_jozua_open_placeholder
+    state: 'on'
+  actions:
+  - target:
+      entity_id: climate.kachel
+    action: climate.turn_off
+  - condition: trigger
+    id: kachel_aangezet
+  - data:
+      title: "\U0001F525 Kachel Jozua"
+      message: Kachel weer uitgezet — raam staat nog open!
+    action: notify.notify
+  mode: restart
+- id: '1770410251454'
+  alias: 'Kachel Jozua: Raam dicht → herstel'
+  description: Zet de kachel weer aan op de vorstbescherming-temperatuur als het raam
+    van Jozua dicht gaat.
+  triggers:
+  - platform: state
+    entity_id: input_boolean.raam_jozua_open_placeholder
+    to: 'off'
+  conditions:
+  - condition: numeric_state
+    entity_id: climate.kachel
+    attribute: current_temperature
+    below: 17
+  - condition: time
+    before: '19:00:00'
+  actions:
+  - target:
+      entity_id: climate.kachel
+    action: climate.turn_on
+  - target:
+      entity_id: climate.kachel
+    data:
+      hvac_mode: heat
+      temperature: 16.5
+    action: climate.set_temperature
+  mode: single
+- id: '1770410262108'
+  alias: 'Kachel Jozua: Vorstbescherming'
+  description: 'Vangnet: als de temperatuur in Jozua''s kamer onder 10°C zakt, kachel
+    forceren op heat — ook als het raam open staat. Stuurt ook een melding.'
+  triggers:
+  - platform: numeric_state
+    entity_id: climate.kachel
+    attribute: current_temperature
+    below: 10
+    for: 00:05:00
+  actions:
+  - target:
+      entity_id: climate.kachel
+    action: climate.turn_on
+  - target:
+      entity_id: climate.kachel
+    data:
+      hvac_mode: heat
+      temperature: 12
+    action: climate.set_temperature
+  - data:
+      title: ⚠️ Vorstbescherming Jozua!
+      message: Temperatuur in kamer Jozua is onder de 10°C gezakt ({{ state_attr('climate.kachel',
+        'current_temperature') }}°C). Kachel is geforceerd aangezet op 12°C.
+    action: notify.notify
+  mode: single
+- id: '1770410271168'
+  alias: 'Kachel Jozua: Melding lang verwarmen'
+  description: Melding als de kachel al meer dan 2 uur continu aan het verwarmen is
+    (heating). Kan wijzen op een probleem, open raam zonder sensor, of extreme koude.
+  triggers:
+  - platform: state
+    entity_id: climate.kachel
+    attribute: hvac_action
+    to: heating
+    for: 02:00:00
+  actions:
+  - data:
+      title: "\U0001F525 Kachel Jozua draait lang"
+      message: 'De kachel in Jozua''s kamer verwarmt al meer dan 2 uur achter elkaar.
+        Huidige temperatuur: {{ state_attr(''climate.kachel'', ''current_temperature'')
+        }}°C, target: {{ state_attr(''climate.kachel'', ''temperature'') }}°C.'
+    action: notify.notify
+  mode: single
+- id: '1770410595805'
+  alias: 'Kachel Jozua: Uit als warm genoeg'
+  description: Zet de kachel uit als de kamertemperatuur boven de target komt. Bespaart
+    energie door de kachel niet onnodig in standby te houden.
+  triggers:
+  - platform: numeric_state
+    entity_id: climate.kachel
+    attribute: current_temperature
+    above: 17
+  conditions:
+  - condition: state
+    entity_id: climate.kachel
+    state: heat
+  - condition: state
+    entity_id: climate.kachel
+    attribute: hvac_action
+    state: idle
+  actions:
+  - target:
+      entity_id: climate.kachel
+    action: climate.turn_off
+  mode: single
+- id: '1770410604363'
+  alias: 'Kachel Jozua: Aan als te koud'
+  description: Zet de kachel weer aan als de kamertemperatuur onder 15°C zakt en het
+    raam dicht is en we thuis zijn. Niet na 19:00. Checkt ook bij HA start.
+  triggers:
+  - below: 15
+    platform: numeric_state
+    attribute: current_temperature
+    entity_id: climate.kachel
+  - event: start
+    platform: homeassistant
+  conditions:
+  - state: 'off'
+    condition: state
+    entity_id: climate.kachel
+  - below: 15
+    attribute: current_temperature
+    condition: numeric_state
+    entity_id: climate.kachel
+  - state: 'off'
+    condition: state
+    entity_id: input_boolean.raam_jozua_open_placeholder
+  - state: home
+    condition: state
+    entity_id: group.bewoners
+  - before: '19:00:00'
+    condition: time
+  actions:
+  - target:
+      entity_id: climate.kachel
+    action: climate.turn_on
+  - target:
+      entity_id: climate.kachel
+    data:
+      hvac_mode: heat
+      temperature: 16.5
+    action: climate.set_temperature
+  mode: single
+- id: '1770496246858'
+  alias: 'EV: Dynamische prijslimiet bijwerken'
+  description: Stelt de smartCostLimit in op het laagste tarief van de dag + €0.005
+    marge, met een maximum van €0,24/kWh. De marge zorgt ervoor dat ook uren met bijna-gelijke
+    prijzen worden meegepakt.
+  triggers:
+  - entity_id: sensor.current_tariff
+    trigger: state
+  - event: start
+    trigger: homeassistant
+  conditions:
+  - condition: template
+    value_template: '{{ state_attr(''sensor.current_tariff'', ''forecast'') is not
+      none }}'
+  actions:
+  - variables:
+      new_limit: '{% set forecast = state_attr(''sensor.current_tariff'', ''forecast'')
+        %}{% set prices = forecast | map(attribute=''electricity_price'') | list |
+        sort %}{% set lowest = prices[0] / 10000000 %}{% set with_offset = lowest
+        + 0.005 %}{% set max_limit = 0.248 %}{{ [with_offset, max_limit] | min | round(4)
+        }}'
+  - action: input_number.set_value
+    target:
+      entity_id: input_number.ev_smart_cost_limiet
+    data:
+      value: '{{ new_limit }}'
+  - action: mqtt.publish
+    data:
+      topic: evcc/loadpoints/1/smartCostLimit/set
+      payload: '{{ new_limit }}'
+  mode: single
+- id: '1770496971896'
+  alias: 'EV: Refresh evcc bij laden detectie'
+  description: Stuurt een vehicle refresh naar evcc zodra de HomeWizard kWh-meter
+    bij de laadpaal stroom detecteert. Zo weet evcc sneller dat de auto aan het laden
+    is en kan het sneller ingrijpen.
+  triggers:
+  - platform: numeric_state
+    entity_id: sensor.kwh_meter_id_5_vermogen
+    above: 100
+    for: 00:00:10
+  actions:
+  - data:
+      topic: evcc/vehicles/id5/refresh/set
+      payload: 'true'
+    action: mqtt.publish
+  mode: single
+- id: '1770755404060'
+  alias: 'Boiler: Manual Override - Extra Opwarmen'
+  description: 'Als je laat thuis komt of een extra douche wilt: zet deze knop aan
+    voor directe BOOST (45 min)'
+  triggers:
+  - platform: state
+    entity_id: input_boolean.boiler_extra_opwarmen_nu
+    to: 'on'
+  actions:
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      operation_mode: BOOST
+    action: water_heater.set_operation_mode
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      temperature: 75
+    action: water_heater.set_temperature
+  - delay:
+      minutes: 45
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      operation_mode: GREEN
+    action: water_heater.set_operation_mode
+  - target:
+      entity_id: input_boolean.boiler_extra_opwarmen_nu
+    action: input_boolean.turn_off
+  mode: restart
+- id: '1770793174832'
+  alias: 'Boiler: Pre-Ochtend Check (05:30)'
+  description: 'Controleert om 05:30 of boiler warm genoeg is voor ochtend douche
+    om ~07:00. Als <72°C: forceer naar 75°C. Boiler blijft altijd op BOOST mode.'
+  triggers:
+  - platform: time
+    at: 05:30:00
+  conditions:
+  - condition: numeric_state
+    entity_id: water_heater.boiler
+    attribute: current_temperature
+    below: 72
+  actions:
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      operation_mode: BOOST
+    action: water_heater.set_operation_mode
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      temperature: 75
+    action: water_heater.set_temperature
+  mode: single
+- id: '1770793183079'
+  alias: 'Boiler: Pre-Avond Check (15:30)'
+  description: 'Controleert om 15:30 of boiler warm genoeg is voor avond douches (17:00-21:00).
+    Als <72°C: forceer naar 75°C. Boiler blijft altijd op BOOST mode.'
+  triggers:
+  - platform: time
+    at: '15:30:00'
+  conditions:
+  - condition: numeric_state
+    entity_id: water_heater.boiler
+    attribute: current_temperature
+    below: 72
+  actions:
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      operation_mode: BOOST
+    action: water_heater.set_operation_mode
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      temperature: 75
+    action: water_heater.set_temperature
+  mode: single
+- id: '1770793191518'
+  alias: 'Boiler: Keeper - Blijf Op BOOST'
+  description: Zorgt ervoor dat boiler ALTIJD op BOOST blijft. Als boiler om een of
+    andere reden op GREEN/PROGRAM komt, zet hem direct terug op BOOST.
+  triggers:
+  - platform: state
+    entity_id: water_heater.boiler
+    attribute: operation_mode
+    to:
+    - GREEN
+    - PROGRAM
+    - IMEMORY
+    for:
+      seconds: 30
+  actions:
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      operation_mode: BOOST
+    action: water_heater.set_operation_mode
+  - target:
+      entity_id: water_heater.boiler
+    data:
+      temperature: 75
+    action: water_heater.set_temperature
+  mode: restart
