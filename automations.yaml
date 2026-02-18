@@ -4664,6 +4664,12 @@
     entity_id:
     - select.droger_geselecteerd_programma
     id: droger_klaar
+    not_from:
+    - unknown
+    - unavailable
+    not_to:
+    - unknown
+    - unavailable
     for:
       hours: 0
       minutes: 0
@@ -4672,6 +4678,12 @@
     entity_id:
     - select.wasmachine_geselecteerd_programma
     id: wasmachine_klaar
+    not_from:
+    - unknown
+    - unavailable
+    not_to:
+    - unknown
+    - unavailable
     for:
       hours: 0
       minutes: 0
@@ -4685,60 +4697,118 @@
         - wasmachine_klaar
       sequence:
       - variables:
-          duration_hours: '{{ states(''sensor.wasmachine_estimated_total_program_time'')
-            | float(3.5) }}
-
-            '
-          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
-            %}   {% set search_start = now() %} {% set search_end = today_at('07:00')
-            + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
-            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
-            \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
-          end_time: '{{ (start_time | as_datetime) + timedelta(hours=duration_hours)
-            }}'
-          hours: '{{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
-            - now()).seconds // 3600 }}'
-          minutes: '{{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}'
-      - action: homeconnect_ws.start_program
-        metadata: {}
-        data:
-          finish_in:
-            hours: '{{ hours }}'
-            minutes: '{{ minutes }}'
-          device_id: 805a0e4a4b9ae3127127eab96b31ac4d
-      - data:
-          message: De wasmachine is over ~{{ hours }} uur klaar!
-        action: notify.mobile_app_iphone_van_bram
+          duration_hours: >-
+            {% set hours = states('sensor.wasmachine_estimated_total_program_time')
+            | float(3.5) %} {{ [hours, 0.5] | max }}
+          start_time: >-
+            {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+            {% set search_start = now() %} {% set search_end = today_at('07:00')
+            + timedelta(days=1) %} {{ cheapest_energy_hours(
+                sensor='sensor.current_tariff',
+                time_key='datetime',
+                hours=duration_hours,
+                start=search_start,
+                end=search_end,
+                include_tomorrow=true
+              )
+            }}
+          end_time: >-
+            {% if start_time %}
+              {{ (start_time | as_datetime) + timedelta(hours=duration_hours) }}
+            {% endif %}
+          hours: >-
+            {% if end_time %}
+              {{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
+              - now()).seconds // 3600 }}
+            {% else %}
+              0
+            {% endif %}
+          minutes: >-
+            {% if end_time %}
+              {{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}
+            {% else %}
+              0
+            {% endif %}
+      - if:
+        - condition: template
+          value_template: "{{ start_time not in ['', 'None', none] and start_time | as_datetime is not none }}"
+        then:
+        - action: homeconnect_ws.start_program
+          metadata: {}
+          data:
+            finish_in:
+              hours: '{{ hours }}'
+              minutes: '{{ minutes }}'
+            device_id: 805a0e4a4b9ae3127127eab96b31ac4d
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: De wasmachine is over ~{{ hours }} uur klaar!
+        else:
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: >-
+              Kon geen goedkoop moment vinden voor de wasmachine.
+              Prijsdata is mogelijk nog niet beschikbaar. Probeer het later
+              opnieuw.
     - conditions:
       - condition: trigger
         id:
         - droger_klaar
       sequence:
       - variables:
-          duration_hours: '{{ states(''sensor.droger_estimated_total_program_time'')
-            | float(3.5) }}
-
-            '
-          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
-            %}   {% set search_start = now() %} {% set search_end = today_at('07:00')
-            + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
-            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
-            \   end=search_end,\n    include_tomorrow=true\n  )\n}}\n"
-          end_time: '{{ (start_time | as_datetime) + timedelta(hours=duration_hours)
-            }}'
-          hours: '{{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
-            - now()).seconds // 3600 }}'
-          minutes: '{{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}'
-      - action: homeconnect_ws.start_program
-        metadata: {}
-        data:
-          finish_in:
-            hours: '{{ hours }}'
-            minutes: '{{ minutes }}'
-          device_id: 2b5e9c6d6b0cdc54d51e2e72859662d7
-      - data:
-          message: De droger is over ~{{ hours }} uur klaar!
-        action: notify.mobile_app_iphone_van_bram
+          duration_hours: >-
+            {% set hours = states('sensor.droger_estimated_total_program_time')
+            | float(3.5) %} {{ [hours, 0.5] | max }}
+          start_time: >-
+            {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
+            {% set search_start = now() %} {% set search_end = today_at('07:00')
+            + timedelta(days=1) %} {{ cheapest_energy_hours(
+                sensor='sensor.current_tariff',
+                time_key='datetime',
+                hours=duration_hours,
+                start=search_start,
+                end=search_end,
+                include_tomorrow=true
+              )
+            }}
+          end_time: >-
+            {% if start_time %}
+              {{ (start_time | as_datetime) + timedelta(hours=duration_hours) }}
+            {% endif %}
+          hours: >-
+            {% if end_time %}
+              {{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
+              - now()).seconds // 3600 }}
+            {% else %}
+              0
+            {% endif %}
+          minutes: >-
+            {% if end_time %}
+              {{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}
+            {% else %}
+              0
+            {% endif %}
+      - if:
+        - condition: template
+          value_template: "{{ start_time not in ['', 'None', none] and start_time | as_datetime is not none }}"
+        then:
+        - action: homeconnect_ws.start_program
+          metadata: {}
+          data:
+            finish_in:
+              hours: '{{ hours }}'
+              minutes: '{{ minutes }}'
+            device_id: 2b5e9c6d6b0cdc54d51e2e72859662d7
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: De droger is over ~{{ hours }} uur klaar!
+        else:
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: >-
+              Kon geen goedkoop moment vinden voor de droger.
+              Prijsdata is mogelijk nog niet beschikbaar. Probeer het later
+              opnieuw.
     - conditions:
       - condition: trigger
         id:
