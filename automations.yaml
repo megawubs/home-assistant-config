@@ -3011,19 +3011,6 @@
               swing_mode: Up/Down Auto
             target:
               label_id: airco_beneden
-        default:
-        - condition: not
-          conditions:
-          - condition: state
-            entity_id: climate.airco_woonkamer
-            state: 'off'
-        - action: climate.turn_off
-          data: {}
-          target:
-            label_id: airco_beneden
-        - action: notify.mobile_app_iphone_van_bram
-          data:
-            message: Airco woonkamer uitgezet (op temperatuur, buiten warm genoeg)
     - conditions:
       - condition: trigger
         id:
