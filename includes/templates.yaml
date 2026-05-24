@@ -149,10 +149,8 @@
           is_state('input_text.focus_bram', 'Slaap') 
         }}
 
-    - unique_id: temperatuur_woonkamer_is_boven_drempel_waarden
-      name: "Temperatuur woonkamer is boven drempel waarden"
-      state: >
-        {{ states('sensor.tstat_9d4027_current_temperature') | float >= (states('input_number.airco_woonkamer_drempelwaarde_koelen') | float) }}
+    # temperatuur_woonkamer_is_(boven|onder)_drempel_waarden staan als
+    # trigger-based binary_sensors met hysterese verderop in dit bestand.
 
     - unique_id: airco_woonkamer_mag_afkoelen
       name: "Airco woonkamer mag afkoelen"
@@ -229,11 +227,6 @@
           or (is_state('binary_sensor.achterdeur_openen', 'on') and is_state('binary_sensor.keuken_deur_openen', 'on'))
         }}
       delay_on: 00:00:10
-
-    - unique_id: temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen
-      name: "Temperatuur woonkamer is onder drempel waarden verwarmen"
-      state: >
-        {{ states('sensor.tstat_9d4027_current_temperature') | float <= (states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float) }}
 
     - unique_id: airco_zolder_mag_afkoelen
       name: "Airco zolder mag afkoelen"
@@ -407,6 +400,56 @@
         minutes: 2
       delay_off:
         minutes: 2
+
+# Hysterese rond koel- en verwarm-drempels van de airco woonkamer.
+# Bron-sensor meet in stappen van 0,5 °C, dus zonder deadband flipt deze
+# elke paar minuten op meetruis en jaagt de airco tussen cool/fan_only/off.
+- trigger:
+    - platform: state
+      entity_id:
+        - sensor.tstat_9d4027_current_temperature
+        - input_number.airco_woonkamer_drempelwaarde_koelen
+        - input_number.airco_woonkamer_drempelwaarde_verwarmen
+        - input_number.airco_woonkamer_hysterese_boven
+        - input_number.airco_woonkamer_hysterese_onder
+    - platform: homeassistant
+      event: start
+  binary_sensor:
+    - unique_id: temperatuur_woonkamer_is_boven_drempel_waarden
+      name: "Temperatuur woonkamer is boven drempel waarden"
+      delay_on: "00:03:00"
+      delay_off: "00:03:00"
+      state: >
+        {% set temp = states('sensor.tstat_9d4027_current_temperature') | float(none) %}
+        {% set drempel = states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(none) %}
+        {% set boven = states('input_number.airco_woonkamer_hysterese_boven') | float(0.5) %}
+        {% set onder = states('input_number.airco_woonkamer_hysterese_onder') | float(0.3) %}
+        {% set vorig = this.state if this.state in ['on', 'off'] else 'off' %}
+        {% if temp is none or drempel is none %}
+          {{ vorig }}
+        {% elif vorig == 'on' %}
+          {{ 'on' if temp > drempel - onder else 'off' }}
+        {% else %}
+          {{ 'on' if temp >= drempel + boven else 'off' }}
+        {% endif %}
+
+    - unique_id: temperatuur_woonkamer_is_onder_drempel_waarden_verwarmen
+      name: "Temperatuur woonkamer is onder drempel waarden verwarmen"
+      delay_on: "00:03:00"
+      delay_off: "00:03:00"
+      state: >
+        {% set temp = states('sensor.tstat_9d4027_current_temperature') | float(none) %}
+        {% set drempel = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(none) %}
+        {% set boven = states('input_number.airco_woonkamer_hysterese_boven') | float(0.5) %}
+        {% set onder = states('input_number.airco_woonkamer_hysterese_onder') | float(0.3) %}
+        {% set vorig = this.state if this.state in ['on', 'off'] else 'off' %}
+        {% if temp is none or drempel is none %}
+          {{ vorig }}
+        {% elif vorig == 'on' %}
+          {{ 'on' if temp < drempel + onder else 'off' }}
+        {% else %}
+          {{ 'on' if temp <= drempel - boven else 'off' }}
+        {% endif %}
 
 - sensor:
     - unique_id: tarief_voorspelling_vandaag

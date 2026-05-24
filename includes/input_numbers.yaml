@@ -6,6 +6,24 @@ airco_woonkamer_temperatuur_offset:
   unit_of_measurement: "°C"
   icon: mdi:thermometer
 
+airco_woonkamer_hysterese_boven:
+  name: Airco Woonkamer Hysterese Boven Drempel
+  min: 0
+  max: 2
+  step: 0.1
+  initial: 0.5
+  unit_of_measurement: "°C"
+  icon: mdi:arrow-expand-up
+
+airco_woonkamer_hysterese_onder:
+  name: Airco Woonkamer Hysterese Onder Drempel
+  min: 0
+  max: 2
+  step: 0.1
+  initial: 0.3
+  unit_of_measurement: "°C"
+  icon: mdi:arrow-expand-down
+
 airco_vakantie_temperatuur:
   name: Airco Vakantie Temperatuur
   min: 16
