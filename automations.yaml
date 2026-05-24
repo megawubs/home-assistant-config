@@ -174,28 +174,33 @@
         - sensor.plug_in_battery_laadpercentage_2
         - sensor.id_5_battery_target_charge_level
 - id: '1608671800538'
-  alias: 'Verlichting: Keuken - Blueprint (Remote)'
+  alias: Schakelaar Bureau
   description: ''
   use_blueprint:
     path: Vogete/zha-aqara-wireless-remote-switch-single-rocker.yaml
     input:
       aqara_mini_switch: 6f8d8a5301b7d9ba9ba0878959dd4018
       button_single_press:
-      - service: light.toggle
+      - action: switch.toggle
+        metadata: {}
         data: {}
+        enabled: true
         target:
-          area_id: keuken
+          entity_id: switch.stekkerdoos_bureau_zolder
       button_long_press:
-      - service: light.toggle
-        data: {}
+      - action: light.toggle
+        metadata: {}
         target:
-          area_id:
-          - 3baf8165348041e1b29208776b5bf03d
-          - keuken
-      - service: media_player.media_pause
+          device_id:
+          - d4a081066b7f4114a0f0e957d5bf8b2a
+          - 4f5df76ac8b13630bc4c2f19d851c946
         data: {}
+      button_double_press:
+      - action: switch.toggle
+        metadata: {}
         target:
-          entity_id: media_player.benedenverdieping
+          entity_id: switch.slaapkamer
+        data: {}
 - id: '1608674171096'
   alias: 'Verlichting: Slaapkamer'
   description: ''
@@ -208,25 +213,16 @@
           device_id: 021c3cd4fbf711ea850ce78959291f51
         data: {}
         action: switch.toggle
-      - condition: time
-        after: '20:00:00'
-        before: 03:00:00
-      - data: {}
-        entity_id: input_boolean.modus_slaap
-        action: input_boolean.turn_on
-      long_press:
-      - target:
-          entity_id:
-          - light.nachtkastje_maninne
-          - light.color_temperature_light_30
-        data:
-          brightness_pct: 5
-        action: light.toggle
+      - action: climate.turn_off
+        metadata: {}
+        target:
+          area_id: 96ed65635b944f368944d38fd2449a1c
+        data: {}
+      long_press: []
       double_press:
       - target:
           area_id:
           - 290ef374526c47d1beb8cbe09186fe0c
-          - 6d60dd9d13ff4ee4b715cf080394ac41
         data: {}
         action: light.turn_off
 - id: '1608845380412'
@@ -285,21 +281,21 @@
   description: 'Hal lamp aan bij beweging, uit na 30 seconden. Failsafe: lamp uit
     als deze langer dan 10 minuten aan staat zonder activiteit.'
   triggers:
-  - entity_id:
+  - trigger: state
+    entity_id:
     - binary_sensor.activiteit_in_de_hal
     to: 'on'
     id: aan
-    platform: state
-  - entity_id:
+  - trigger: state
+    entity_id:
     - binary_sensor.activiteit_in_de_hal
     to: 'off'
-    id: uit
     for:
       hours: 0
       minutes: 0
       seconds: 30
-    platform: state
-  - platform: time_pattern
+    id: uit
+  - trigger: time_pattern
     minutes: /15
     id: failsafe
   conditions: []
@@ -311,47 +307,117 @@
         id:
         - aan
       - condition: state
+        enabled: true
         entity_id: binary_sensor.licht_intensiteit_in_de_woonkamer_onder_ingestelde_waarde
         state: 'on'
-        enabled: true
     then:
-    - data:
+    - target:
+        entity_id:
+        - light.lamp_hal_licht
+      data:
         brightness_pct: 100
-      target:
-        entity_id:
-        - light.lamp_hal_licht
       action: light.turn_on
-  - if:
-    - condition: trigger
-      id:
-      - uit
-    then:
-    - data: {}
-      target:
-        entity_id:
-        - light.lamp_hal_licht
-      action: light.turn_off
-  - if:
-    - condition: and
-      conditions:
+    - parallel:
+      - if:
+        - condition: trigger
+          id:
+          - uit
+        then:
+        - target:
+            entity_id:
+            - light.lamp_hal_licht
+          data: {}
+          action: light.turn_off
+        else: []
+      - if:
+        - condition: and
+          conditions:
+          - condition: trigger
+            id:
+            - failsafe
+          - condition: state
+            entity_id: light.lamp_hal_licht
+            state: 'on'
+            for:
+              minutes: 10
+          - condition: state
+            entity_id: binary_sensor.activiteit_in_de_hal
+            state: 'off'
+        then:
+        - target:
+            entity_id:
+            - light.lamp_hal_licht
+          data: {}
+          action: light.turn_off
+        else: []
+    else:
+    - if:
       - condition: trigger
         id:
-        - failsafe
-      - condition: state
-        entity_id: light.lamp_hal_licht
-        state: 'on'
-        for:
-          minutes: 10
-      - condition: state
-        entity_id: binary_sensor.activiteit_in_de_hal
-        state: 'off'
-    then:
-    - data: {}
-      target:
-        entity_id:
-        - light.lamp_hal_licht
-      action: light.turn_off
+        - uit
+      then:
+      - target:
+          entity_id:
+          - light.lamp_hal_licht
+        data: {}
+        action: light.turn_off
+      else: []
+    - if:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - failsafe
+        - condition: state
+          entity_id: light.lamp_hal_licht
+          state: 'on'
+          for:
+            minutes: 10
+        - condition: state
+          entity_id: binary_sensor.activiteit_in_de_hal
+          state: 'off'
+      then:
+      - target:
+          entity_id:
+          - light.lamp_hal_licht
+        data: {}
+        action: light.turn_off
+      else: []
   mode: restart
+  variables:
+    _cafe_metadata:
+      version: 1
+      strategy: native
+      nodes:
+        trigger_1776102850598_0_0:
+          x: 12
+          y: 332
+        trigger_1776102850599_1_1:
+          x: 12
+          y: 172
+        trigger_1776102850599_2_2:
+          x: 12
+          y: 12
+        condition_1776102850599_3_3:
+          x: 312
+          y: 162
+        action_1776102850599_4_4:
+          x: 585
+          y: 15
+        condition_1776102850599_5_5:
+          x: 930
+          y: 375
+        action_1776102850600_6_6:
+          x: 1245
+          y: 360
+        condition_1776102850600_7_7:
+          x: 930
+          y: 195
+        action_1776102850600_8_8:
+          x: 1245
+          y: 180
+      graph_id: d7e60390-926e-4c10-8181-7cef1697fe8c
+      graph_version: 1
 - id: '1609196365224'
   alias: 'Verlichting: Woonkamer'
   description: ''
@@ -361,36 +427,36 @@
     to: 'on'
     from: 'off'
     id: beweging gedetecteerd
-    trigger: state
+    platform: state
   - event: sunset
     offset: -00:45:00
     id: zon gaat onder
     alias: Zon gaat onder
     enabled: false
-    trigger: sun
+    platform: sun
   - event: sunrise
     offset: +01:30:00
     id: zon komt op
     alias: Zon komt op
-    trigger: sun
+    platform: sun
   - entity_id:
     - input_boolean.modus_slaap
     from: 'off'
     to: 'on'
     id: Slaap modus gaat aan
-    trigger: state
+    platform: state
   - entity_id:
     - binary_sensor.activiteit_in_de_woonkamer
     to: 'off'
     from: 'on'
     id: Inactiviteit gedetecteerd
-    trigger: state
+    platform: state
   - entity_id:
     - binary_sensor.licht_intensiteit_in_de_woonkamer_onder_ingestelde_waarde
     from: 'off'
     to: 'on'
     id: Het wordt donker
-    trigger: state
+    platform: state
   conditions:
   - condition: and
     conditions:
@@ -426,9 +492,14 @@
     then:
     - data: {}
       action: script.woonkamer_aan
-    - data:
-        message: Woonkamer aan omdat er beweging was en het is donker genoeg
-      action: notify.bram
+    - if:
+      - condition: state
+        entity_id: person.bram_wubs
+        state: not_home
+      then:
+      - data:
+          message: Woonkamer aan omdat er beweging was en het is donker genoeg
+        action: notify.bram
     alias: Woonkamer aan als er beweging was en wanneer het donker is als we wakker
       zijn
   - if:
@@ -443,10 +514,15 @@
     then:
     - data: {}
       action: script.woonkamer_aan
-    - data:
-        message: Woonkamer aan omdat de zon onder gaat en er activiteit was in de
-          woonkamer
-      action: notify.bram
+    - if:
+      - condition: state
+        entity_id: person.bram_wubs
+        state: not_home
+      then:
+      - data:
+          message: Woonkamer aan omdat de zon onder gaat en er activiteit was in de
+            woonkamer
+        action: notify.bram
     alias: Woonkamer aan als zon onder gaat en er beweging was
   - if:
     - condition: and
@@ -997,7 +1073,7 @@
     from: home
     to: not_home
     for: 00:10:00
-    platform: state
+    trigger: state
   conditions:
   - condition: state
     entity_id: input_boolean.modus_gast
@@ -1042,7 +1118,10 @@
     action: homeassistant.turn_off
   - action: climate.turn_off
     target:
-      entity_id: climate.kachel
+      entity_id:
+      - climate.kachel
+      - climate.kachel_2
+    data: {}
 - id: e279cbdb-3235-4657-8e2f-77521884ae50
   alias: 'Aanwezigheid: Herstel alles van voordat we weg waren'
   triggers:
@@ -1722,138 +1801,6 @@
       action: light.turn_off
   mode: restart
   max: 10
-- id: '1674910294791'
-  alias: 'Klimaat: Zolder'
-  description: ''
-  trigger:
-  - platform: state
-    entity_id:
-    - schedule.verwarming_zolder
-    to: 'on'
-    from: 'off'
-    id: verwarmen
-  - platform: state
-    entity_id:
-    - schedule.verwarming_zolder
-    to: 'off'
-    from: 'on'
-    id: laag
-  - platform: state
-    entity_id:
-    - binary_sensor.zolder_raam_openen
-    id: zolder raam geopend
-    to: 'on'
-  - platform: state
-    entity_id:
-    - binary_sensor.zolder_raam_openen
-    id: zolder raam gesloten
-    to: 'off'
-  condition:
-  - condition: state
-    entity_id: person.bram_wubs
-    state: home
-  action:
-  - alias: Automatische verwarming Zolder uitzetten
-    if:
-    - condition: trigger
-      id:
-      - zolder raam geopend
-    then:
-    - service: input_boolean.turn_off
-      data: {}
-      target:
-        entity_id: input_boolean.automatische_verwarming_zolder
-  - alias: Automatische verwarming Zolder aanzetten
-    if:
-    - condition: trigger
-      id:
-      - zolder raam gesloten
-    then:
-    - service: input_boolean.turn_on
-      data: {}
-      target:
-        entity_id: input_boolean.automatische_verwarming_zolder
-  - alias: Verwarmen naar 16
-    if:
-    - condition: or
-      conditions:
-      - condition: trigger
-        id: verwarmen
-      - condition: trigger
-        id:
-        - zolder raam gesloten
-    - condition: state
-      entity_id: person.bram_wubs
-      state: home
-      alias: Bram is thuis
-    - condition: state
-      entity_id: input_boolean.thuiswerkdag
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.automatische_verwarming_zolder
-      state: 'on'
-    - condition: state
-      entity_id: schedule.verwarming_zolder
-      state: 'on'
-    then:
-    - service: climate.turn_on
-      data: {}
-      target:
-        entity_id: climate.kantoor_2
-    - service: climate.set_temperature
-      data:
-        temperature: 16
-      target:
-        entity_id: climate.kantoor_2
-    - service: notify.bram
-      data:
-        message: Kantoor ingesteld naar 16 graden
-        data:
-          actions:
-          - action: KLIMAAT_ZOLDER_MOET_UIT
-            title: Weer uit zetten?
-            activationMode: background
-    - wait_for_trigger:
-      - platform: event
-        event_type: mobile_app_notification_action
-        event_data:
-          action: KLIMAAT_ZOLDER_MOET_UIT
-      timeout:
-        hours: 0
-        minutes: 2
-        seconds: 0
-        milliseconds: 0
-      continue_on_timeout: false
-    - service: climate.turn_off
-      data: {}
-      target:
-        entity_id: climate.kantoor_2
-  - alias: Verwarming uit
-    if:
-    - condition: or
-      conditions:
-      - condition: trigger
-        id:
-        - zolder raam geopend
-      - condition: and
-        conditions:
-        - condition: trigger
-          id: laag
-        alias: Als triggered door laag
-    then:
-    - service: climate.set_temperature
-      data:
-        temperature: 12
-      target:
-        entity_id: climate.kantoor_2
-      enabled: false
-    - service: climate.turn_off
-      data: {}
-      target:
-        entity_id: climate.kantoor_2
-    else: []
-  mode: queued
-  max: 10
 - id: '1679930666066'
   alias: 'Afstandsbediening: Muziek Keuken'
   description: ''
@@ -2521,103 +2468,6 @@
     data:
       library_name: Audio Boeken
   mode: single
-- id: '1697607298005'
-  alias: 'Verlichting: Zolder'
-  description: ''
-  use_blueprint:
-    path: EPMatt/ikea_e1766.yaml
-    input:
-      integration: ZHA
-      controller_device: 9f4a069384e3166a176f73f9d8a71fd5
-      helper_last_controller_event: input_text.muur_schakelaar_kantoor_helper
-      action_button_up_short:
-      - if:
-        - condition: state
-          entity_id: light.kantoor_lamp
-          state: 'on'
-        then:
-        - data: {}
-          target:
-            entity_id: light.kantoor_lamp
-          action: light.turn_off
-        - data: {}
-          target:
-            entity_id: input_boolean.zolder_automatiche_verlichting
-          action: input_boolean.turn_off
-        else:
-        - data:
-            brightness_pct: 23
-          target:
-            entity_id: light.kantoor_lamp
-          action: light.turn_on
-        - data: {}
-          target:
-            entity_id: input_boolean.zolder_automatiche_verlichting
-          action: input_boolean.turn_on
-      action_button_down_short:
-      - if:
-        - condition: state
-          state: 'on'
-          entity_id: light.nachtkastjes_zolder
-        then:
-        - data: {}
-          action: light.turn_off
-          target:
-            entity_id: light.nachtkastjes_zolder
-        - data: {}
-          target:
-            entity_id: input_boolean.zolder_automatiche_verlichting
-          action: input_boolean.turn_off
-        else:
-        - data:
-            brightness_pct: 23
-          action: light.turn_on
-          target:
-            entity_id: light.nachtkastjes_zolder
-        - data: {}
-          target:
-            entity_id: input_boolean.zolder_automatiche_verlichting
-          action: input_boolean.turn_on
-      action_button_down_double:
-      - if:
-        - condition: device
-          device_id: 71f27134959e53d7a39ac2de181d2d00
-          domain: cover
-          entity_id: 243582ca6749d5c62f16dcd5aa320ee0
-          type: is_closing
-        then:
-        - action: cover.stop_cover
-          metadata: {}
-          data: {}
-          target:
-            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
-        else:
-        - action: cover.close_cover
-          metadata: {}
-          data: {}
-          target:
-            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
-      button_down_double_press: true
-      button_up_double_press: true
-      action_button_up_double:
-      - if:
-        - condition: device
-          device_id: 71f27134959e53d7a39ac2de181d2d00
-          domain: cover
-          entity_id: 243582ca6749d5c62f16dcd5aa320ee0
-          type: is_opening
-        then:
-        - action: cover.stop_cover
-          metadata: {}
-          data: {}
-          target:
-            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
-        else:
-        - action: cover.open_cover
-          metadata: {}
-          data: {}
-          target:
-            area_id: 6d60dd9d13ff4ee4b715cf080394ac41
 - id: '1702616898816'
   alias: 'Verlichting: Slaapkamer (ZHA)'
   description: ''
@@ -2626,23 +2476,17 @@
     input:
       aqara_mini_switch: fc61675aa53ea4566196ab517d1ee8af
       button_single_press:
-      - service: switch.toggle
-        target:
+      - target:
           entity_id: switch.slaapkamer
         data: {}
-      button_long_press:
-      - service: light.toggle
-        data:
-          brightness_pct: 5
-        target:
-          entity_id: light.slaapkamer_kast_licht
+        action: switch.toggle
+      button_long_press: []
       button_double_press:
-      - service: light.turn_off
-        target:
+      - target:
           area_id:
           - 290ef374526c47d1beb8cbe09186fe0c
-          - 6d60dd9d13ff4ee4b715cf080394ac41
         data: {}
+        action: light.turn_off
 - id: '1713988326145'
   alias: 'Schakelaar: Zolder Bureau'
   description: ''
@@ -2712,268 +2556,128 @@
           target:
             area_id: 6d60dd9d13ff4ee4b715cf080394ac41
           data: {}
-      action_button_down_double:
-      - action: switch.toggle
-        metadata: {}
-        data: {}
-        target:
-          entity_id: switch.stekkerdoos_bureau_zolder
-- id: '1713989923973'
-  alias: 'Klimaat & Verlichting: Zolder'
-  description: ''
-  triggers:
-  - entity_id:
-    - binary_sensor.activiteit_op_zolder
-    to: 'on'
-    id: Activiteit
-    trigger: state
-  - entity_id:
-    - binary_sensor.activiteit_op_zolder
-    to: 'off'
-    id: Inactiviteit
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
-    trigger: state
-  - entity_id:
-    - binary_sensor.activiteit_op_zolder
-    to: 'off'
-    id: Inactiviteit 3 Min
-    for:
-      hours: 0
-      minutes: 3
-      seconds: 0
-    trigger: state
-  - entity_id:
-    - binary_sensor.activiteit_op_zolder
-    to: 'off'
-    id: Inactiviteit 6  Min
-    for:
-      hours: 0
-      minutes: 6
-      seconds: 0
-    trigger: state
-  - trigger: state
-    entity_id:
-    - binary_sensor.presence_detected_near
-    to: 'on'
-    id: Bureau bezet
-  - trigger: state
-    entity_id:
-    - binary_sensor.presence_detected_near
-    to: 'off'
-    id: Bureau niet bezet
-    enabled: false
-  conditions: []
-  actions:
-  - parallel:
-    - alias: Bureau apparatuur aan als dat mag
-      if:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Bureau bezet
-        - condition: state
-          state: 'on'
-          entity_id: input_boolean.thuiswerkdag
-          enabled: false
-        - condition: state
-          state: 'on'
-          enabled: true
-          entity_id: input_boolean.zolder_automatiche_verlichting
-        - condition: zone
-          entity_id: person.bram_wubs
-          zone: zone.home
-          enabled: false
-        - condition: state
-          entity_id: schedule.werktijden
-          state: 'on'
-          enabled: true
-        - condition: state
-          entity_id: binary_sensor.presence_detected_near
-          state: 'on'
-          enabled: false
-      then:
-      - action: switch.turn_on
-        metadata: {}
-        data: {}
-        target:
-          entity_id: switch.stekkerdoos_bureau_zolder
-      enabled: true
-    - if:
-      - condition: and
-        conditions:
-        - condition: state
-          entity_id: input_boolean.zolder_automatiche_verlichting
-          state: 'on'
-        - condition: trigger
-          id:
-          - Activiteit
-      then:
-      - data:
-          brightness_pct: 70
-          transition: 2
-        target:
-          entity_id: light.kantoor_lamp
-        action: light.turn_on
-      alias: Zolder lamp aan bij activiteit
-    - alias: Zolder lamp uit bij inactiviteit
-      if:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Inactiviteit
-        - condition: state
-          entity_id: input_boolean.zolder_automatiche_verlichting
-          state: 'on'
-      then:
-      - data:
-          transition: 2
-        target:
-          entity_id: light.kantoor_lamp
-        action: light.turn_off
-      - data: {}
-        action: light.turn_off
-        target:
-          entity_id: light.nachtkastjes_zolder
-    - alias: Zolder verwarming uit bij inactiviteit
-      if:
-      - condition: trigger
-        id:
-        - Inactiviteit 3 Min
-        - Inactiviteit 6  Min
-        - Schedule Off
-      then:
-      - metadata: {}
-        data: {}
-        action: script.zolder_verwarming_uit
-      enabled: false
-    - alias: Zet Randaparatuur uit bij inactiviteit
-      if:
-      - condition: trigger
-        id:
-        - Bureau niet bezet
-      then:
-      - metadata: {}
-        data: {}
-        target:
-          entity_id:
-          - switch.stekkerdoos_bureau_zolder
-        action: switch.turn_off
-        enabled: true
-  mode: restart
+      action_button_down_double: []
 - id: '1721486084058'
   alias: Airco Woonkamer
-  description: ''
+  description: 'Beheert de airco woonkamer en keuken op basis van schedule, temperatuur
+    en seizoen. Ventileren na koelen = altijd fan_only. Na verwarmen: winter (buiten
+    < drempel) = blijven moduleren op heat, voorjaar/zomer = uitschakelen (alleen
+    als airco nog aan is).'
   triggers:
-  - entity_id:
+  - enabled: false
+    entity_id:
     - binary_sensor.airco_woonkamer_mag_aan
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 0
+    from:
     id: Airco Mag Aan
-    from:
+    platform: state
     to: 'on'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
-    enabled: false
-    trigger: state
   - entity_id:
     - binary_sensor.airco_woonkamer_mag_aan
-    id: Airco Moet Uit
-    from:
-    to: 'off'
     for:
       hours: 0
       minutes: 0
       seconds: 0
-    trigger: state
+    from:
+    id: Airco Moet Uit
+    platform: state
+    to: 'off'
   - entity_id:
     - sensor.airco_woonkamer_target_temperatuur
     id: Temperatuur Veranderd
-    trigger: state
+    platform: state
   - entity_id:
     - schedule.airco_woonkamer
-    to: 'off'
     id: Airco Moet Uit
-    trigger: state
+    platform: state
+    to: 'off'
   - entity_id:
     - binary_sensor.airco_woonkamer_mag_afkoelen
-    to: 'on'
     id: Afkoelen
-    trigger: state
+    platform: state
+    to: 'on'
   - entity_id:
     - binary_sensor.airco_woonkamer_mag_verwarmen
-    to: 'on'
     id: Verwarmen
-    trigger: state
-  - entity_id:
-    - binary_sensor.airco_woonkamer_mag_ventileren
+    platform: state
     to: 'on'
-    id: Airco Moet Uit
-    trigger: state
-    enabled: true
+  - enabled: true
+    entity_id:
+    - binary_sensor.airco_woonkamer_mag_ventileren
     for:
       hours: 0
       minutes: 30
       seconds: 0
-  - trigger: state
-    entity_id:
+    id: Airco Moet Uit
+    platform: state
+    to: 'on'
+  - entity_id:
     - climate.airco_woonkamer
     from: unavailable
-    to:
     id: Beschikbaar
-  - entity_id:
+    platform: state
+    to:
+  - enabled: true
+    entity_id:
     - binary_sensor.airco_woonkamer_mag_ventileren
-    to: 'on'
-    id: Ventileren
-    trigger: state
-    enabled: true
     for:
       hours: 0
       minutes: 0
       seconds: 0
-  - entity_id:
+    id: Ventileren
+    platform: state
+    to: 'on'
+  - enabled: true
+    entity_id:
     - binary_sensor.airco_woonkamer_mag_ventileren
-    to: 'off'
     id: Ventileren Uit
-    trigger: state
-    enabled: true
-  - trigger: time_pattern
-    hours: '*'
+    platform: state
+    to: 'off'
+  - hours: '*'
     minutes: /5
+    platform: time_pattern
     seconds: '0'
-  - trigger: state
-    entity_id:
+  - entity_id:
     - input_number.airco_woonkamer_drempelwaarde_verwarmen
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - input_number.airco_woonkamer_temperatuur_offset
     for:
       hours: 0
       minutes: 0
       seconds: 10
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - input_boolean.airco_woonkamer_moet_afkoelen
     id: moet afkoelen gaat aan
+    platform: state
     to: 'on'
-  - trigger: state
-    entity_id:
+  - entity_id:
     - input_boolean.airco_woonkamer_moet_verwarmen
     id: moet verwarmen gaat aan
+    platform: state
     to: 'on'
-  - trigger: state
-    entity_id:
+  - entity_id:
     - input_boolean.vakantie_modus
     id: Vakantie Modus Veranderd
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - input_boolean.airco_woonkamer_boost_modus
     for:
       seconds: 5
+    platform: state
+  - entity_id:
+    - binary_sensor.airco_woonkamer_mag_verwarmen
+    platform: state
+    to: 'off'
+    for:
+      hours: 0
+      minutes: 5
+      seconds: 0
+    id: Verwarmen Klaar
   conditions:
   - condition: state
     entity_id: input_boolean.airco_woonkamer_manual_override
@@ -2989,17 +2693,18 @@
         state: 'on'
       sequence:
       - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
         data:
           timestamp: '{{ now().timestamp() }}'
-      - data:
+        target:
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - action: climate.set_temperature
+        data:
           temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
-        action: climate.set_temperature
-    - conditions:
+    - alias: Afkoelen
+      conditions:
       - condition: state
         entity_id: binary_sensor.airco_woonkamer_mag_afkoelen
         state: 'on'
@@ -3026,33 +2731,31 @@
         enabled: true
       sequence:
       - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
         data:
           timestamp: '{{ now().timestamp() }}'
-      - target:
-          entity_id: climate.airco_woonkamer
+        target:
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - action: climate.turn_on
         data: {}
-        action: climate.turn_on
         enabled: false
-      - metadata: {}
+        target:
+          entity_id: climate.airco_woonkamer
+      - action: climate.set_hvac_mode
         data:
           hvac_mode: cool
         target:
           label_id: airco_beneden
-        action: climate.set_hvac_mode
       - delay:
           seconds: 2
-      - data:
+      - action: climate.set_temperature
+        data:
           temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
-        action: climate.set_temperature
       - delay:
           seconds: 2
       - action: climate.set_swing_mode
-        metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
@@ -3060,10 +2763,10 @@
       - delay:
           seconds: 2
       - action: select.select_option
-        target:
-          entity_id: select.airco_woonkamer_horizontal_swing_direction
         data:
           option: Left/Right Auto
+        target:
+          entity_id: select.airco_woonkamer_horizontal_swing_direction
       - delay:
           seconds: 2
       - action: select.select_option
@@ -3072,11 +2775,10 @@
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
       - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
         data:
           message: 'Airco woonkamer is gaan koelen '
-      alias: Afkoelen
-    - conditions:
+    - alias: Uitschakelen
+      conditions:
       - condition: and
         conditions:
         - condition: or
@@ -3085,13 +2787,13 @@
             entity_id: binary_sensor.airco_woonkamer_mag_aan
             state: 'off'
           - condition: state
+            enabled: false
             entity_id: binary_sensor.airco_woonkamer_mag_ventileren
-            state: 'on'
             for:
               hours: 0
               minutes: 30
               seconds: 0
-            enabled: false
+            state: 'on'
           enabled: true
         - condition: or
           conditions:
@@ -3112,21 +2814,19 @@
             state: heat
       sequence:
       - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
         data:
           timestamp: '{{ now().timestamp() }}'
-      - metadata: {}
+        target:
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - action: climate.turn_off
         data: {}
         target:
           label_id: airco_beneden
-        action: climate.turn_off
       - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
         data:
           message: Airco woonkamer is uitgezet
-      alias: Uitschakelen
-    - conditions:
+    - alias: Verwarmen
+      conditions:
       - condition: state
         entity_id: binary_sensor.airco_woonkamer_mag_verwarmen
         state: 'on'
@@ -3153,28 +2853,26 @@
         enabled: true
       sequence:
       - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
         data:
           timestamp: '{{ now().timestamp() }}'
-      - metadata: {}
+        target:
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - action: climate.set_hvac_mode
         data:
           hvac_mode: heat
         target:
           label_id: airco_beneden
-        action: climate.set_hvac_mode
       - delay:
           seconds: 2
-      - data:
+      - action: climate.set_temperature
+        data:
           temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
           label_id: airco_beneden
-        action: climate.set_temperature
       - delay:
           seconds: 2
       - action: climate.set_fan_mode
-        metadata: {}
         data:
           fan_mode: '{{ ''3 High'' if is_state(''input_boolean.airco_woonkamer_boost_modus'',
             ''on'') else ''auto'' }}'
@@ -3183,7 +2881,6 @@
       - delay:
           seconds: 2
       - action: climate.set_swing_mode
-        metadata: {}
         data:
           swing_mode: Up/Down Auto
         target:
@@ -3191,7 +2888,6 @@
       - delay:
           seconds: 2
       - action: select.select_option
-        metadata: {}
         data:
           option: Left/Right Auto
         target:
@@ -3203,76 +2899,137 @@
           option: Left/Right Auto
         target:
           entity_id: select.airco_keuken_horizontal_swing_direction
-      alias: Verwarmen
-    - conditions:
+    - alias: 'Na verwarmen klaar: winter moduleren of lente/zomer uitzetten'
+      conditions:
+      - condition: trigger
+        id:
+        - Verwarmen Klaar
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_verwarmen
+        state: 'off'
+      - condition: state
+        entity_id: climate.airco_woonkamer
+        state: heat
+      sequence:
+      - choose:
+        - alias: 'Winter: buiten koud, blijven moduleren op laag'
+          conditions:
+          - condition: numeric_state
+            entity_id: weather.home
+            attribute: temperature
+            below: input_number.airco_ventileren_buitentemp_drempel
+          sequence:
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: auto
+            target:
+              label_id: airco_beneden
+        default:
+        - action: climate.turn_off
+          data: {}
+          target:
+            label_id: airco_beneden
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: Airco woonkamer uitgezet (verwarmen klaar, buiten warm genoeg)
+    - alias: Ventileren (seizoensgebonden)
+      conditions:
       - condition: state
         entity_id: binary_sensor.airco_woonkamer_mag_ventileren
         state: 'on'
       sequence:
       - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
         data:
           timestamp: '{{ now().timestamp() }}'
-      - target:
-          label_id: airco_beneden
-        data: {}
-        action: climate.turn_on
-        enabled: true
-      - delay:
-          seconds: 2
-      - data:
-          temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
-            float }}'
         target:
-          label_id: airco_beneden
-        action: climate.set_temperature
-        enabled: false
-      - action: climate.set_hvac_mode
-        metadata: {}
-        data:
-          hvac_mode: fan_only
-        target:
-          label_id: airco_beneden
-      - delay:
-          seconds: 2
-      - action: climate.set_fan_mode
-        metadata: {}
-        data:
-          fan_mode: 2 Low
-        target:
-          label_id: airco_beneden
-        enabled: true
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        metadata: {}
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          label_id: airco_beneden
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        target:
-          entity_id: select.airco_woonkamer_horizontal_swing_direction
-        data:
-          option: Left/Right Auto
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        target:
-          entity_id: select.airco_keuken_horizontal_swing_direction
-        data:
-          option: Left/Right Auto
-      alias: Ventileren
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - choose:
+        - alias: 'Na koelen (zomer): altijd fan_only voor luchtstroom'
+          conditions:
+          - condition: state
+            entity_id: climate.airco_woonkamer
+            state: cool
+          sequence:
+          - action: climate.turn_on
+            data: {}
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_hvac_mode
+            data:
+              hvac_mode: fan_only
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: 2 Low
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_swing_mode
+            data:
+              swing_mode: Up/Down Auto
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_woonkamer_horizontal_swing_direction
+          - delay:
+              seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_keuken_horizontal_swing_direction
+        - alias: 'Na verwarmen + buiten koud (winter): moduleren op lage stand'
+          conditions:
+          - condition: state
+            entity_id: climate.airco_woonkamer
+            state: heat
+          - attribute: temperature
+            below: input_number.airco_ventileren_buitentemp_drempel
+            condition: numeric_state
+            entity_id: weather.home
+          sequence:
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: auto
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_swing_mode
+            data:
+              swing_mode: Up/Down Auto
+            target:
+              label_id: airco_beneden
+        default:
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: climate.airco_woonkamer
+            state: 'off'
+        - action: climate.turn_off
+          data: {}
+          target:
+            label_id: airco_beneden
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: Airco woonkamer uitgezet (op temperatuur, buiten warm genoeg)
     - conditions:
       - condition: trigger
         id:
         - Verwarmen
       sequence:
       - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
         data:
           message: Airco woonkamer is gaan verwarmen
         enabled: true
@@ -3290,7 +3047,6 @@
         state: 'on'
     then:
     - action: input_boolean.turn_off
-      metadata: {}
       data: {}
       target:
         entity_id: input_boolean.airco_woonkamer_moet_verwarmen
@@ -3308,440 +3064,68 @@
         state: 'on'
     then:
     - action: input_boolean.turn_off
-      metadata: {}
       data: {}
       target:
         entity_id:
         - input_boolean.airco_woonkamer_moet_afkoelen
-  mode: queued
   max: 10
-- id: '1724615319447'
-  alias: Airco Zolder
-  description: ''
-  triggers:
-  - at: '20:30:00'
-    id: Koelen voor de nacht
-    trigger: time
-  - entity_id:
-    - sensor.airco_zolder_indoor
-    for:
-      hours: 0
-      minutes: 10
-      seconds: 0
-    below: 19.5
-    id: Onder 19,5 voor 10 min
-    trigger: numeric_state
-  - entity_id:
-    - sensor.airco_zolder_indoor
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-    id: Boven 20 voor 5 min
-    above: 20
-    trigger: numeric_state
-  - at: 07:30:00
-    id: ' Stoppen met koelen'
-    trigger: time
-  conditions:
-  - condition: state
-    entity_id: group.bewoners
-    state: home
-  actions:
-  - if:
-    - condition: trigger
-      id:
-      - Koelen voor de nacht
-    then:
-    - action: climate.turn_on
-      metadata: {}
-      data: {}
-      target:
-        device_id: 7baa7aab550ac8e4da6fbca589f1653c
-    - action: climate.set_temperature
-      metadata: {}
-      data:
-        temperature: 21
-        hvac_mode: cool
-      target:
-        entity_id: climate.airco_zolder
-    - action: notify.persistent_notification
-      metadata: {}
-      data:
-        message: Afkoelen voor de nacht
-    alias: 'Nacht programma '
-  - if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id:
-        - Onder 19,5 voor 10 min
-      - condition: device
-        device_id: 7baa7aab550ac8e4da6fbca589f1653c
-        domain: climate
-        entity_id: f94bde5aae9a1a7a379e24b34b814f65
-        type: is_hvac_mode
-        hvac_mode: cool
-    then:
-    - action: climate.set_hvac_mode
-      metadata: {}
-      data:
-        hvac_mode: fan_only
-      target:
-        entity_id: climate.airco_zolder
-    - action: notify.persistent_notification
-      metadata: {}
-      data:
-        message: Alleen ventileren
-    alias: Onder de 20 voor 10 min
-  - alias: Boven de 20 voor 5 min
-    if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id:
-        - Boven 20 voor 5 min
-      - condition: device
-        device_id: 7baa7aab550ac8e4da6fbca589f1653c
-        domain: climate
-        entity_id: f94bde5aae9a1a7a379e24b34b814f65
-        type: is_hvac_mode
-        hvac_mode: fan_only
-    then:
-    - action: climate.set_temperature
-      metadata: {}
-      data:
-        temperature: 20
-        hvac_mode: cool
-      target:
-        entity_id: climate.airco_zolder
-    - action: notify.persistent_notification
-      metadata: {}
-      data:
-        message: Weer afkoelen
-  - if:
-    - condition: trigger
-      id:
-      - ' Stoppen met koelen'
-    then:
-    - action: climate.turn_off
-      target:
-        device_id:
-        - 7baa7aab550ac8e4da6fbca589f1653c
-      data: {}
-    - action: notify.persistent_notification
-      metadata: {}
-      data:
-        message: stoppen met koelen
-    alias: Stoppen met koelen
-  mode: single
-- id: '1729061312544'
-  alias: Airco Zolder
-  description: ''
-  triggers:
-  - entity_id:
-    - binary_sensor.airco_zolder_mag_aan
-    id: Airco Mag Aan
-    from:
-    to: 'on'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
-    enabled: false
-    trigger: state
-  - entity_id:
-    - binary_sensor.airco_zolder_mag_aan
-    id: Airco Moet Uit
-    from:
-    to: 'off'
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 0
-    trigger: state
-  - entity_id:
-    - sensor.airco_zolder_ideale_temperatuur
-    id: Temperatuur Veranderd
-    trigger: state
-  - entity_id:
-    - schedule.verwarming_zolder
-    to: 'off'
-    id: Airco Moet Uit
-    trigger: state
-  - entity_id:
-    - binary_sensor.airco_zolder_mag_afkoelen
-    to: 'on'
-    id: Afkoelen
-    trigger: state
-  - entity_id:
-    - binary_sensor.airco_zolder_mag_verwarmen
-    to: 'on'
-    id: Verwarmen
-    trigger: state
-  - entity_id:
-    - binary_sensor.airco_zolder_mag_ventileren
-    to: 'on'
-    id: Ventileren
-    trigger: state
-  - trigger: state
-    entity_id:
-    - climate.airco_zolder
-    to: 'off'
-    id: Airco Zolder is Uitgegaan
-  - trigger: state
-    entity_id:
-    - binary_sensor.airco_zolder_mag_aan
-    - binary_sensor.airco_zolder_mag_afkoelen
-    - binary_sensor.airco_zolder_mag_ventileren
-    - binary_sensor.airco_zolder_mag_verwarmen
-  - trigger: time_pattern
-    hours: '*'
-    minutes: /9
-    seconds: '0'
-  conditions: []
-  actions:
-  - choose:
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Afkoelen
-          - Airco Zolder is Uitgegaan
-          enabled: false
-        - condition: state
-          entity_id: binary_sensor.airco_zolder_mag_afkoelen
-          state: 'on'
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: 'off'
-      sequence:
-      - data: {}
-        action: climate.turn_on
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - metadata: {}
-        data:
-          hvac_mode: cool
-        target:
-          entity_id: climate.airco_zolder
-        action: climate.set_hvac_mode
-      - delay:
-          seconds: 2
-      - data:
-          temperature: '{{states(''sensor.airco_zolder_ideale_temperatuur'') | float
-            }}'
-        target:
-          entity_id: climate.airco_zolder
-        action: climate.set_temperature
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        metadata: {}
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        target:
-          entity_id: select.airco_zolder_horizontal_swing_direction
-        data:
-          option: Left/Right Auto
-      - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
-        data:
-          message: 'Airco zolder is gaan koelen '
-        enabled: false
-      alias: Mag afkoelen
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.airco_zolder_mag_aan
-          state: 'off'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: climate.airco_zolder
-            state: heat
-          - condition: state
-            entity_id: climate.airco_zolder
-            state: cool
-        enabled: true
-      sequence:
-      - metadata: {}
-        data: {}
-        target:
-          entity_id: climate.airco_zolder
-        action: climate.turn_off
-      - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
-        data:
-          message: Airco zolder is uitgezet
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Verwarmen
-          - Airco Zolder is Uitgegaan
-          enabled: false
-        - condition: state
-          entity_id: binary_sensor.airco_zolder_mag_verwarmen
-          state: 'on'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: climate.airco_zolder
-            state: 'off'
-          - condition: numeric_state
-            entity_id: climate.airco_zolder
-            above: sensor.airco_woonkamer_target_temperatuur
-            attribute: temperature
-          - condition: numeric_state
-            entity_id: climate.airco_zolder
-            below: sensor.airco_zolder_ideale_temperatuur
-            attribute: temperature
-      sequence:
-      - target:
-          entity_id: climate.airco_zolder
-        data: {}
-        action: climate.turn_on
-      - delay:
-          seconds: 2
-      - metadata: {}
-        data:
-          hvac_mode: heat
-        target:
-          entity_id: climate.airco_zolder
-        action: climate.set_hvac_mode
-      - delay:
-          seconds: 2
-      - data:
-          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
-            }}'
-        target:
-          entity_id: climate.airco_zolder
-        action: climate.set_temperature
-      - delay:
-          seconds: 2
-      - action: climate.set_fan_mode
-        metadata: {}
-        data:
-          fan_mode: 3 High
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        metadata: {}
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        target:
-          entity_id: select.airco_zolder_horizontal_swing_direction
-        data:
-          option: Left/Right Auto
-      - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
-        data:
-          message: Airco zolder is gaan verwarmen
-        enabled: false
-      alias: Mag verwarmen
-    - conditions:
-      - condition: and
-        conditions:
-        - condition: trigger
-          id:
-          - Airco Zolder is Uitgegaan
-          - Ventileren
-          enabled: false
-        - condition: state
-          entity_id: binary_sensor.airco_zolder_mag_ventileren
-          state: 'on'
-        - condition: or
-          conditions:
-          - condition: state
-            entity_id: climate.airco_zolder
-            state: heat
-          - condition: state
-            entity_id: climate.airco_zolder
-            state: cool
-      sequence:
-      - target:
-          entity_id: climate.airco_zolder
-        data: {}
-        action: climate.turn_on
-      - delay:
-          seconds: 2
-      - metadata: {}
-        data:
-          hvac_mode: fan_only
-        target:
-          entity_id: climate.airco_zolder
-        action: climate.set_hvac_mode
-      - delay:
-          seconds: 2
-      - action: climate.set_fan_mode
-        metadata: {}
-        data:
-          fan_mode: 1 Lowest
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        metadata: {}
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        target:
-          entity_id: select.airco_zolder_horizontal_swing_direction
-        data:
-          option: Left/Right Auto
-      - action: notify.mobile_app_iphone_van_bram
-        metadata: {}
-        data:
-          message: Airco zolder is gaan ventileren
-      alias: Mag ventileren
-  mode: single
+  mode: queued
 - id: '1733782066889'
   alias: 'Klimaat: Badkamer'
   description: ''
   triggers:
-  - trigger: time_pattern
-    hours: '*'
+  - hours: '*'
     minutes: /5
-  - trigger: state
-    entity_id:
+    platform: time_pattern
+  - entity_id:
     - schedule.verwarming_badkamer
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - input_boolean.vakantie_modus
     id: vakantie_modus_veranderd
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - binary_sensor.radiatorkraan_badkamer_mag_aan
     id: mag_aan_veranderd
+    platform: state
+  - entity_id:
+    - binary_sensor.raam_badkamer_openen
+    id: raam_veranderd
+    platform: state
+  - platform: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.badkamer_verwarming_tijdelijk_aan
+    id: timer_afgelopen
   conditions: []
   actions:
   - if:
     - condition: state
-      entity_id: binary_sensor.radiatorkraan_badkamer_mag_aan
+      entity_id: binary_sensor.raam_badkamer_openen
       state: 'on'
+    then:
+    - action: climate.turn_off
+      target:
+        entity_id:
+        - climate.badkamer_verwarming
+  - if:
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.radiatorkraan_badkamer_mag_aan
+        state: 'on'
+      - condition: state
+        entity_id: input_boolean.badkamer_verwarming_moet_uit
+        state:
+        - 'off'
+      - condition: state
+        entity_id: binary_sensor.raam_badkamer_openen
+        state:
+        - 'off'
+        - unavailable
+      - condition: state
+        entity_id: timer.badkamer_verwarming_tijdelijk_aan
+        state: idle
     then:
     - action: climate.set_temperature
       metadata: {}
@@ -3755,9 +3139,23 @@
         entity_id:
         - climate.badkamer_verwarming
   - if:
-    - condition: state
-      entity_id: binary_sensor.radiatorkraan_badkamer_mag_aan
-      state: 'off'
+    - condition: and
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.radiatorkraan_badkamer_mag_aan
+        state: 'off'
+      - condition: state
+        entity_id: input_boolean.badkamer_verwarming_moet_uit
+        state:
+        - 'off'
+      - condition: state
+        entity_id: binary_sensor.raam_badkamer_openen
+        state:
+        - 'off'
+        - unavailable
+      - condition: state
+        entity_id: timer.badkamer_verwarming_tijdelijk_aan
+        state: idle
     then:
     - action: climate.set_temperature
       metadata: {}
@@ -4498,47 +3896,6 @@
         entity_id: d1b071a27d769061708eed2a10e73c69
         domain: switch
   mode: single
-- id: '1758048541867'
-  alias: Cover Control Automation (CCA)
-  description: ''
-  use_blueprint:
-    path: hvorragend/cover_control_automation.yaml
-    input:
-      blind: cover.rolluik_dakkapel
-      auto_options:
-      - auto_down_enabled
-      - auto_sun_enabled
-      - auto_shading_enabled
-      - auto_brightness_enabled
-      - auto_ventilate_enabled
-      cover_status_options: cover_helper_enabled
-      cover_status_helper: input_text.zolder_rolluik_helper
-      ventilate_position: 15
-      time_control: time_control_enabled
-      default_brightness_sensor: sensor.aanwezigheid_zolder_licht
-      contact_window_tilted: binary_sensor.zolder_raam_openen
-      shading_forecast_sensor: weather.home
-      shading_forecast_type: hourly
-      shading_weather_conditions:
-      - lightning
-      - partlycloudy
-      - sunny
-      - clear
-      ignore_after_manual_config: []
-      reset_override_config: reset_disabled
-      reset_override_time: 08:00:00
-      check_config: true
-      time_up_early: 08:00:00
-      time_up_early_non_workday: 09:00:00
-      workday_sensor: binary_sensor.workday_sensor
-      sun_elevation_up: 11.2
-      shading_azimuth_start: 141
-      shading_elevation_min: 71.5
-      shading_brightness_sensor: sensor.aanwezigheid_zolder_licht
-      shading_sun_brightness_start: 17575
-      shading_sun_brightness_end: 11131
-      time_up_late: 08:30:00
-      time_up_late_non_workday: '10:00:00'
 - id: '1759521136361'
   alias: Boiler - Compleet Cyclus Management
   description: Herijkt de opwarmduur, start en stopt de boiler op het optimale moment,
@@ -4670,31 +4027,30 @@
   description: Plant en start de wasmachine of droger op het goedkoopste moment in
     de nacht.
   triggers:
-  - trigger: state
-    entity_id:
+  - entity_id:
     - sensor.droger_bedrijfsstatus
     to: Finished
     id: Droger Finished
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - sensor.droger_bedrijfsstatus
     to: run
     id: Droger Started
     from: delayedstart
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - sensor.wasmachine_bedrijfsstatus
     from: Run
     to: Finished
     id: Wasmachine Finished
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - sensor.wasmachine_bedrijfsstatus
     from: delayedstart
     to: run
     id: Wasmachine Started
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - select.droger_geselecteerd_programma
     id: droger_klaar
     not_from:
@@ -4707,8 +4063,8 @@
       hours: 0
       minutes: 0
       seconds: 7
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - select.wasmachine_geselecteerd_programma
     id: wasmachine_klaar
     not_from:
@@ -4721,6 +4077,16 @@
       hours: 0
       minutes: 0
       seconds: 7
+    platform: state
+  - entity_id:
+    - sensor.droger_bedrijfsstatus
+    to: ready
+    id: droger_klaar
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 10
+    platform: state
   conditions: []
   actions:
   - choose:
@@ -4730,41 +4096,24 @@
         - wasmachine_klaar
       sequence:
       - variables:
-          duration_hours: >-
-            {% set hours = states('sensor.wasmachine_estimated_total_program_time')
-            | float(3.5) %} {{ [hours, 0.5] | max }}
-          start_time: >-
-            {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
-            {% set search_start = now() %} {% set search_end = today_at('07:00')
-            + timedelta(days=1) %} {{ cheapest_energy_hours(
-                sensor='sensor.current_tariff',
-                time_key='datetime',
-                hours=duration_hours,
-                start=search_start,
-                end=search_end,
-                include_tomorrow=true
-              )
-            }}
-          end_time: >-
-            {% if start_time %}
-              {{ (start_time | as_datetime) + timedelta(hours=duration_hours) }}
-            {% endif %}
-          hours: >-
-            {% if end_time %}
-              {{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
-              - now()).seconds // 3600 }}
-            {% else %}
-              0
-            {% endif %}
-          minutes: >-
-            {% if end_time %}
-              {{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}
-            {% else %}
-              0
-            {% endif %}
+          duration_hours: '{% set hours = states(''sensor.wasmachine_estimated_total_program_time'')
+            | float(3.5) %} {{ [hours, 0.5] | max }}'
+          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
+            %} {% set search_start = now() %} {% set search_end = today_at('07:00')
+            + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
+            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
+            \   end=search_end,\n    include_tomorrow=true\n  )\n}}"
+          end_time: "{% if start_time %}\n  {{ (start_time | as_datetime) + timedelta(hours=duration_hours)
+            }}\n{% endif %}"
+          hours: "{% if end_time %}\n  {{ (end_time | as_datetime - now()).days *
+            24 + (end_time | as_datetime\n  - now()).seconds // 3600 }}\n{% else %}\n
+            \ 0\n{% endif %}"
+          minutes: "{% if end_time %}\n  {{ ((end_time | as_datetime - now()).seconds
+            % 3600) // 60 }}\n{% else %}\n  0\n{% endif %}"
       - if:
         - condition: template
-          value_template: "{{ start_time not in ['', 'None', none] and start_time | as_datetime is not none }}"
+          value_template: '{{ start_time not in ['''', ''None'', none] and start_time
+            | as_datetime is not none }}'
         then:
         - action: homeconnect_ws.start_program
           metadata: {}
@@ -4773,75 +4122,70 @@
               hours: '{{ hours }}'
               minutes: '{{ minutes }}'
             device_id: 805a0e4a4b9ae3127127eab96b31ac4d
-        - action: notify.mobile_app_iphone_van_bram
-          data:
-            message: De wasmachine is over ~{{ hours }} uur klaar!
+          continue_on_error: true
+        - if:
+          - condition: template
+            value_template: '{{ not this.attributes.last_triggered or (now() - this.attributes.last_triggered).total_seconds()
+              < 5 }}'
+          then:
+          - action: notify.mobile_app_iphone_van_bram
+            data:
+              message: De wasmachine is over ~{{ hours }} uur klaar!
+          else:
+          - action: notify.mobile_app_iphone_van_bram
+            data:
+              message: ⚠️ Wasmachine inplannen mislukt! Controleer de machine (fout
+                bij starten).
         else:
         - action: notify.mobile_app_iphone_van_bram
           data:
-            message: >-
-              Kon geen goedkoop moment vinden voor de wasmachine.
-              Prijsdata is mogelijk nog niet beschikbaar. Probeer het later
-              opnieuw.
+            message: Kon geen goedkoop moment vinden voor de wasmachine. Prijsdata
+              is mogelijk nog niet beschikbaar. Probeer het later opnieuw.
     - conditions:
       - condition: trigger
         id:
         - droger_klaar
       sequence:
       - variables:
-          duration_hours: >-
-            {% set hours = states('sensor.droger_estimated_total_program_time')
-            | float(3.5) %} {{ [hours, 0.5] | max }}
-          start_time: >-
-            {% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours %}
-            {% set search_start = now() %} {% set search_end = today_at('07:00')
-            + timedelta(days=1) %} {{ cheapest_energy_hours(
-                sensor='sensor.current_tariff',
-                time_key='datetime',
-                hours=duration_hours,
-                start=search_start,
-                end=search_end,
-                include_tomorrow=true
-              )
-            }}
-          end_time: >-
-            {% if start_time %}
-              {{ (start_time | as_datetime) + timedelta(hours=duration_hours) }}
-            {% endif %}
-          hours: >-
-            {% if end_time %}
-              {{ (end_time | as_datetime - now()).days * 24 + (end_time | as_datetime
-              - now()).seconds // 3600 }}
-            {% else %}
-              0
-            {% endif %}
-          minutes: >-
-            {% if end_time %}
-              {{ ((end_time | as_datetime - now()).seconds % 3600) // 60 }}
-            {% else %}
-              0
-            {% endif %}
+          duration_hours: '{% set hours = states(''sensor.droger_estimated_total_program_time'')
+            | float(3.5) %} {{ [hours, 0.5] | max }}'
+          start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
+            %} {% set search_start = now() %} {% set search_end = today_at('07:00')
+            + timedelta(days=1) %} {{ cheapest_energy_hours(\n    sensor='sensor.current_tariff',\n
+            \   time_key='datetime',\n    hours=duration_hours,\n    start=search_start,\n
+            \   end=search_end,\n    include_tomorrow=true\n  )\n}}"
+          end_time: "{% if start_time %}\n  {{ (start_time | as_datetime) + timedelta(hours=duration_hours)
+            }}\n{% endif %}"
+          hours: "{% if end_time %}\n  {{ (end_time | as_datetime - now()).days *
+            24 + (end_time | as_datetime\n  - now()).seconds // 3600 }}\n{% else %}\n
+            \ 0\n{% endif %}"
+          minutes: "{% if end_time %}\n  {{ ((end_time | as_datetime - now()).seconds
+            % 3600) // 60 }}\n{% else %}\n  0\n{% endif %}"
+      - action: homeconnect_ws.start_program
+        metadata: {}
+        data:
+          finish_in:
+            hours: '{{ hours }}'
+            minutes: '{{ minutes }}'
+          device_id: 2b5e9c6d6b0cdc54d51e2e72859662d7
+        continue_on_error: true
       - if:
         - condition: template
-          value_template: "{{ start_time not in ['', 'None', none] and start_time | as_datetime is not none }}"
+          value_template: '{{ start_time not in ['''', ''None'', none] and start_time
+            | as_datetime is not none }}'
         then:
-        - action: homeconnect_ws.start_program
-          metadata: {}
-          data:
-            finish_in:
-              hours: '{{ hours }}'
-              minutes: '{{ minutes }}'
-            device_id: 2b5e9c6d6b0cdc54d51e2e72859662d7
         - action: notify.mobile_app_iphone_van_bram
           data:
             message: De droger is over ~{{ hours }} uur klaar!
         else:
         - action: notify.mobile_app_iphone_van_bram
           data:
-            message: >-
-              Kon geen goedkoop moment vinden voor de droger.
-              Prijsdata is mogelijk nog niet beschikbaar. Probeer het later
-              opnieuw.
+            message: '⚠️ Droger inplannen mislukt! Controleer de machine (fout bij
+              starten).
+
+
+              Tip: controleer of de refresher tank vol genoeg is of schakel de refresher
+              functie uit.'
     - conditions:
       - condition: trigger
         id:
@@ -5109,43 +4453,45 @@
   mode: single
 - id: '1737381600002'
   alias: 'Airco Beneden: Detecteer handmatige bediening'
-  description: Activeert manual override wanneer een airco beneden via de fysieke
-    remote wordt bediend (niet via HA UI)
+  description: Detecteert echte handmatige override door te vergelijken of de huidige
+    airco-staat afwijkt van wat HA verwacht. Robuuster dan context-gebaseerde detectie
+    (voorkomt false positives door poll-updates van de integratie).
   triggers:
-  - trigger: state
-    entity_id: climate.airco_woonkamer
+  - platform: state
+    entity_id:
+    - climate.airco_woonkamer
+    - climate.airco_keuken
     for:
-      hours: 0
-      minutes: 0
-      seconds: 2
-    id: woonkamer
-  - trigger: state
-    entity_id: climate.airco_keuken
-    for:
-      hours: 0
-      minutes: 0
-      seconds: 2
-    id: keuken
+      seconds: 10
   conditions:
   - condition: state
     entity_id: input_boolean.airco_woonkamer_manual_override
     state: 'off'
-  - condition: template
-    alias: Wijziging niet via HA UI of automation (geen user_id EN geen parent_id)
-    value_template: '{{ trigger.to_state.context.user_id is none and trigger.to_state.context.parent_id
-      is none }}'
-  - condition: template
-    alias: Er was daadwerkelijk een wijziging
-    value_template: "{% set old = trigger.from_state %} {% set new = trigger.to_state
-      %} {{\n  old.state != new.state or\n  old.attributes.temperature != new.attributes.temperature
-      or\n  old.attributes.get('fan_mode') != new.attributes.get('fan_mode') or\n
-      \ old.attributes.get('preset_mode') != new.attributes.get('preset_mode')\n}}"
-  - condition: template
-    alias: Niet recent door automation gewijzigd (60 sec window voor label met meerdere
-      devices)
+  - condition: state
+    entity_id: binary_sensor.airco_woonkamer_mag_aan
+    state: 'on'
+  - alias: Niet recent automatisch gewijzigd (90 sec buffer voor multi-step sequences)
+    condition: template
     value_template: "{% set last_auto = states('input_datetime.airco_woonkamer_laatste_automatische_wijziging')
-      %} {% if last_auto in ['unknown', 'unavailable', 'none'] %}\n  true\n{% else
-      %}\n  {{ (now().timestamp() - as_timestamp(last_auto)) > 60 }}\n{% endif %}"
+      %}\n{% if last_auto in ['unknown', 'unavailable', 'none'] %}\n  true\n{% else
+      %}\n  {{ (now().timestamp() - as_timestamp(last_auto)) > 90 }}\n{% endif %}"
+  - alias: Airco staat wijkt af van wat HA verwacht (hvac_mode OF temperatuur)
+    condition: template
+    value_template: "{% set target_temp = states('sensor.airco_woonkamer_target_temperatuur')
+      | float(0) %}\n{% set mag_verwarmen = is_state('binary_sensor.airco_woonkamer_mag_verwarmen',
+      'on') %}\n{% set mag_afkoelen = is_state('binary_sensor.airco_woonkamer_mag_afkoelen',
+      'on') %}\n{% set mag_ventileren = is_state('binary_sensor.airco_woonkamer_mag_ventileren',
+      'on') %}\n\n{% if mag_afkoelen %}\n  {% set verwachte_mode = 'cool' %}\n{% elif
+      mag_verwarmen %}\n  {% set verwachte_mode = 'heat' %}\n{% elif mag_ventileren
+      %}\n  {% set verwachte_mode = 'fan_only' %}\n{% else %}\n  {% set verwachte_mode
+      = 'off' %}\n{% endif %}\n\n{% set woonkamer_mode = states('climate.airco_woonkamer')
+      %}\n{% set keuken_mode = states('climate.airco_keuken') %}\n{% set woonkamer_temp
+      = state_attr('climate.airco_woonkamer', 'temperature') | float(0) %}\n{% set
+      keuken_temp = state_attr('climate.airco_keuken', 'temperature') | float(0) %}\n{%
+      set tolerantie = 0.6 %}\n\n{# Override als hvac_mode afwijkt of temperatuur
+      meer dan tolerantie afwijkt #}\n{{ woonkamer_mode != verwachte_mode\n   or keuken_mode
+      != verwachte_mode\n   or (woonkamer_temp - target_temp) | abs > tolerantie\n
+      \  or (keuken_temp - target_temp) | abs > tolerantie }}"
   actions:
   - action: input_boolean.turn_on
     target:
@@ -5153,8 +4499,14 @@
     data: {}
   - action: notify.mobile_app_iphone_van_bram
     data:
-      message: Airco beneden manual override geactiveerd - handmatige bediening gedetecteerd
-        ({{ 'woonkamer' if trigger.id == 'woonkamer' else 'keuken' }})
+      message: "\U0001F579️ Airco beneden handmatige override gedetecteerd\nVerwacht:
+        {{ 'cool' if is_state('binary_sensor.airco_woonkamer_mag_afkoelen', 'on')
+        else 'heat' if is_state('binary_sensor.airco_woonkamer_mag_verwarmen', 'on')
+        else 'fan_only' if is_state('binary_sensor.airco_woonkamer_mag_ventileren',
+        'on') else 'off' }} @ {{ states('sensor.airco_woonkamer_target_temperatuur')
+        }}°C\nWoonkamer: {{ states('climate.airco_woonkamer') }} @ {{ state_attr('climate.airco_woonkamer',
+        'temperature') }}°C\nKeuken: {{ states('climate.airco_keuken') }} @ {{ state_attr('climate.airco_keuken',
+        'temperature') }}°C"
   mode: single
 - id: airco_woonkamer_boost_modus_auto
   alias: Airco Woonkamer Boost Modus Beheer
@@ -5624,330 +4976,60 @@
               de weg?
           action: notify.mobile_app_iphone_van_maninne_1
   mode: parallel
-- id: '1770224369212'
-  alias: Airco Zolder Handmatig
-  description: Automatisch koelen/verwarmen/ventileren op basis van temperatuur wanneer
-    de airco aan staat
-  triggers:
-  - trigger: state
-    entity_id:
-    - climate.airco_zolder
-    from: 'off'
-    id: Airco Aan
-  - trigger: state
-    entity_id:
-    - binary_sensor.airco_zolder_mag_afkoelen
-    to: 'on'
-    id: Afkoelen
-  - trigger: state
-    entity_id:
-    - binary_sensor.airco_zolder_mag_verwarmen
-    to: 'on'
-    id: Verwarmen
-  - trigger: state
-    entity_id:
-    - binary_sensor.airco_zolder_mag_ventileren
-    to: 'on'
-    id: Ventileren
-  - trigger: state
-    entity_id:
-    - sensor.airco_zolder_ideale_temperatuur
-    id: Temperatuur Veranderd
-  - trigger: state
-    entity_id:
-    - climate.airco_zolder
-    from: unavailable
-    id: Beschikbaar
-  - trigger: time_pattern
-    hours: '*'
-    minutes: /5
-    seconds: '0'
-  - trigger: state
-    entity_id:
-    - input_boolean.airco_zolder_moet_afkoelen
-    to: 'on'
-    id: moet afkoelen gaat aan
-  - trigger: state
-    entity_id:
-    - input_boolean.airco_zolder_moet_verwarmen
-    to: 'on'
-    id: moet verwarmen gaat aan
-  - trigger: state
-    entity_id:
-    - input_boolean.airco_zolder_boost_modus
-    for:
-      seconds: 5
-  conditions:
-  - condition: not
-    conditions:
-    - condition: state
-      entity_id: climate.airco_zolder
-      state: 'off'
-  actions:
-  - choose:
-    - alias: Temperatuur Veranderd
-      conditions:
-      - condition: trigger
-        id:
-        - Temperatuur Veranderd
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: heat
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: cool
-      sequence:
-      - action: climate.set_temperature
-        data:
-          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
-            }}'
-        target:
-          entity_id: climate.airco_zolder
-    - alias: Afkoelen
-      conditions:
-      - condition: state
-        entity_id: binary_sensor.airco_zolder_mag_afkoelen
-        state: 'on'
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: heat
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: fan_only
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: dry
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: auto
-      sequence:
-      - action: climate.set_hvac_mode
-        data:
-          hvac_mode: cool
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_temperature
-        data:
-          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
-            }}'
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        data:
-          option: Left/Right Auto
-        target:
-          entity_id: select.airco_zolder_horizontal_swing_direction
-      - action: notify.mobile_app_iphone_van_bram
-        data:
-          message: Airco zolder is gaan koelen
-    - alias: Verwarmen
-      conditions:
-      - condition: state
-        entity_id: binary_sensor.airco_zolder_mag_verwarmen
-        state: 'on'
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: cool
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: fan_only
-      sequence:
-      - action: climate.set_hvac_mode
-        data:
-          hvac_mode: heat
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_temperature
-        data:
-          temperature: '{{ states(''sensor.airco_zolder_ideale_temperatuur'') | float
-            }}'
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_fan_mode
-        data:
-          fan_mode: '{{ ''3 High'' if is_state(''input_boolean.airco_zolder_boost_modus'',
-            ''on'') else ''auto'' }}'
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        data:
-          option: Left/Right Auto
-        target:
-          entity_id: select.airco_zolder_horizontal_swing_direction
-      - action: notify.mobile_app_iphone_van_bram
-        data:
-          message: Airco zolder is gaan verwarmen
-    - alias: Ventileren
-      conditions:
-      - condition: state
-        entity_id: binary_sensor.airco_zolder_mag_ventileren
-        state: 'on'
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: heat
-        - condition: state
-          entity_id: climate.airco_zolder
-          state: cool
-      sequence:
-      - action: climate.set_hvac_mode
-        data:
-          hvac_mode: fan_only
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_fan_mode
-        data:
-          fan_mode: 2 Low
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_zolder
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        data:
-          option: Left/Right Auto
-        target:
-          entity_id: select.airco_zolder_horizontal_swing_direction
-  - if:
-    - condition: trigger
-      id:
-      - moet afkoelen gaat aan
-    - condition: state
-      entity_id: input_boolean.airco_zolder_moet_afkoelen
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.airco_zolder_moet_verwarmen
-      state: 'on'
-    then:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.airco_zolder_moet_verwarmen
-  - if:
-    - condition: trigger
-      id:
-      - moet verwarmen gaat aan
-    - condition: state
-      entity_id: input_boolean.airco_zolder_moet_afkoelen
-      state: 'on'
-    - condition: state
-      entity_id: input_boolean.airco_zolder_moet_verwarmen
-      state: 'on'
-    then:
-    - action: input_boolean.turn_off
-      target:
-        entity_id: input_boolean.airco_zolder_moet_afkoelen
-  mode: queued
-  max: 10
-- id: '1770224379163'
-  alias: Airco Zolder Uitzetten
-  description: Zet de airco zolder uit wanneer de handmatige schakelaar uit gaat
-  triggers:
-  - trigger: state
-    entity_id:
-    - input_boolean.airco_zolder_aan
-    to: 'off'
-    id: Airco Uit
-  conditions: []
-  actions:
-  - action: climate.turn_off
-    target:
-      entity_id: climate.airco_zolder
-  - action: notify.mobile_app_iphone_van_bram
-    data:
-      message: Airco zolder is uitgezet
-  mode: single
 - id: '1770224411482'
   alias: Airco Boven Handmatig
-  description: Automatisch koelen/verwarmen/ventileren op basis van temperatuur wanneer
-    de airco aan staat
+  description: 'Automatisch koelen/verwarmen/ventileren. Ventileren na koelen = fan_only.
+    Na verwarmen: winter (buiten < drempel) = moduleren op heat, voorjaar/zomer =
+    uitschakelen (alleen als airco nog aan is).'
   triggers:
-  - trigger: state
-    entity_id:
+  - entity_id:
     - climate.airco_boven
     from: 'off'
     id: Airco Aan
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - binary_sensor.airco_boven_mag_afkoelen
-    to: 'on'
     id: Afkoelen
-  - trigger: state
-    entity_id:
+    platform: state
+    to: 'on'
+  - entity_id:
     - binary_sensor.airco_boven_mag_verwarmen
-    to: 'on'
     id: Verwarmen
-  - trigger: state
-    entity_id:
-    - binary_sensor.airco_boven_mag_ventileren
+    platform: state
     to: 'on'
+  - entity_id:
+    - binary_sensor.airco_boven_mag_ventileren
     id: Ventileren
-  - trigger: state
-    entity_id:
+    platform: state
+    to: 'on'
+  - entity_id:
     - sensor.airco_boven_indoor
     id: Temperatuur Veranderd
-  - trigger: state
-    entity_id:
+    platform: state
+  - entity_id:
     - climate.airco_boven
     from: unavailable
     id: Beschikbaar
-  - trigger: time_pattern
-    hours: '*'
+    platform: state
+  - hours: '*'
     minutes: /5
+    platform: time_pattern
     seconds: '0'
-  - trigger: state
-    entity_id:
+  - entity_id:
     - input_boolean.airco_boven_moet_afkoelen
-    to: 'on'
     id: moet afkoelen gaat aan
-  - trigger: state
-    entity_id:
-    - input_boolean.airco_boven_moet_verwarmen
+    platform: state
     to: 'on'
+  - entity_id:
+    - input_boolean.airco_boven_moet_verwarmen
     id: moet verwarmen gaat aan
-  - trigger: state
-    entity_id:
+    platform: state
+    to: 'on'
+  - entity_id:
     - input_boolean.airco_boven_boost_modus
     for:
       seconds: 5
+    platform: state
   conditions:
   - condition: not
     conditions:
@@ -6083,46 +5165,80 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: Airco boven is gaan verwarmen
-    - alias: Ventileren
+    - alias: Ventileren (seizoensgebonden)
       conditions:
       - condition: state
         entity_id: binary_sensor.airco_boven_mag_ventileren
         state: 'on'
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: climate.airco_boven
-          state: heat
-        - condition: state
-          entity_id: climate.airco_boven
-          state: cool
       sequence:
-      - action: climate.set_hvac_mode
-        data:
-          hvac_mode: fan_only
-        target:
-          entity_id: climate.airco_boven
-      - delay:
-          seconds: 2
-      - action: climate.set_fan_mode
-        data:
-          fan_mode: 2 Low
-        target:
-          entity_id: climate.airco_boven
-      - delay:
-          seconds: 2
-      - action: climate.set_swing_mode
-        data:
-          swing_mode: Up/Down Auto
-        target:
-          entity_id: climate.airco_boven
-      - delay:
-          seconds: 2
-      - action: select.select_option
-        data:
-          option: Left/Right Auto
-        target:
-          entity_id: select.airco_boven_horizontal_swing_direction
+      - choose:
+        - alias: 'Na koelen (zomer): fan_only'
+          conditions:
+          - condition: state
+            entity_id: climate.airco_boven
+            state: cool
+          sequence:
+          - action: climate.set_hvac_mode
+            data:
+              hvac_mode: fan_only
+            target:
+              entity_id: climate.airco_boven
+          - delay:
+              seconds: 2
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: 2 Low
+            target:
+              entity_id: climate.airco_boven
+          - delay:
+              seconds: 2
+          - action: climate.set_swing_mode
+            data:
+              swing_mode: Up/Down Auto
+            target:
+              entity_id: climate.airco_boven
+          - delay:
+              seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_boven_horizontal_swing_direction
+        - alias: 'Na verwarmen + buiten koud (winter): moduleren'
+          conditions:
+          - condition: state
+            entity_id: climate.airco_boven
+            state: heat
+          - attribute: temperature
+            below: input_number.airco_ventileren_buitentemp_drempel
+            condition: numeric_state
+            entity_id: weather.home
+          sequence:
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: auto
+            target:
+              entity_id: climate.airco_boven
+          - delay:
+              seconds: 2
+          - action: climate.set_swing_mode
+            data:
+              swing_mode: Up/Down Auto
+            target:
+              entity_id: climate.airco_boven
+        default:
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: climate.airco_boven
+            state: 'off'
+        - action: climate.turn_off
+          data: {}
+          target:
+            entity_id: climate.airco_boven
+        - action: notify.mobile_app_iphone_van_bram
+          data:
+            message: Airco boven uitgezet (op temperatuur, buiten warm genoeg)
   - if:
     - condition: trigger
       id:
@@ -6151,8 +5267,8 @@
     - action: input_boolean.turn_off
       target:
         entity_id: input_boolean.airco_boven_moet_afkoelen
-  mode: queued
   max: 10
+  mode: queued
 - id: '1770224420136'
   alias: Airco Boven Uitzetten
   description: Zet de airco boven uit wanneer de handmatige schakelaar uit gaat
@@ -6171,166 +5287,6 @@
     data:
       message: Airco boven is uitgezet
   mode: single
-- id: '1770410243172'
-  alias: 'Kachel Jozua: Raam open → uit'
-  description: 'Zet de Mill kachel uit als het raam van Jozua open staat. Bevat een
-    waakhond: als de kachel wordt aangezet terwijl het raam open staat, wordt hij
-    direct weer uitgezet. Vervang input_boolean.raam_jozua_open_placeholder later
-    door de echte raamsensor.'
-  triggers:
-  - platform: state
-    entity_id: input_boolean.raam_jozua_open_placeholder
-    to: 'on'
-    id: raam_open
-  - platform: state
-    entity_id: climate.kachel
-    to: heat
-    id: kachel_aangezet
-  conditions:
-  - condition: state
-    entity_id: input_boolean.raam_jozua_open_placeholder
-    state: 'on'
-  actions:
-  - target:
-      entity_id: climate.kachel
-    action: climate.turn_off
-  - condition: trigger
-    id: kachel_aangezet
-  - data:
-      title: "\U0001F525 Kachel Jozua"
-      message: Kachel weer uitgezet — raam staat nog open!
-    action: notify.notify
-  mode: restart
-- id: '1770410251454'
-  alias: 'Kachel Jozua: Raam dicht → herstel'
-  description: Zet de kachel weer aan op de vorstbescherming-temperatuur als het raam
-    van Jozua dicht gaat.
-  triggers:
-  - platform: state
-    entity_id: input_boolean.raam_jozua_open_placeholder
-    to: 'off'
-  conditions:
-  - condition: numeric_state
-    entity_id: climate.kachel
-    attribute: current_temperature
-    below: 17
-  - condition: time
-    before: '19:00:00'
-  actions:
-  - target:
-      entity_id: climate.kachel
-    action: climate.turn_on
-  - target:
-      entity_id: climate.kachel
-    data:
-      hvac_mode: heat
-      temperature: 16.5
-    action: climate.set_temperature
-  mode: single
-- id: '1770410262108'
-  alias: 'Kachel Jozua: Vorstbescherming'
-  description: 'Vangnet: als de temperatuur in Jozua''s kamer onder 10°C zakt, kachel
-    forceren op heat — ook als het raam open staat. Stuurt ook een melding.'
-  triggers:
-  - platform: numeric_state
-    entity_id: climate.kachel
-    attribute: current_temperature
-    below: 10
-    for: 00:05:00
-  actions:
-  - target:
-      entity_id: climate.kachel
-    action: climate.turn_on
-  - target:
-      entity_id: climate.kachel
-    data:
-      hvac_mode: heat
-      temperature: 12
-    action: climate.set_temperature
-  - data:
-      title: ⚠️ Vorstbescherming Jozua!
-      message: Temperatuur in kamer Jozua is onder de 10°C gezakt ({{ state_attr('climate.kachel',
-        'current_temperature') }}°C). Kachel is geforceerd aangezet op 12°C.
-    action: notify.notify
-  mode: single
-- id: '1770410271168'
-  alias: 'Kachel Jozua: Melding lang verwarmen'
-  description: Melding als de kachel al meer dan 2 uur continu aan het verwarmen is
-    (heating). Kan wijzen op een probleem, open raam zonder sensor, of extreme koude.
-  triggers:
-  - platform: state
-    entity_id: climate.kachel
-    attribute: hvac_action
-    to: heating
-    for: 02:00:00
-  actions:
-  - data:
-      title: "\U0001F525 Kachel Jozua draait lang"
-      message: 'De kachel in Jozua''s kamer verwarmt al meer dan 2 uur achter elkaar.
-        Huidige temperatuur: {{ state_attr(''climate.kachel'', ''current_temperature'')
-        }}°C, target: {{ state_attr(''climate.kachel'', ''temperature'') }}°C.'
-    action: notify.notify
-  mode: single
-- id: '1770410595805'
-  alias: 'Kachel Jozua: Uit als warm genoeg'
-  description: Zet de kachel uit als de kamertemperatuur boven de target komt. Bespaart
-    energie door de kachel niet onnodig in standby te houden.
-  triggers:
-  - platform: numeric_state
-    entity_id: climate.kachel
-    attribute: current_temperature
-    above: 17
-  conditions:
-  - condition: state
-    entity_id: climate.kachel
-    state: heat
-  - condition: state
-    entity_id: climate.kachel
-    attribute: hvac_action
-    state: idle
-  actions:
-  - target:
-      entity_id: climate.kachel
-    action: climate.turn_off
-  mode: single
-- id: '1770410604363'
-  alias: 'Kachel Jozua: Aan als te koud'
-  description: Zet de kachel weer aan als de kamertemperatuur onder 15°C zakt en het
-    raam dicht is en we thuis zijn. Niet na 19:00. Checkt ook bij HA start.
-  triggers:
-  - below: 15
-    platform: numeric_state
-    attribute: current_temperature
-    entity_id: climate.kachel
-  - event: start
-    platform: homeassistant
-  conditions:
-  - state: 'off'
-    condition: state
-    entity_id: climate.kachel
-  - below: 15
-    attribute: current_temperature
-    condition: numeric_state
-    entity_id: climate.kachel
-  - state: 'off'
-    condition: state
-    entity_id: input_boolean.raam_jozua_open_placeholder
-  - state: home
-    condition: state
-    entity_id: group.bewoners
-  - before: '19:00:00'
-    condition: time
-  actions:
-  - target:
-      entity_id: climate.kachel
-    action: climate.turn_on
-  - target:
-      entity_id: climate.kachel
-    data:
-      hvac_mode: heat
-      temperature: 16.5
-    action: climate.set_temperature
-  mode: single
 - id: '1770496246858'
   alias: 'EV: Dynamische prijslimiet bijwerken'
   description: Stelt de smartCostLimit in op het laagste tarief van de dag + €0.005
@@ -6348,10 +5304,10 @@
   actions:
   - variables:
       new_limit: '{% set forecast = state_attr(''sensor.current_tariff'', ''forecast'')
-        %}{% set prices = forecast | map(attribute=''electricity_price'') | list |
-        sort %}{% set lowest = prices[0] / 10000000 %}{% set with_offset = lowest
-        + 0.005 %}{% set max_limit = 0.248 %}{{ [with_offset, max_limit] | min | round(4)
-        }}'
+        %} {% set prices = forecast | map(attribute=''electricity_price'') | list
+        | sort %} {% set n = 12 %} {% set cheapest_n = prices[:n] %} {% set avg_cheapest
+        = (cheapest_n | sum) / (cheapest_n | length) / 10000000 %} {% set max_limit
+        = 0.248 %} {{ [avg_cheapest, max_limit] | min | round(4) }}'
   - action: input_number.set_value
     target:
       entity_id: input_number.ev_smart_cost_limiet
@@ -6481,4 +5437,382 @@
     data:
       temperature: 75
     action: water_heater.set_temperature
+  mode: restart
+- id: '1771498333793'
+  alias: 'Afstandsbediening: Stoel Bram'
+  description: ''
+  use_blueprint:
+    path: EPMatt/ikea_e1524_e1810.yaml
+    input:
+      integration: ZHA
+      controller_device: b8182ac0e0a3ac6cd06512222e3cf4cb
+      action_button_left_short:
+      - if:
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: sensor.actieve_media_player_woonkamer
+            state: media_player.woonkamer_tv
+        then:
+        - data:
+            num_repeats: 1
+            delay_secs: 0.4
+            hold_secs: 0
+            command: left
+          target:
+            entity_id: remote.woonkamer_tv
+          action: remote.send_command
+        enabled: true
+        else:
+        - data: {}
+          target:
+            entity_id: media_player.woonkamer
+          enabled: true
+          action: media_player.media_previous_track
+      action_button_right_short:
+      - data: {}
+        target:
+          entity_id: media_player.woonkamer
+        action: media_player.media_next_track
+      action_button_up_short:
+      - if:
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: sensor.actieve_media_player_woonkamer
+            state: media_player.woonkamer_tv
+        then:
+        - data:
+            num_repeats: 1
+            delay_secs: 0.4
+            hold_secs: 0
+            command: up
+          target:
+            entity_id: remote.woonkamer_tv
+          action: remote.send_command
+        enabled: true
+        else:
+        - data: {}
+          target:
+            entity_id: input_number.volume_woonkamer
+          action: input_number.increment
+      action_button_down_short:
+      - if:
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: sensor.actieve_media_player_woonkamer
+            state: media_player.woonkamer_tv
+        then:
+        - data:
+            num_repeats: 1
+            delay_secs: 0.4
+            hold_secs: 0
+            command: down
+          target:
+            entity_id: remote.woonkamer_tv
+          action: remote.send_command
+        enabled: true
+        else:
+        - data: {}
+          target:
+            entity_id: input_number.volume_woonkamer
+          action: input_number.decrement
+      action_button_center_short:
+      - if:
+        - condition: or
+          conditions:
+          - condition: state
+            entity_id: sensor.actieve_media_player_woonkamer
+            state: media_player.woonkamer_tv
+        then:
+        - data:
+            num_repeats: 1
+            delay_secs: 0.4
+            hold_secs: 0
+            command: select
+          target:
+            entity_id: remote.woonkamer_tv
+          action: remote.send_command
+        enabled: true
+        else:
+        - data: {}
+          target:
+            entity_id: media_player.woonkamer
+          action: media_player.media_play_pause
+      action_button_center_long:
+      - data: {}
+        action: script.media_groepeer_woonkamer
+      - data: {}
+        enabled: false
+        action: script.wakker_worden
+      action_button_down_double: []
+      button_up_long_loop: true
+      button_down_long_loop: true
+      button_right_long_max_loop_repeats: 94
+      button_down_long_max_loop_repeats: 1378
+      action_button_up_long:
+      - data: {}
+        target:
+          entity_id: input_number.volume_woonkamer
+        action: input_number.increment
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 400
+        enabled: true
+      action_button_down_long:
+      - data: {}
+        target:
+          entity_id: input_number.volume_woonkamer
+        action: input_number.decrement
+      - delay:
+          hours: 0
+          minutes: 0
+          seconds: 0
+          milliseconds: 400
+        enabled: true
+      action_button_right_double:
+      - data: {}
+        action: script.media_groepeer_woonkamer
+      button_right_double_press: false
+      button_left_double_press: false
+      action_button_center_double: []
+      button_center_double_press: false
+      helper_last_controller_event: input_text.media_woonkamer_helper
+      helper_double_press_delay: 0
+      button_up_long_max_loop_repeats: 1383
+      button_right_long_loop: false
+- id: '1772090220842'
+  alias: 'EVCC: Laadmodus instellen via MQTT'
+  description: Stuurt de geselecteerde laadmodus naar evcc loadpoint 1 via MQTT wanneer
+    de input_select wijzigt
+  triggers:
+  - platform: state
+    entity_id: input_select.evcc_laadmodus
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.from_state.state != trigger.to_state.state }}'
+  actions:
+  - action: mqtt.publish
+    data:
+      topic: evcc/loadpoints/1/mode/set
+      payload: '{{ states(''input_select.evcc_laadmodus'') }}'
+  mode: single
+- id: '1772090228768'
+  alias: 'EVCC: Sync laadmodus van evcc naar input_select'
+  description: Houdt de input_select in sync wanneer evcc zelf de modus wijzigt
+  triggers:
+  - platform: state
+    entity_id: sensor.ev_laadmodus
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.state in [''off'', ''pv'', ''minpv'', ''now'']
+      and trigger.to_state.state != states(''input_select.evcc_laadmodus'') }}'
+  actions:
+  - action: input_select.select_option
+    target:
+      entity_id: input_select.evcc_laadmodus
+    data:
+      option: '{{ trigger.to_state.state }}'
+  mode: single
+- id: '1772371520248'
+  alias: 'Stekkerdoos: Fietsaccu'
+  description: ''
+  triggers:
+  - type: power
+    device_id: f3798ca5e01905feb27db01bb26458ed
+    entity_id: 18a9f0cdb0d21972d142585d51dd2fee
+    domain: sensor
+    trigger: device
+    below: 10
+    for:
+      hours: 0
+      minutes: 3
+      seconds: 0
+  conditions: []
+  actions:
+  - type: turn_off
+    device_id: f3798ca5e01905feb27db01bb26458ed
+    entity_id: 0de01807d2b430848cf8736306977c39
+    domain: switch
+  mode: single
+- id: '1774703502055'
+  alias: Schakelaar bij bed
+  description: ''
+  triggers:
+  - device_id: 9f4a069384e3166a176f73f9d8a71fd5
+    domain: zha
+    type: remote_button_short_press
+    subtype: close
+    trigger: device
+    id: Sluiten in gedrukt
+  - device_id: 9f4a069384e3166a176f73f9d8a71fd5
+    domain: zha
+    type: remote_button_short_press
+    subtype: open
+    trigger: device
+    id: Open ingedrukt
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - Sluiten in gedrukt
+    then:
+    - action: light.toggle
+      metadata: {}
+      target:
+        area_id: 96ed65635b944f368944d38fd2449a1c
+      data: {}
+    - action: switch.turn_off
+      metadata: {}
+      target:
+        entity_id: switch.stekkerdoos_bureau_zolder
+      data: {}
+  - if:
+    - condition: trigger
+      id:
+      - Open ingedrukt
+    then:
+    - action: switch.toggle
+      metadata: {}
+      target:
+        entity_id: switch.slaapkamer
+      data: {}
+  mode: single
+- id: '1776665603348'
+  alias: Melding om het water te geven
+  description: ''
+  triggers:
+  - trigger: time
+    at: '19:30:00'
+  conditions: []
+  actions:
+  - action: notify.mobile_app_iphone_van_bram
+    metadata: {}
+    data:
+      message: Heg water geven!
+  mode: single
+- id: '1778181561884'
+  alias: 'Media: Herstel Linkplay bij unavailable'
+  description: Herlaadt de Linkplay config entries wanneer een speaker langer dan
+    2 minuten unavailable is, zodat de join automatisch herstelt.
+  triggers:
+  - platform: state
+    entity_id:
+    - media_player.woonkamer
+    - media_player.keuken
+    - media_player.eettafel
+    to: unavailable
+    for: 00:02:00
+  actions:
+  - action: homeassistant.reload_config_entry
+    data:
+      entry_id: 01J6ZCXPHJCE5DWT9DQHYX6JCB
+  - action: homeassistant.reload_config_entry
+    data:
+      entry_id: 01J6ZCXEPY8H8KPXFEEX0MSBNG
+  - action: homeassistant.reload_config_entry
+    data:
+      entry_id: 01J6ZCX3ZF0PQ46XRDF644NXN9
+  mode: single
+- id: '1778181618120'
+  alias: 'Media: Linkplay speakers dagelijks herstarten'
+  description: Herstart alle drie Linkplay speakers elke nacht om 03:00 om verbindingsproblemen
+    te voorkomen.
+  triggers:
+  - platform: time
+    at: 03:00:00
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: media_player.woonkamer
+      state: playing
+    - condition: state
+      entity_id: media_player.keuken
+      state: playing
+    - condition: state
+      entity_id: media_player.eettafel
+      state: playing
+  actions:
+  - action: button.press
+    target:
+      entity_id:
+      - button.keuken_herstarten
+      - button.woonkamer_herstarten
+      - button.eettafel_herstarten
+  mode: single
+- id: '1778399541931'
+  alias: 'Media: Zondag 09:00 overschakelen van GNR naar 7FM'
+  description: Op zondag om 09:00 begint een programma op Groot Nieuws Radio. Als
+    de woonkamer dan GNR speelt, schakel automatisch over naar 7FM.
+  triggers:
+  - platform: time
+    at: 09:00:00
+  conditions:
+  - condition: time
+    weekday:
+    - sun
+  - condition: state
+    entity_id: media_player.woonkamer
+    state: playing
+  - condition: template
+    value_template: '{{ ''grootnieuwsradio'' in (state_attr(''media_player.woonkamer'',
+      ''media_content_id'') | default('''')) or ''ead62101'' in (state_attr(''media_player.woonkamer'',
+      ''media_content_id'') | default('''')) }}'
+  actions:
+  - action: media_player.play_media
+    target:
+      entity_id: media_player.woonkamer
+    data:
+      media_content_id: http://playerservices.streamtheworld.com/api/livestream-redirect/SEVENFM.mp3
+      media_content_type: audio/mpeg
+  mode: single
+- id: '1778823385217'
+  alias: 'Klimaat: Badkamer handmatige override detectie'
+  description: Start timer wanneer badkamer temperatuur handmatig aangepast wordt
+    (niet door een automatisering).
+  triggers:
+  - platform: state
+    entity_id: climate.badkamer_verwarming
+    attribute: temperature
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.to_state.context.user_id is not none }}'
+  actions:
+  - action: timer.start
+    target:
+      entity_id: timer.badkamer_verwarming_tijdelijk_aan
+    data:
+      duration: 0:45:00
+  - choose:
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.context.user_id == state_attr(''person.bram'',
+          ''user_id'') }}'
+      sequence:
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          title: "\U0001F321️ Badkamer verwarming"
+          message: Temperatuur handmatig aangepast naar {{ trigger.to_state.attributes.temperature
+            }}°C. Timer loopt 45 minuten, daarna terug naar schema.
+    - conditions:
+      - condition: template
+        value_template: '{{ trigger.to_state.context.user_id == state_attr(''person.maninne'',
+          ''user_id'') }}'
+      sequence:
+      - action: notify.mobile_app_iphone_van_maninne_1
+        data:
+          title: "\U0001F321️ Badkamer verwarming"
+          message: Temperatuur handmatig aangepast naar {{ trigger.to_state.attributes.temperature
+            }}°C. Timer loopt 45 minuten, daarna terug naar schema.
+    default:
+    - action: notify.notify
+      data:
+        title: "\U0001F321️ Badkamer verwarming"
+        message: Temperatuur handmatig aangepast naar {{ trigger.to_state.attributes.temperature
+          }}°C. Timer loopt 45 minuten, daarna terug naar schema.
   mode: restart
