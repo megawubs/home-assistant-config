@@ -941,7 +941,7 @@
       name: "dag nl"
       state: >-
         {% set dagen = ["Ma", "Di", "Wo", "Do", "Vr", "Za", "Zo"] %}
-        {{ dagen[now().isoweekday()] }}
+        {{ dagen[now().weekday()] }}
 
     - default_entity_id: sensor.maand_nl
       unique_id: maand_nl
