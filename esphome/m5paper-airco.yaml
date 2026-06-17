@@ -1,0 +1,860 @@
+substitutions:
+  device_name: M5Paper Airco
+  # Te bedienen entities (pas hier aan als je een andere ruimte wilt):
+  climate_entity: climate.airco_boven
+  # Losse kamersensor (nauwkeuriger dan de airco-interne meting). Ondanks de naam
+  # is dit de sensor in de master bedroom.
+  room_temp_entity: sensor.luchtkwaliteitsensor_zolder_temperatuur
+  # Hoofdscherm-agenda (door HA samengevoegd uit gezins-/persoonskalenders).
+  agenda_entity: sensor.m5paper_agenda
+
+# ---------------------------------------------------------------------------
+# Identiteit: hergebruikt bewust de slaapkamer device-naam + keys, zodat Home
+# Assistant dit als HETZELFDE apparaat adopteert (vervangt de oude, niet-werkende
+# m5paper-slaapkamer.yaml). Wil je een los apparaat? Geef dan een eigen `name`
+# en genereer nieuwe api/ota keys.
+# ---------------------------------------------------------------------------
+esphome:
+  name: m5paper-slaapkamer
+  friendly_name: ${device_name}
+  includes:
+    - text_utils.h
+    - hfiles/m5paper_airco.h
+  on_boot:
+    - priority: 220.0
+      then:
+        - it8951e.clear
+        - delay: 100ms
+        - component.update: m5paper_display
+    - priority: -100.0
+      then:
+        - delay: 10s
+        - component.update: m5paper_display
+
+# IT8951 is NIET native in ESPHome (juni 2026) -> external component vereist.
+# De lokale it8951e is gepatcht voor ESPHome 2026.x (get_loop_priority override
+# verwijderd + App.feed_wdt() in de clear/write-lus tegen task-watchdog boot loop).
+# m5paper + bm8563 komen van razqqm.
+external_components:
+  - source: github://razqqm/m5paper_esphome
+    components: [m5paper, bm8563]
+  - source:
+      type: local
+      path: components
+    components: [it8951e]
+
+esp32:
+  board: m5stack-grey
+  framework:
+    type: arduino
+
+logger:
+  level: INFO
+
+api:
+  encryption:
+    key: "SLsOsNZZWNNh49LZ++9o9I9oac1ZytcDx0820yK3l4I="
+
+ota:
+  - platform: esphome
+    password: "85ee1d814688c0ac55374b08dc64c442"
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "M5Paper-Airco"
+    password: "Rk8mN3xPqF5v"
+
+captive_portal:
+
+psram:
+
+spi:
+  clk_pin: GPIO14
+  mosi_pin: GPIO12
+  miso_pin: GPIO13
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+
+globals:
+  - id: refresh_counter
+    type: int
+    restore_value: no
+    initial_value: '0'
+  # Schermnavigatie: 0 = hoofdscherm (agenda), 1 = airco-bediening.
+  - id: current_screen
+    type: int
+    restore_value: no
+    initial_value: '0'
+  # Minuten sinds laatste touch; >= 2 op airco-scherm -> automatisch terug naar hoofdscherm.
+  - id: idle_min
+    type: int
+    restore_value: no
+    initial_value: '0'
+  # Optimistic UI: verwachte staat direct tonen bij een tik; gewist zodra HA bevestigt.
+  - id: opt_mode         # -1 = geen, 0 = cool, 1 = heat, 2 = dry, 3 = off
+    type: int
+    restore_value: no
+    initial_value: '-1'
+  - id: opt_target       # < 0 = geen; anders verwachte doeltemperatuur
+    type: float
+    restore_value: no
+    initial_value: '-1'
+  - id: opt_swing        # -1 = geen; anders swing-index 0..5
+    type: int
+    restore_value: no
+    initial_value: '-1'
+  - id: opt_fan          # -1 = geen; anders fan-index 0..4
+    type: int
+    restore_value: no
+    initial_value: '-1'
+
+# ---------------------------------------------------------------------------
+# Fonts — design-system schaal. Roboto op vaste px (komma-decimaal NL).
+# Grote numerieke fonts hebben een beperkte glyph-set om flash te sparen.
+# ---------------------------------------------------------------------------
+font:
+  - file: 'gfonts://Roboto@light'
+    id: roboto_l120
+    size: 120
+    glyphs: "0123456789,-°"
+  - file: 'gfonts://Roboto@medium'
+    id: roboto_m56
+    size: 56
+    glyphs: "0123456789,-°"
+  - file: 'gfonts://Roboto'
+    id: roboto_r72
+    size: 72
+    glyphs: "0123456789,-°"
+  - file: 'gfonts://Roboto@medium'
+    id: roboto_m40
+    size: 40
+    glyphs: "0123456789:"
+  - file: 'gfonts://Roboto@light'
+    id: roboto_l40
+    size: 40
+  - file: 'gfonts://Roboto@bold'
+    id: roboto_b28
+    size: 28
+  - file: 'gfonts://Roboto'
+    id: roboto_28
+    size: 28
+  - file: 'gfonts://Roboto@medium'
+    id: roboto_m24
+    size: 24
+  - file: 'gfonts://Roboto'
+    id: roboto_22
+    size: 22
+  # Material Design Icons (per px-grootte)
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic30
+    size: 30
+    glyphs:
+      - "\U000F050F"  # thermometer
+      - "\U000F058E"  # water-percent
+      - "\U000F0210"  # fan (ventilator-trio)
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic32
+    size: 32
+    glyphs:
+      - "\U000F05A9"  # wifi
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic36
+    size: 36
+    glyphs:
+      - "\U000F0717"  # snowflake (koel)
+      - "\U000F0238"  # fire (warm)
+      - "\U000F058D"  # water-off (droog)
+      - "\U000F0425"  # power (uit)
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic38
+    size: 38
+    glyphs:
+      - "\U000F0393"  # thermostat (nav-knop Klimaat)
+      - "\U000F0142"  # chevron-right (nav vooruit)
+      - "\U000F0141"  # chevron-left (nav terug)
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic40
+    size: 40
+    glyphs:
+      - "\U000F0393"  # thermostat (doeltemp-readout + temp-trio)
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic44
+    size: 44
+    glyphs:
+      - "\U000F0374"  # minus
+      - "\U000F0415"  # plus
+
+m5paper:
+  battery_power_pin: GPIO5
+  main_power_pin: GPIO2
+
+# GT911: GEEN interrupt_pin. De M5Paper bedraadt de interrupt op GPIO36 (input-only);
+# ESPHome 2026.3.0 (#14358) eist een output-capable pin -> config faalt. Maintainers
+# bevestigen dat de GT911 zonder interrupt_pin terugvalt op polling. Prima bij USB-voeding.
+touchscreen:
+  - platform: gt911
+    display: m5paper_display
+    id: gt911_touchscreen
+    # GT911 is 90° geroteerd + gespiegeld t.o.v. het display (empirisch via hoek-tikken:
+    # display_x <-> raw_y recht, display_y <-> raw_x geinverteerd). swap_xy + mirror_y lijnt
+    # de touch-coordinaten uit op de getekende layout (zones blijven in display-coords).
+    transform:
+      swap_xy: true
+      mirror_x: false
+      mirror_y: true
+    on_touch:
+      # Elke tik reset de inactiviteit-teller (voor auto-terug naar hoofdscherm).
+      - lambda: 'id(idle_min) = 0;'
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+    timezone: Europe/Amsterdam
+    on_time_sync:
+      - bm8563.write_time
+  - platform: bm8563
+    id: rtc_time
+    sleep_duration: 60000ms
+    on_time:
+      - seconds: 0
+        then:
+          - lambda: 'id(refresh_counter) += 1;'
+          # Auto-terug: na ~2 min inactiviteit op het airco-scherm terug naar hoofdscherm.
+          - lambda: |-
+              id(idle_min) += 1;
+              if (id(current_screen) == 1 && id(idle_min) >= 2) {
+                id(current_screen) = 0;
+                id(idle_min) = 0;
+              }
+          - if:
+              condition:
+                lambda: 'return id(refresh_counter) >= 15;'
+              then:
+                - lambda: 'id(refresh_counter) = 0;'
+                - it8951e.clear
+                - delay: 100ms
+          - component.update: m5paper_display
+
+# ---------------------------------------------------------------------------
+# Sensors
+# ---------------------------------------------------------------------------
+sensor:
+  - platform: sht3xd
+    temperature:
+      name: "${device_name} temperature"
+      id: m5paper_temperature
+      device_class: temperature
+      state_class: measurement
+    humidity:
+      name: "${device_name} humidity"
+      id: m5paper_humidity
+      device_class: humidity
+      state_class: measurement
+    address: 0x44
+    update_interval: 60s
+
+  - platform: wifi_signal
+    id: wifi_signal_sensor
+    update_interval: 60s
+    internal: true
+
+  # Kamertemperatuur (losse master-bedroom sensor)
+  - platform: homeassistant
+    id: airco_room_temp
+    entity_id: ${room_temp_entity}
+    internal: true
+    on_value:
+      - component.update: m5paper_display
+
+  # Airco doeltemperatuur
+  - platform: homeassistant
+    id: airco_target_temp
+    entity_id: ${climate_entity}
+    attribute: temperature
+    internal: true
+    on_value:
+      # Reconcile: sla de tweede flash over als HA de optimistic gok bevestigt
+      - lambda: |-
+          bool skip = (id(opt_target) >= 0.0f) && (fabsf(id(opt_target) - x) < 0.05f);
+          id(opt_target) = -1;
+          if (!skip) id(m5paper_display).update();
+
+  # Hoofdscherm-agenda: aantal afspraken vandaag (state van de HA-agenda-sensor)
+  - platform: homeassistant
+    id: agenda_count
+    entity_id: ${agenda_entity}
+    internal: true
+
+# ---------------------------------------------------------------------------
+# Text sensors
+# ---------------------------------------------------------------------------
+text_sensor:
+  - platform: homeassistant
+    id: airco_hvac_mode
+    entity_id: ${climate_entity}
+    internal: true
+    on_value:
+      # Reconcile: sla de tweede flash over als HA de optimistic mode bevestigt
+      - lambda: |-
+          int m = -1;
+          if (x == "cool") m = 0; else if (x == "heat") m = 1;
+          else if (x == "dry") m = 2; else if (x == "off") m = 3;
+          bool skip = (id(opt_mode) >= 0) && (id(opt_mode) == m);
+          id(opt_mode) = -1;
+          if (!skip) id(m5paper_display).update();
+
+  # Airco swing-stand (louver-positie)
+  - platform: homeassistant
+    id: airco_swing_mode
+    entity_id: ${climate_entity}
+    attribute: swing_mode
+    internal: true
+    on_value:
+      - lambda: |-
+          bool skip = (id(opt_swing) >= 0) && (id(opt_swing) == swing_index(x));
+          id(opt_swing) = -1;
+          if (!skip) id(m5paper_display).update();
+
+  # Airco ventilatorsnelheid
+  - platform: homeassistant
+    id: airco_fan_mode
+    entity_id: ${climate_entity}
+    attribute: fan_mode
+    internal: true
+    on_value:
+      - lambda: |-
+          bool skip = (id(opt_fan) >= 0) && (id(opt_fan) == fan_index(x));
+          id(opt_fan) = -1;
+          if (!skip) id(m5paper_display).update();
+
+  # Hoofdscherm-agenda items "HH:MM|titel" (lege tijd = hele-dag) + overflow-teller.
+  # Geen on_value: de minuut-tick hertekent het hoofdscherm toch al (klok).
+  - platform: homeassistant
+    id: agenda_i1
+    entity_id: ${agenda_entity}
+    attribute: i1
+    internal: true
+  - platform: homeassistant
+    id: agenda_i2
+    entity_id: ${agenda_entity}
+    attribute: i2
+    internal: true
+  - platform: homeassistant
+    id: agenda_i3
+    entity_id: ${agenda_entity}
+    attribute: i3
+    internal: true
+  - platform: homeassistant
+    id: agenda_i4
+    entity_id: ${agenda_entity}
+    attribute: i4
+    internal: true
+  - platform: homeassistant
+    id: agenda_more
+    entity_id: ${agenda_entity}
+    attribute: more
+    internal: true
+
+# ---------------------------------------------------------------------------
+# Binary sensors
+# ---------------------------------------------------------------------------
+binary_sensor:
+  # Fysieke BTN-knop (G38): forceer volledige verversing (ghosting wissen)
+  - platform: gpio
+    name: "${device_name} refresh knop"
+    icon: mdi:refresh
+    pin:
+      number: GPIO38
+      inverted: true
+    on_release:
+      - lambda: 'id(refresh_counter) = 0;'
+      - it8951e.clear
+      - delay: 100ms
+      - component.update: m5paper_display
+
+  # ---------------------------------------------------------------------------
+  # Touch-zones (display-coordinaten 960x540). Airco-zones vuren alleen op het
+  # airco-scherm (current_screen == 1); de navigatie-zone werkt altijd.
+  # ---------------------------------------------------------------------------
+  # --- Navigatie (rechtsonder, zelfde plek op beide schermen): toggelt scherm ---
+  - platform: touchscreen
+    name: "Navigatie"
+    internal: true
+    x_min: 648
+    x_max: 928
+    y_min: 416
+    y_max: 508
+    on_press:
+      - lambda: 'id(current_screen) = (id(current_screen) == 0) ? 1 : 0;'
+      - component.update: m5paper_display
+
+  # --- Doeltemperatuur-trio (alleen airco-scherm) ---
+  - platform: touchscreen
+    name: "Temp Minus"
+    internal: true
+    x_min: 330
+    x_max: 402
+    y_min: 322
+    y_max: 406
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: |-
+                float base = (id(opt_target) >= 0.0f) ? id(opt_target) : id(airco_target_temp).state;
+                if (isnan(base)) base = 20.0f;
+                id(opt_target) = base - 0.5f;
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_temperature
+                data:
+                  entity_id: ${climate_entity}
+                data_template:
+                  temperature: "{{ t }}"
+                variables:
+                  t: !lambda 'return id(opt_target);'
+
+  - platform: touchscreen
+    name: "Temp Plus"
+    internal: true
+    x_min: 528
+    x_max: 600
+    y_min: 322
+    y_max: 406
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: |-
+                float base = (id(opt_target) >= 0.0f) ? id(opt_target) : id(airco_target_temp).state;
+                if (isnan(base)) base = 20.0f;
+                id(opt_target) = base + 0.5f;
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_temperature
+                data:
+                  entity_id: ${climate_entity}
+                data_template:
+                  temperature: "{{ t }}"
+                variables:
+                  t: !lambda 'return id(opt_target);'
+
+  # --- Ventilatorsnelheid-trio (alleen airco-scherm) ---
+  - platform: touchscreen
+    name: "Fan Minus"
+    internal: true
+    x_min: 330
+    x_max: 402
+    y_min: 416
+    y_max: 500
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: |-
+                int base = (id(opt_fan) >= 0) ? id(opt_fan) : fan_index(id(airco_fan_mode).state);
+                if (base < 0) base = 0;
+                base -= 1; if (base < 0) base = 0;
+                id(opt_fan) = base;
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_fan_mode
+                data:
+                  entity_id: ${climate_entity}
+                data_template:
+                  fan_mode: "{{ m }}"
+                variables:
+                  m: !lambda 'return FAN_MODES[id(opt_fan)];'
+
+  - platform: touchscreen
+    name: "Fan Plus"
+    internal: true
+    x_min: 528
+    x_max: 600
+    y_min: 416
+    y_max: 500
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: |-
+                int base = (id(opt_fan) >= 0) ? id(opt_fan) : fan_index(id(airco_fan_mode).state);
+                if (base < 0) base = 0;
+                base += 1; if (base > 4) base = 4;
+                id(opt_fan) = base;
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_fan_mode
+                data:
+                  entity_id: ${climate_entity}
+                data_template:
+                  fan_mode: "{{ m }}"
+                variables:
+                  m: !lambda 'return FAN_MODES[id(opt_fan)];'
+
+  # --- HVAC mode-grid 2x2 (alleen airco-scherm): Koel/Warm @ y322 · Droog/Uit @ y416 ---
+  - platform: touchscreen
+    name: "Mode Koel"
+    internal: true
+    x_min: 40
+    x_max: 164
+    y_min: 322
+    y_max: 406
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_mode) = 0;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_hvac_mode
+                data:
+                  entity_id: ${climate_entity}
+                  hvac_mode: cool
+
+  - platform: touchscreen
+    name: "Mode Warm"
+    internal: true
+    x_min: 180
+    x_max: 304
+    y_min: 322
+    y_max: 406
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_mode) = 1;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_hvac_mode
+                data:
+                  entity_id: ${climate_entity}
+                  hvac_mode: heat
+
+  - platform: touchscreen
+    name: "Mode Droog"
+    internal: true
+    x_min: 40
+    x_max: 164
+    y_min: 416
+    y_max: 500
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_mode) = 2;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_hvac_mode
+                data:
+                  entity_id: ${climate_entity}
+                  hvac_mode: dry
+
+  - platform: touchscreen
+    name: "Mode Uit"
+    internal: true
+    x_min: 180
+    x_max: 304
+    y_min: 416
+    y_max: 500
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_mode) = 3;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_hvac_mode
+                data:
+                  entity_id: ${climate_entity}
+                  hvac_mode: "off"
+
+  # --- Swing-standen 2x3 (alleen airco-scherm): rijen y150/238/326, 132x76 ---
+  - platform: touchscreen
+    name: "Swing 0 Op-Neer"
+    internal: true
+    x_min: 648
+    x_max: 780
+    y_min: 150
+    y_max: 226
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_swing) = 0;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_swing_mode
+                data:
+                  entity_id: ${climate_entity}
+                  swing_mode: "Up/Down Auto"
+
+  - platform: touchscreen
+    name: "Swing 1 Hoogst"
+    internal: true
+    x_min: 796
+    x_max: 928
+    y_min: 150
+    y_max: 226
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_swing) = 1;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_swing_mode
+                data:
+                  entity_id: ${climate_entity}
+                  swing_mode: "Highest"
+
+  - platform: touchscreen
+    name: "Swing 2 Midden"
+    internal: true
+    x_min: 648
+    x_max: 780
+    y_min: 238
+    y_max: 314
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_swing) = 2;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_swing_mode
+                data:
+                  entity_id: ${climate_entity}
+                  swing_mode: "Middle"
+
+  - platform: touchscreen
+    name: "Swing 3 Normaal"
+    internal: true
+    x_min: 796
+    x_max: 928
+    y_min: 238
+    y_max: 314
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_swing) = 3;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_swing_mode
+                data:
+                  entity_id: ${climate_entity}
+                  swing_mode: "Normal"
+
+  - platform: touchscreen
+    name: "Swing 4 Laagst"
+    internal: true
+    x_min: 648
+    x_max: 780
+    y_min: 326
+    y_max: 402
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_swing) = 4;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_swing_mode
+                data:
+                  entity_id: ${climate_entity}
+                  swing_mode: "Lowest"
+
+  - platform: touchscreen
+    name: "Swing 5 3D Auto"
+    internal: true
+    x_min: 796
+    x_max: 928
+    y_min: 326
+    y_max: 402
+    on_press:
+      - if:
+          condition:
+            lambda: 'return id(current_screen) == 1;'
+          then:
+            - lambda: 'id(opt_swing) = 5;'
+            - component.update: m5paper_display
+            - homeassistant.action:
+                action: climate.set_swing_mode
+                data:
+                  entity_id: ${climate_entity}
+                  swing_mode: "3D Auto"
+
+# ---------------------------------------------------------------------------
+# Display - enkele pagina, landscape 960x540 (E-ink Design System)
+# ---------------------------------------------------------------------------
+display:
+  - platform: it8951e
+    id: m5paper_display
+    cs_pin: GPIO15
+    reset_pin: GPIO23
+    reset_duration: 100ms
+    busy_pin: GPIO27
+    rotation: 0
+    reversed: false
+    update_interval: never
+    lambda: |-
+      // ===== STATUSBALK (hoogte 60) =====
+      auto t = id(rtc_time).now();
+      char tbuf[8];
+      snprintf(tbuf, sizeof(tbuf), "%02d:%02d", t.hour, t.minute);
+      it.print(24, 11, id(roboto_m40), tbuf);
+
+      it.print(344, 14, id(ic30), "\U000F050F");
+      if (!isnan(id(m5paper_temperature).state))
+        eink_val(&it, 384, 18, id(roboto_28), TextAlign::TOP_LEFT,
+                 id(m5paper_temperature).state, 1, "°C");
+
+      it.print(556, 14, id(ic30), "\U000F058E");
+      if (!isnan(id(m5paper_humidity).state))
+        eink_val(&it, 596, 18, id(roboto_28), TextAlign::TOP_LEFT,
+                 id(m5paper_humidity).state, 0, "%");
+
+      if (!isnan(id(wifi_signal_sensor).state))
+        it.print(910, 13, id(ic32), "\U000F05A9");
+
+      eink_hline(&it, 16, 60, 928, 3);
+
+      // ============ HOOFDSCHERM (agenda) — current_screen == 0 ============
+      if (id(current_screen) == 0) {
+        // datum-paneel links
+        eink_rect(&it, 16, 76, 300, 448, 3);
+        it.print(40, 104, id(roboto_28), nl_weekday(t.day_of_week));
+        char dbuf[4];
+        snprintf(dbuf, sizeof(dbuf), "%d", t.day_of_month);
+        it.print(34, 138, id(roboto_l120), dbuf);
+        it.print(40, 300, id(roboto_l40), nl_month(t.month));
+        eink_hline(&it, 40, 362, 120, 2);
+        int cnt = isnan(id(agenda_count).state) ? 0 : (int) id(agenda_count).state;
+        char cbuf[28];
+        snprintf(cbuf, sizeof(cbuf), "%d afspra%s", cnt, (cnt == 1) ? "ak" : "ken");
+        it.print(40, 380, id(roboto_b28), cbuf);
+        it.print(40, 420, id(roboto_22), "vandaag");
+
+        // agenda rechts
+        it.print(340, 92, id(roboto_b28), "Vandaag");
+        eink_hline(&it, 340, 134, 110, 2);
+        std::string a1 = id(agenda_i1).has_state() ? id(agenda_i1).state : std::string("");
+        std::string a2 = id(agenda_i2).has_state() ? id(agenda_i2).state : std::string("");
+        std::string a3 = id(agenda_i3).has_state() ? id(agenda_i3).state : std::string("");
+        std::string a4 = id(agenda_i4).has_state() ? id(agenda_i4).state : std::string("");
+        if (a1.empty()) {
+          it.print(620, 296, id(roboto_28), TextAlign::CENTER, "Geen afspraken vandaag");
+        } else {
+          if (!a2.empty()) eink_hline(&it, 340, 196, 560, 2);
+          if (!a3.empty()) eink_hline(&it, 340, 260, 560, 2);
+          if (!a4.empty()) eink_hline(&it, 340, 324, 560, 2);
+          eink_agenda_item(&it, a1, 150, id(roboto_28), id(roboto_28), id(roboto_22));
+          eink_agenda_item(&it, a2, 214, id(roboto_28), id(roboto_28), id(roboto_22));
+          eink_agenda_item(&it, a3, 278, id(roboto_28), id(roboto_28), id(roboto_22));
+          eink_agenda_item(&it, a4, 342, id(roboto_28), id(roboto_28), id(roboto_22));
+          int more = id(agenda_more).has_state() ? atoi(id(agenda_more).state.c_str()) : 0;
+          if (more > 0) {
+            char mbuf[28];
+            snprintf(mbuf, sizeof(mbuf), "+%d meer vandaag", more);
+            it.print(340, 446, id(roboto_m24), mbuf);
+          }
+        }
+
+        // nav-knop "Klimaat >" (rechtsonder)
+        eink_rect(&it, 648, 416, 280, 92, 3);
+        it.print(688, 442, id(ic38), "\U000F0393");  // thermostaat
+        it.print(738, 447, id(roboto_28), "Klimaat");
+        it.print(850, 443, id(ic38), "\U000F0142");  // chevron-right
+        return;
+      }
+
+      // ============ AIRCO-SCHERM — current_screen == 1 ============
+      // ===== HVAC-PANEEL (links) =====
+      eink_rect(&it, 16, 76, 600, 448, 3);
+      it.print(40, 100, id(roboto_b28), "Klimaat");
+      eink_hline(&it, 40, 138, 110, 2);
+
+      // huidige kamertemperatuur (room sensor) - groot, linksboven
+      if (!isnan(id(airco_room_temp).state))
+        eink_val(&it, 28, 152, id(roboto_l120), TextAlign::TOP_LEFT,
+                 id(airco_room_temp).state, 1, "°");
+      else
+        it.print(28, 152, id(roboto_l120), "--,-°");
+      it.print(40, 282, id(roboto_22), "Huidige temperatuur");
+
+      // doeltemperatuur als readout rechtsboven (kleiner dan huidige temp)
+      it.print(352, 168, id(ic40), "\U000F0393");  // thermostaat
+      float tgt = (id(opt_target) >= 0.0f) ? id(opt_target) : id(airco_target_temp).state;
+      if (!isnan(tgt))
+        eink_val(&it, 404, 152, id(roboto_r72), TextAlign::TOP_LEFT, tgt, 1, "°");
+      else
+        it.print(404, 152, id(roboto_r72), "--,-°");
+      it.print(356, 236, id(roboto_22), "Doeltemperatuur");
+
+      // mode-grid 2x2 (links, onder de grote temp): Koel/Warm (y322) · Droog/Uit (y416)
+      bool cool_on, heat_on, dry_on, off_on;
+      if (id(opt_mode) >= 0) {  // optimistic: toon de zojuist getikte mode direct
+        cool_on = id(opt_mode) == 0; heat_on = id(opt_mode) == 1;
+        dry_on  = id(opt_mode) == 2; off_on  = id(opt_mode) == 3;
+      } else {
+        cool_on = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "cool";
+        heat_on = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat";
+        dry_on  = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "dry";
+        off_on  = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "off";
+      }
+      eink_mode_btn(&it,  40, 322, 124, 84, id(ic36), "\U000F0717", id(roboto_m24), "Koel",  cool_on);
+      eink_mode_btn(&it, 180, 322, 124, 84, id(ic36), "\U000F0238", id(roboto_m24), "Warm",  heat_on);
+      eink_mode_btn(&it,  40, 416, 124, 84, id(ic36), "\U000F058D", id(roboto_m24), "Droog", dry_on);
+      eink_mode_btn(&it, 180, 416, 124, 84, id(ic36), "\U000F0425", id(roboto_m24), "Uit",   off_on);
+
+      // temp-stepper als icoon-trio op de bovenste mode-rij (y322): [-] [thermostaat] [+]
+      eink_rect(&it, 330, 322, 72, 84, 3);
+      it.print(344, 342, id(ic44), "\U000F0374");
+      it.print(465, 364, id(ic40), TextAlign::CENTER, "\U000F0393");
+      eink_rect(&it, 528, 322, 72, 84, 3);
+      it.print(542, 342, id(ic44), "\U000F0415");
+
+      // fan-stepper als icoon-trio op de onderste mode-rij (y416): [-] [fan waarde] [+]
+      int fan = (id(opt_fan) >= 0) ? id(opt_fan)
+                : (id(airco_fan_mode).has_state() ? fan_index(id(airco_fan_mode).state) : -1);
+      eink_rect(&it, 330, 416, 72, 84, 3);
+      it.print(344, 436, id(ic44), "\U000F0374");
+      it.print(430, 458, id(ic30), TextAlign::CENTER, "\U000F0210");  // fan
+      it.print(482, 458, id(roboto_b28), TextAlign::CENTER, fan_short(fan));
+      eink_rect(&it, 528, 416, 72, 84, 3);
+      it.print(542, 436, id(ic44), "\U000F0415");
+
+      // ===== SWING-STANDEN (rechts, 2x3 grid; nachtlampjes verwijderd, grid ademt) =====
+      it.print(648, 96, id(roboto_b28), "Stand");
+      eink_hline(&it, 648, 134, 80, 2);
+      int sw = (id(opt_swing) >= 0) ? id(opt_swing)
+               : (id(airco_swing_mode).has_state() ? swing_index(id(airco_swing_mode).state) : -1);
+      eink_text_btn(&it, 648, 150, 132, 76, id(roboto_m24), "Op/Neer", sw == 0);
+      eink_text_btn(&it, 796, 150, 132, 76, id(roboto_m24), "Hoogst",  sw == 1);
+      eink_text_btn(&it, 648, 238, 132, 76, id(roboto_m24), "Midden",  sw == 2);
+      eink_text_btn(&it, 796, 238, 132, 76, id(roboto_m24), "Normaal", sw == 3);
+      eink_text_btn(&it, 648, 326, 132, 76, id(roboto_m24), "Laagst",  sw == 4);
+      eink_text_btn(&it, 796, 326, 132, 76, id(roboto_m24), "3D Auto", sw == 5);
+
+      // ===== TERUG-KNOP (rechtsonder, zelfde plek als de Klimaat-knop) =====
+      eink_rect(&it, 648, 416, 280, 92, 3);
+      it.print(732, 443, id(ic38), "\U000F0141");  // chevron-left
+      it.print(776, 447, id(roboto_28), "Terug");

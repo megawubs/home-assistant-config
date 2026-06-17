@@ -1036,3 +1036,60 @@
             {{ (extern + compensatie) | round(1) }}
           {% endif %}
         {% endif %}
+
+# ---------------------------------------------------------------------------
+# M5Paper hoofdscherm-agenda: vandaag-events uit de gezins-/persoonskalenders,
+# samengevoegd + op tijd gesorteerd, afgevlakt naar i1..i4 + count + more.
+# Formaat per item: "HH:MM|titel"  (lege tijd = hele-dag). Titel voorgekapt op 30.
+# ---------------------------------------------------------------------------
+- trigger:
+    - platform: homeassistant
+      event: start
+    - platform: time_pattern
+      minutes: "/5"
+  action:
+    - service: calendar.get_events
+      target:
+        entity_id:
+          - calendar.gezin
+          - calendar.bram
+          - calendar.maninne
+          - calendar.jozua
+          - calendar.anne_lize
+      data:
+        start_date_time: "{{ now() }}"
+        end_date_time: "{{ today_at('23:59:59') }}"
+      response_variable: agenda
+  sensor:
+    - name: M5Paper Agenda
+      unique_id: m5paper_agenda
+      icon: mdi:calendar-clock
+      state: >
+        {%- set ns = namespace(n=0) -%}
+        {%- for cal, d in agenda.items() -%}{%- set ns.n = ns.n + (d.events | length) -%}{%- endfor -%}
+        {{ ns.n }}
+      attributes:
+        more: >-
+          {%- set ns = namespace(n=0) -%}
+          {%- for cal, d in agenda.items() -%}{%- set ns.n = ns.n + (d.events | length) -%}{%- endfor -%}
+          {{ [ns.n - 4, 0] | max }}
+        i1: >-
+          {%- set ns = namespace(l=[]) -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+        i2: >-
+          {%- set ns = namespace(l=[]) -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+        i3: >-
+          {%- set ns = namespace(l=[]) -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+        i4: >-
+          {%- set ns = namespace(l=[]) -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
