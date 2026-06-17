@@ -129,6 +129,7 @@ const char *cal_glyph(char c) {
     case 'm': return "\U000F1077";  // face-woman        (Maninne)
     case 'j': return "\U000F0644";  // face-man-profile  (Jozua)
     case 'a': return "\U000F15CE";  // face-woman-shimmer (Anne-Lize)
+    case 'r': return "\U000F15CF";  // face-woman-shimmer-outline (Rosalyn)
     case 'w': return "\U000F02E8";  // human-male-female (BMW = Bram+Maninne)
     default:  return "";
   }
@@ -153,7 +154,8 @@ AgendaItem agenda_parse(const std::string &s) {
   std::string f1 = (b1 == std::string::npos) ? s : s.substr(0, b1);
   std::string rest = (b1 == std::string::npos) ? std::string("") : s.substr(b1 + 1);
   if (f1.size() == 1 && (f1[0] == 'g' || f1[0] == 'b' || f1[0] == 'm' ||
-                         f1[0] == 'j' || f1[0] == 'a' || f1[0] == 'w')) {
+                         f1[0] == 'j' || f1[0] == 'a' || f1[0] == 'r' ||
+                         f1[0] == 'w')) {
     a.code = f1[0];
     size_t b2 = rest.find('|');
     a.tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);

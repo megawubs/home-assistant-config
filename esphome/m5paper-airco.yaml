@@ -197,6 +197,7 @@ font:
       - "\U000F1077"  # face-woman   (Maninne)
       - "\U000F0644"  # face-man-profile (Jozua)
       - "\U000F15CE"  # face-woman-shimmer (Anne-Lize)
+      - "\U000F15CF"  # face-woman-shimmer-outline (Rosalyn)
       - "\U000F02E8"  # human-male-female (BMW = Bram+Maninne, het stel)
 
 m5paper:
