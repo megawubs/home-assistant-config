@@ -122,7 +122,9 @@ const char *nl_month(int m) {
 }
 
 // Bron-icoon per kalender-code (gelijk aan de HA-entiteit-iconen, in ic28).
+// Hoofdletter-codes (= morgen-items) worden ge-lowercased voor het icoon.
 const char *cal_glyph(char c) {
+  if (c >= 'A' && c <= 'Z') c = c + 32;
   switch (c) {
     case 'g': return "\U000F0827";  // home-heart        (Gezin)
     case 'b': return "\U000F0643";  // face-man          (Bram)
@@ -153,9 +155,9 @@ AgendaItem agenda_parse(const std::string &s) {
   size_t b1 = s.find('|');
   std::string f1 = (b1 == std::string::npos) ? s : s.substr(0, b1);
   std::string rest = (b1 == std::string::npos) ? std::string("") : s.substr(b1 + 1);
-  if (f1.size() == 1 && (f1[0] == 'g' || f1[0] == 'b' || f1[0] == 'm' ||
-                         f1[0] == 'j' || f1[0] == 'a' || f1[0] == 'r' ||
-                         f1[0] == 'w')) {
+  char lc = (f1.size() == 1 && f1[0] >= 'A' && f1[0] <= 'Z') ? (char)(f1[0] + 32) : (f1.size() == 1 ? f1[0] : ' ');
+  if (lc == 'g' || lc == 'b' || lc == 'm' || lc == 'j' || lc == 'a' ||
+      lc == 'r' || lc == 'w') {
     a.code = f1[0];
     size_t b2 = rest.find('|');
     a.tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);
@@ -166,6 +168,9 @@ AgendaItem agenda_parse(const std::string &s) {
   }
   return a;
 }
+
+// Morgen-item? (HA codeert morgen-afspraken met een hoofdletter-broncode.)
+bool agenda_tomorrow(const AgendaItem &a) { return a.code >= 'A' && a.code <= 'Z'; }
 
 // Startminuten sinds middernacht uit tm ("HH:MM..."); hele-dag/onbekend -> 0
 // (sorteert als "vroegst", dus boven de nu-lijn).

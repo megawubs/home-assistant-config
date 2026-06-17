@@ -1060,45 +1060,77 @@
           - calendar.bmw
       data:
         start_date_time: "{{ now() }}"
-        end_date_time: "{{ today_at('23:59:59') }}"
+        end_date_time: "{{ today_at('23:59:59') + timedelta(days=1) }}"
       response_variable: agenda
   sensor:
     - name: M5Paper Agenda
       unique_id: m5paper_agenda
       icon: mdi:calendar-clock
+      # state = aantal afspraken VANDAAG (de hero-teller). De getoonde lijst vult
+      # lege plekken (tot 4) aan met morgen-items; die krijgen een HOOFDLETTER-code
+      # zodat de firmware er een "morgen"-divider voor zet.
       state: >
-        {%- set ns = namespace(n=0) -%}
-        {%- for cal, d in agenda.items() -%}{%- set ns.n = ns.n + (d.events | length) -%}{%- endfor -%}
-        {{ ns.n }}
+        {%- set ns = namespace(l=[]) -%}
+        {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [e.start] -%}{%- endfor -%}{%- endfor -%}
+        {%- set tdy = now().strftime('%Y-%m-%d') -%}
+        {{ ns.l | select('match', tdy) | list | length }}
       attributes:
         more: >-
-          {%- set ns = namespace(n=0) -%}
-          {%- for cal, d in agenda.items() -%}{%- set ns.n = ns.n + (d.events | length) -%}{%- endfor -%}
-          {{ [ns.n - 4, 0] | max }}
+          {%- set ns = namespace(l=[]) -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [e.start] -%}{%- endfor -%}{%- endfor -%}
+          {%- set tdy = now().strftime('%Y-%m-%d') -%}
+          {{ [ (ns.l | select('match', tdy) | list | length) - 4, 0] | max }}
         i1: >-
           {%- set ns = namespace(l=[]) -%}
           {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
-          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- set tdy = now().strftime('%Y-%m-%d') -%}
+          {%- set sp = namespace(today=[], tom=[]) -%}
+          {%- for ev in ns.l -%}{%- if ev.s[:10] == tdy -%}{%- set sp.today = sp.today + [ev] -%}{%- else -%}{%- set sp.tom = sp.tom + [ev] -%}{%- endif -%}{%- endfor -%}
+          {%- set s = (sp.today | sort(attribute='s')) + (sp.tom | sort(attribute='s')) -%}
           {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.rosalyn':'r','calendar.bmw':'w'} -%}
-          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
+          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{%- set c = codes.get(ev.c,'') -%}{%- set c = c | upper if ev.s[:10] != tdy else c -%}{{ c ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
         i2: >-
           {%- set ns = namespace(l=[]) -%}
           {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
-          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- set tdy = now().strftime('%Y-%m-%d') -%}
+          {%- set sp = namespace(today=[], tom=[]) -%}
+          {%- for ev in ns.l -%}{%- if ev.s[:10] == tdy -%}{%- set sp.today = sp.today + [ev] -%}{%- else -%}{%- set sp.tom = sp.tom + [ev] -%}{%- endif -%}{%- endfor -%}
+          {%- set s = (sp.today | sort(attribute='s')) + (sp.tom | sort(attribute='s')) -%}
           {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.rosalyn':'r','calendar.bmw':'w'} -%}
-          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
+          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{%- set c = codes.get(ev.c,'') -%}{%- set c = c | upper if ev.s[:10] != tdy else c -%}{{ c ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
         i3: >-
           {%- set ns = namespace(l=[]) -%}
           {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
-          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- set tdy = now().strftime('%Y-%m-%d') -%}
+          {%- set sp = namespace(today=[], tom=[]) -%}
+          {%- for ev in ns.l -%}{%- if ev.s[:10] == tdy -%}{%- set sp.today = sp.today + [ev] -%}{%- else -%}{%- set sp.tom = sp.tom + [ev] -%}{%- endif -%}{%- endfor -%}
+          {%- set s = (sp.today | sort(attribute='s')) + (sp.tom | sort(attribute='s')) -%}
           {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.rosalyn':'r','calendar.bmw':'w'} -%}
-          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
+          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{%- set c = codes.get(ev.c,'') -%}{%- set c = c | upper if ev.s[:10] != tdy else c -%}{{ c ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
         i4: >-
           {%- set ns = namespace(l=[]) -%}
           {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
-          {%- set s = ns.l | sort(attribute='s') -%}
+          {%- set tdy = now().strftime('%Y-%m-%d') -%}
+          {%- set sp = namespace(today=[], tom=[]) -%}
+          {%- for ev in ns.l -%}{%- if ev.s[:10] == tdy -%}{%- set sp.today = sp.today + [ev] -%}{%- else -%}{%- set sp.tom = sp.tom + [ev] -%}{%- endif -%}{%- endfor -%}
+          {%- set s = (sp.today | sort(attribute='s')) + (sp.tom | sort(attribute='s')) -%}
           {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.rosalyn':'r','calendar.bmw':'w'} -%}
-          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
+          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{%- set c = codes.get(ev.c,'') -%}{%- set c = c | upper if ev.s[:10] != tdy else c -%}{{ c ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
+
+# ---------------------------------------------------------------------------
+# M5Paper statusbalk: resterende douche-tijd in hele minuten (-1 = timer niet
+# actief). Niet-trigger-based -> herrekent elke minuut via now(), past bij de
+# minuut-resolutie van het e-ink-paneel.
+# ---------------------------------------------------------------------------
+- sensor:
+    - name: "Douche timer resterend"
+      unique_id: douche_timer_resterend
+      icon: mdi:shower
+      state: >
+        {% set t = 'timer.douche_timer' %}
+        {% if is_state(t, 'active') and state_attr(t, 'finishes_at') %}
+          {{ [ ((state_attr(t, 'finishes_at') | as_datetime - now()).total_seconds() / 60) | round(0, 'ceil'), 0] | max | int }}
+        {% else %}-1{% endif %}
 
 # ---------------------------------------------------------------------------
 # RLCD Bureaudisplay agenda: Bram's komende afspraken (werk + persoonlijk),

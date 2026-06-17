@@ -156,6 +156,9 @@ font:
       - "\U000F050F"  # thermometer
       - "\U000F058E"  # water-percent
       - "\U000F0210"  # fan (ventilator-trio)
+      - "\U000F0F92"  # water-boiler (boiler-temp statusbalk)
+      - "\U000F0238"  # fire (boiler verwarmt)
+      - "\U000F09A0"  # shower (douche-timer)
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: ic32
     size: 32
@@ -301,6 +304,16 @@ sensor:
     entity_id: ${agenda_entity}
     internal: true
 
+  # Statusbalk: warmwaterboiler temperatuur + resterende douche-tijd (minuten, -1=uit)
+  - platform: homeassistant
+    id: boiler_temp
+    entity_id: sensor.boiler_huidige_temperatuur
+    internal: true
+  - platform: homeassistant
+    id: douche_remaining
+    entity_id: sensor.douche_timer_resterend
+    internal: true
+
 # ---------------------------------------------------------------------------
 # Text sensors
 # ---------------------------------------------------------------------------
@@ -375,6 +388,12 @@ text_sensor:
 # Binary sensors
 # ---------------------------------------------------------------------------
 binary_sensor:
+  # Boiler verwarmt? (vlammetje in de statusbalk)
+  - platform: homeassistant
+    id: boiler_heating
+    entity_id: binary_sensor.ariston_is_heating
+    internal: true
+
   # Fysieke BTN-knop (G38): forceer volledige verversing (ghosting wissen)
   - platform: gpio
     name: "${device_name} refresh knop"
@@ -744,6 +763,22 @@ display:
         eink_val(&it, 596, 18, id(roboto_28), TextAlign::TOP_LEFT,
                  id(m5paper_humidity).state, 0, "%");
 
+      // warmwaterboiler: temperatuur + vlammetje als 'ie verwarmt
+      it.print(670, 14, id(ic30), "\U000F0F92");
+      if (!isnan(id(boiler_temp).state))
+        eink_val(&it, 706, 18, id(roboto_28), TextAlign::TOP_LEFT,
+                 id(boiler_temp).state, 0, "°");
+      if (id(boiler_heating).state)
+        it.print(768, 14, id(ic30), "\U000F0238");
+
+      // douche-timer: alleen tonen als 'ie loopt (resterende minuten)
+      if (!isnan(id(douche_remaining).state) && id(douche_remaining).state >= 0) {
+        it.print(810, 14, id(ic30), "\U000F09A0");
+        char db[8];
+        snprintf(db, sizeof(db), "%dm", (int) id(douche_remaining).state);
+        it.print(846, 18, id(roboto_28), db);
+      }
+
       if (!isnan(id(wifi_signal_sensor).state))
         it.print(910, 13, id(ic32), "\U000F05A9");
 
@@ -780,26 +815,39 @@ display:
           int ys[4] = {170, 232, 294, 356};
           int count = 0;
           for (int k = 0; k < 4; k++) if (ag[k].valid) count++;
+          // nt = index van het eerste MORGEN-item (= aantal vandaag-items)
+          int nt = 0;
+          while (nt < count && !agenda_tomorrow(ag[nt])) nt++;
           int now_min = t.hour * 60 + t.minute;
-          // p = aantal getoonde items waarvan de start al voorbij/bezig is
+          // p = aantal vandaag-items waarvan de start al voorbij/bezig is
           int p = 0;
-          for (int k = 0; k < count; k++) if (agenda_start_min(ag[k]) <= now_min) p++;
-          int nly = (p == 0) ? 150 : (p < count ? ys[p] - 15 : ys[count - 1] + 44);
-          for (int k = 0; k < count; k++) {
-            if (k > 0) {  // dunne scheidingslijn, behalve waar de nu-lijn komt
-              int sy = ys[k] - 15;
-              int d = (sy > nly) ? (sy - nly) : (nly - sy);
-              if (d >= 18) eink_hline(&it, 340, sy, 560, 2);
-            }
+          for (int k = 0; k < nt; k++) if (agenda_start_min(ag[k]) <= now_min) p++;
+          int morgenB = (nt < count) ? nt : -1;   // grens waar "morgen" begint
+          int nuB = (nt > 0) ? p : -1;             // nu-lijn alleen als er vandaag-items zijn
+          if (nuB == morgenB) nuB = -1;            // morgen-divider wint op dezelfde grens
+
+          for (int k = 0; k < count; k++)
             eink_agenda_draw(&it, ag[k], ys[k], id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
-          }
-          // nu-indicator: tag "nu HH:MM" + lijn op de chronologische nu-positie
-          char nb[16];
-          snprintf(nb, sizeof(nb), "nu %02d:%02d", t.hour, t.minute);
+
           esphome::Color w(0, 0, 0);  // = WIT op deze driver
-          it.filled_rectangle(340, nly - 13, 112, 26);
-          it.print(396, nly, id(roboto_22), w, TextAlign::CENTER, nb);
-          eink_hline(&it, 458, nly, 442, 3);
+          // grens-elementen: morgen-divider / nu-lijn / dunne scheidingslijn
+          for (int b = 0; b <= count; b++) {
+            int by = (b <= 0) ? 150 : (b >= count ? ys[count - 1] + 44 : ys[b] - 15);
+            if (b == morgenB) {
+              it.filled_rectangle(340, by - 13, 104, 26);
+              it.print(392, by, id(roboto_22), w, TextAlign::CENTER, "morgen");
+              eink_hline(&it, 452, by, 448, 3);
+            } else if (b == nuB) {
+              char nb[16];
+              snprintf(nb, sizeof(nb), "nu %02d:%02d", t.hour, t.minute);
+              it.filled_rectangle(340, by - 13, 112, 26);
+              it.print(396, by, id(roboto_22), w, TextAlign::CENTER, nb);
+              eink_hline(&it, 458, by, 442, 3);
+            } else if (b > 0 && b < count) {
+              eink_hline(&it, 340, by, 560, 2);
+            }
+          }
+
           int more = id(agenda_more).has_state() ? atoi(id(agenda_more).state.c_str()) : 0;
           if (more > 0) {
             char mbuf[28];
