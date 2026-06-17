@@ -187,6 +187,16 @@ font:
     glyphs:
       - "\U000F0374"  # minus
       - "\U000F0415"  # plus
+  # Agenda-bron-iconen (per kalender, gelijk aan de HA-entiteit-iconen)
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ic28
+    size: 28
+    glyphs:
+      - "\U000F0827"  # home-heart   (Gezin)
+      - "\U000F0643"  # face-man     (Bram)
+      - "\U000F1077"  # face-woman   (Maninne)
+      - "\U000F0644"  # face-man-profile (Jozua)
+      - "\U000F15CE"  # face-woman-shimmer (Anne-Lize)
 
 m5paper:
   battery_power_pin: GPIO5
@@ -766,10 +776,10 @@ display:
           if (!a2.empty()) eink_hline(&it, 340, 196, 560, 2);
           if (!a3.empty()) eink_hline(&it, 340, 260, 560, 2);
           if (!a4.empty()) eink_hline(&it, 340, 324, 560, 2);
-          eink_agenda_item(&it, a1, 150, id(roboto_28), id(roboto_28), id(roboto_22));
-          eink_agenda_item(&it, a2, 214, id(roboto_28), id(roboto_28), id(roboto_22));
-          eink_agenda_item(&it, a3, 278, id(roboto_28), id(roboto_28), id(roboto_22));
-          eink_agenda_item(&it, a4, 342, id(roboto_28), id(roboto_28), id(roboto_22));
+          eink_agenda_item(&it, a1, 150, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
+          eink_agenda_item(&it, a2, 214, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
+          eink_agenda_item(&it, a3, 278, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
+          eink_agenda_item(&it, a4, 342, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
           int more = id(agenda_more).has_state() ? atoi(id(agenda_more).state.c_str()) : 0;
           if (more > 0) {
             char mbuf[28];

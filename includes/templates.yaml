@@ -1075,21 +1075,74 @@
           {{ [ns.n - 4, 0] | max }}
         i1: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
+          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
         i2: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
+          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
         i3: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
+          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
         i4: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)')}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{{ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
+          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+
+# ---------------------------------------------------------------------------
+# RLCD Bureaudisplay agenda: Bram's komende afspraken (werk + persoonlijk),
+# samengevoegd + op tijd gesorteerd. Voedt esphome rlcd-bureaudisplay.yaml.
+#  - sensor.rlcd_agenda          : max 7 regels "HH:MM|Titel" (\n-gescheiden,
+#                                  regel 0 = eerstvolgende). Hele-dag-events en
+#                                  emoji/niet-Latin worden eruit gefilterd.
+#  - sensor.rlcd_agenda_next_minutes : minuten tot start eerstvolgende (<=0 = nu).
+# ---------------------------------------------------------------------------
+- trigger:
+    - platform: homeassistant
+      event: start
+    - platform: time_pattern
+      minutes: "/5"
+  action:
+    - service: calendar.get_events
+      target:
+        entity_id:
+          - calendar.bram_sibi_nl
+          - calendar.bram_planning
+          - calendar.bram
+      data:
+        start_date_time: "{{ now() }}"
+        end_date_time: "{{ today_at('23:59:59') }}"
+      response_variable: agenda
+  sensor:
+    - name: RLCD Agenda
+      unique_id: rlcd_agenda
+      icon: mdi:calendar-clock
+      state: >-
+        {%- set ns = namespace(items=[]) -%}
+        {%- for cal, data in agenda.items() -%}{%- for e in data.events if 'T' in e.start and (as_datetime(e.end)|as_local) > now() -%}{%- set ns.items = ns.items + [e] -%}{%- endfor -%}{%- endfor -%}
+        {%- set evs = ns.items | sort(attribute='start') -%}
+        {%- set ns2 = namespace(seen=[], lines=[]) -%}
+        {%- for e in evs -%}
+          {%- set hm = (as_datetime(e.start)|as_local).strftime('%H:%M') -%}
+          {%- set title = (e.summary | default('(geen titel)') | regex_replace('[^\x20-\xFF]', ''))|trim -%}
+          {%- set key = hm ~ '|' ~ title -%}
+          {%- if key not in ns2.seen and (ns2.lines|length) < 7 -%}{%- set ns2.seen = ns2.seen + [key] -%}{%- set ns2.lines = ns2.lines + [hm ~ '|' ~ title[:20]] -%}{%- endif -%}
+        {%- endfor -%}
+        {{ ns2.lines | join('\n') }}
+    - name: RLCD Agenda Next Minutes
+      unique_id: rlcd_agenda_next_minutes
+      unit_of_measurement: min
+      state: >-
+        {%- set ns = namespace(items=[]) -%}
+        {%- for cal, data in agenda.items() -%}{%- for e in data.events if 'T' in e.start and (as_datetime(e.end)|as_local) > now() -%}{%- set ns.items = ns.items + [e] -%}{%- endfor -%}{%- endfor -%}
+        {%- set evs = ns.items | sort(attribute='start') -%}
+        {%- if evs|length > 0 -%}{{ (((as_datetime(evs[0].start)|as_local) - now()).total_seconds()/60)|round(0,'floor')|int }}{%- else -%}9999{%- endif -%}

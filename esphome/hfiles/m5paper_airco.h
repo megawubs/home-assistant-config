@@ -121,22 +121,39 @@ const char *nl_month(int m) {
   return mo[m];
 }
 
-// Eén agenda-regel op het hoofdscherm. `s` = "HH:MM|titel" (lege tijd voor de '|'
-// = hele-dag -> "Hele dag"-badge i.p.v. tijd). Lege string = niets tekenen.
-// Geeft true terug als er een regel getekend is (voor scheidingslijn-logica).
+// Bron-icoon per kalender-code (gelijk aan de HA-entiteit-iconen, in ic28).
+const char *cal_glyph(char c) {
+  switch (c) {
+    case 'g': return "\U000F0827";  // home-heart        (Gezin)
+    case 'b': return "\U000F0643";  // face-man          (Bram)
+    case 'm': return "\U000F1077";  // face-woman        (Maninne)
+    case 'j': return "\U000F0644";  // face-man-profile  (Jozua)
+    case 'a': return "\U000F15CE";  // face-woman-shimmer (Anne-Lize)
+    default:  return "";
+  }
+}
+
+// Eén agenda-regel op het hoofdscherm. `s` = "CODE|HH:MM|titel" (lege tijd voor de
+// 2e '|' = hele-dag -> "Hele dag"-badge; CODE = bronkalender voor het icoon).
+// Lege string = niets tekenen. Geeft true terug als er een regel getekend is.
 bool eink_agenda_item(esphome::display::Display *it, const std::string &s, int y,
                       esphome::font::Font *time_f, esphome::font::Font *title_f,
-                      esphome::font::Font *badge_f) {
+                      esphome::font::Font *badge_f, esphome::font::Font *icon_f) {
   if (s.empty()) return false;
-  size_t bar = s.find('|');
-  std::string tm = (bar == std::string::npos) ? std::string("") : s.substr(0, bar);
-  std::string title = (bar == std::string::npos) ? s : s.substr(bar + 1);
+  size_t b1 = s.find('|');
+  char code = (b1 != std::string::npos && b1 > 0) ? s[0] : ' ';
+  std::string rest = (b1 == std::string::npos) ? s : s.substr(b1 + 1);
+  size_t b2 = rest.find('|');
+  std::string tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);
+  std::string title = (b2 == std::string::npos) ? rest : rest.substr(b2 + 1);
   if (tm.empty()) {
     eink_rect(it, 340, y - 4, 112, 40, 2);
     it->print(396, y + 16, badge_f, TextAlign::CENTER, "Hele dag");
   } else {
     it->print(340, y, time_f, tm.c_str());
   }
-  it->print(500, y, title_f, title.c_str());
+  const char *g = cal_glyph(code);
+  if (g[0] != '\0') it->print(470, y, icon_f, g);
+  it->print(506, y, title_f, title.c_str());
   return true;
 }

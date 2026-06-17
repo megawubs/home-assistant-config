@@ -15,8 +15,11 @@ het paneel automatisch terug naar het hoofdscherm (`idle_min`-teller, gereset bi
 Een schermwissel is een bewuste, volledige e-ink-refresh.
 
 **Hoofdscherm:** datum-hero links (weekdag/dag/maand uit de RTC + "N afspraken vandaag") en
-rechts de agenda — vandaag-events, op tijd gesorteerd, met "Hele dag"-badge en "+N meer
-vandaag"-teller; lege staat = "Geen afspraken vandaag". Rechtsonder de **Klimaat ›**-knop.
+rechts de agenda — vandaag-events, op tijd gesorteerd, met **bron-icoon per kalender**
+(gelijk aan de HA-entiteit-iconen: Gezin `home-heart`, Bram `face-man`, Maninne
+`face-woman`, Jozua `face-man-profile`, Anne-Lize `face-woman-shimmer`), "Hele dag"-badge en
+"+N meer vandaag"-teller; lege staat = "Geen afspraken vandaag". Rechtsonder de
+**Klimaat ›**-knop.
 
 > **Agenda-databron — vereist HA-deploy.** De agenda komt van de template-sensor
 > `sensor.m5paper_agenda` (toegevoegd in [`includes/templates.yaml`](../includes/templates.yaml)):
