@@ -5803,3 +5803,131 @@
         message: Temperatuur handmatig aangepast naar {{ trigger.to_state.attributes.temperature
           }}°C. Timer loopt 45 minuten, daarna terug naar schema.
   mode: restart
+- id: '1780597745336'
+  alias: Airco Zolder Uitzetten
+  description: Zet de zolder-airco (climate.airco_zolder) uit wanneer het raam (binary_sensor.zolder_raam_openen)
+    opengaat, en standaard om 23:00 als hij dan nog aan staat. Alleen uitzet-logica;
+    automatisch koelen op temperatuur volgt later, zodra er een goede losse temperatuursensor
+    op zolder is. Notificatie wordt alleen verstuurd als de airco daadwerkelijk aan
+    stond (conditie 'niet uit'), om ruis te voorkomen.
+  triggers:
+  - platform: state
+    entity_id:
+    - binary_sensor.zolder_raam_openen
+    to: 'on'
+    id: raam_open
+  - platform: time
+    at: '23:00:00'
+    id: nacht
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: climate.airco_zolder
+      state: 'off'
+  actions:
+  - action: climate.turn_off
+    target:
+      entity_id: climate.airco_zolder
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: Zolder-airco uitgezet ({{ 'raam open' if trigger.id == 'raam_open'
+        else 'standaard 23:00' }})
+  mode: single
+- id: '1781627520002'
+  alias: 'Douche: timer starten'
+  description: 'Detecteert douchen: waterflow > 2 L/min onafgebroken 60s (sluit wc-spoeling/kraan
+    uit) terwijl er iemand in de badkamer is (licht aan of beweging). Start dan de
+    5-minuten douche-timer. Voorwaarde timer ''idle'' voorkomt herstarten tijdens
+    dezelfde douche.'
+  triggers:
+  - trigger: numeric_state
+    entity_id: sensor.watermeter_water_gebruik
+    above: 2
+    for: 00:01:00
+  conditions:
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: light.badkamer_leds
+      state: 'on'
+    - condition: state
+      entity_id: binary_sensor.beweging_in_de_badkamer
+      state: 'on'
+  - condition: state
+    entity_id: timer.douche_timer
+    state: idle
+  actions:
+  - action: timer.start
+    target:
+      entity_id: timer.douche_timer
+  - action: notify.bram
+    data:
+      title: Douche gestart
+      message: De douche-timer van 5 minuten loopt.
+  mode: single
+- id: '1781627526429'
+  alias: 'Douche: timer annuleren bij geen water'
+  description: Als het water langer dan 90s (bijna) stopt terwijl de douche-timer
+    loopt, is de douche waarschijnlijk eerder klaar dan 5 min. Annuleer de timer zodat
+    de lampen niet onnodig gaan knipperen.
+  triggers:
+  - below: 0.5
+    entity_id: sensor.watermeter_water_gebruik
+    for: 00:01:30
+    trigger: numeric_state
+  conditions:
+  - condition: state
+    entity_id: timer.douche_timer
+    state: active
+  actions:
+  - action: timer.cancel
+    target:
+      entity_id: timer.douche_timer
+  mode: single
+- id: '1781627534453'
+  alias: 'Douche: tijd voorbij - lampen knipperen'
+  description: 'Als de 5-minuten douche-timer afloopt: badkamerlampen 8x rood laten
+    knipperen als signaal dat de douchetijd voorbij is, daarna de oorspronkelijke
+    lichtstand herstellen via een snapshot-scene.'
+  triggers:
+  - trigger: event
+    event_type: timer.finished
+    event_data:
+      entity_id: timer.douche_timer
+  actions:
+  - action: notify.bram
+    data:
+      title: Douchetijd voorbij
+      message: De 5 minuten zijn om - tijd om af te ronden!
+  - action: scene.create
+    data:
+      scene_id: douche_lampen_herstel
+      snapshot_entities:
+      - light.badkamer_leds
+  - repeat:
+      count: 8
+      sequence:
+      - action: light.turn_on
+        target:
+          entity_id: light.badkamer_leds
+        data:
+          rgb_color:
+          - 255
+          - 0
+          - 0
+          brightness: 255
+          transition: 0
+      - delay:
+          milliseconds: 400
+      - action: light.turn_off
+        target:
+          entity_id: light.badkamer_leds
+        data:
+          transition: 0
+      - delay:
+          milliseconds: 400
+  - action: scene.turn_on
+    target:
+      entity_id: scene.douche_lampen_herstel
+  mode: restart
