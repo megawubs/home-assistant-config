@@ -129,7 +129,7 @@ const char *cal_glyph(char c) {
     case 'm': return "\U000F1077";  // face-woman        (Maninne)
     case 'j': return "\U000F0644";  // face-man-profile  (Jozua)
     case 'a': return "\U000F15CE";  // face-woman-shimmer (Anne-Lize)
-    case 'w': return "\U000F010B";  // car               (BMW)
+    case 'w': return "\U000F02E8";  // human-male-female (BMW = Bram+Maninne)
     default:  return "";
   }
 }
