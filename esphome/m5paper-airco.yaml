@@ -197,6 +197,7 @@ font:
       - "\U000F1077"  # face-woman   (Maninne)
       - "\U000F0644"  # face-man-profile (Jozua)
       - "\U000F15CE"  # face-woman-shimmer (Anne-Lize)
+      - "\U000F010B"  # car (BMW)
 
 m5paper:
   battery_power_pin: GPIO5
@@ -766,25 +767,43 @@ display:
         // agenda rechts
         it.print(340, 92, id(roboto_b28), "Vandaag");
         eink_hline(&it, 340, 134, 110, 2);
-        std::string a1 = id(agenda_i1).has_state() ? id(agenda_i1).state : std::string("");
-        std::string a2 = id(agenda_i2).has_state() ? id(agenda_i2).state : std::string("");
-        std::string a3 = id(agenda_i3).has_state() ? id(agenda_i3).state : std::string("");
-        std::string a4 = id(agenda_i4).has_state() ? id(agenda_i4).state : std::string("");
-        if (a1.empty()) {
+        AgendaItem ag[4] = {
+          agenda_parse(id(agenda_i1).has_state() ? id(agenda_i1).state : std::string("")),
+          agenda_parse(id(agenda_i2).has_state() ? id(agenda_i2).state : std::string("")),
+          agenda_parse(id(agenda_i3).has_state() ? id(agenda_i3).state : std::string("")),
+          agenda_parse(id(agenda_i4).has_state() ? id(agenda_i4).state : std::string(""))
+        };
+        if (!ag[0].valid) {
           it.print(620, 296, id(roboto_28), TextAlign::CENTER, "Geen afspraken vandaag");
         } else {
-          if (!a2.empty()) eink_hline(&it, 340, 196, 560, 2);
-          if (!a3.empty()) eink_hline(&it, 340, 260, 560, 2);
-          if (!a4.empty()) eink_hline(&it, 340, 324, 560, 2);
-          eink_agenda_item(&it, a1, 150, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
-          eink_agenda_item(&it, a2, 214, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
-          eink_agenda_item(&it, a3, 278, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
-          eink_agenda_item(&it, a4, 342, id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
+          int ys[4] = {170, 232, 294, 356};
+          int count = 0;
+          for (int k = 0; k < 4; k++) if (ag[k].valid) count++;
+          int now_min = t.hour * 60 + t.minute;
+          // p = aantal getoonde items waarvan de start al voorbij/bezig is
+          int p = 0;
+          for (int k = 0; k < count; k++) if (agenda_start_min(ag[k]) <= now_min) p++;
+          int nly = (p == 0) ? 150 : (p < count ? ys[p] - 15 : ys[count - 1] + 44);
+          for (int k = 0; k < count; k++) {
+            if (k > 0) {  // dunne scheidingslijn, behalve waar de nu-lijn komt
+              int sy = ys[k] - 15;
+              int d = (sy > nly) ? (sy - nly) : (nly - sy);
+              if (d >= 18) eink_hline(&it, 340, sy, 560, 2);
+            }
+            eink_agenda_draw(&it, ag[k], ys[k], id(roboto_28), id(roboto_28), id(roboto_22), id(ic28));
+          }
+          // nu-indicator: tag "nu HH:MM" + lijn op de chronologische nu-positie
+          char nb[16];
+          snprintf(nb, sizeof(nb), "nu %02d:%02d", t.hour, t.minute);
+          esphome::Color w(0, 0, 0);  // = WIT op deze driver
+          it.filled_rectangle(340, nly - 13, 112, 26);
+          it.print(396, nly, id(roboto_22), w, TextAlign::CENTER, nb);
+          eink_hline(&it, 458, nly, 442, 3);
           int more = id(agenda_more).has_state() ? atoi(id(agenda_more).state.c_str()) : 0;
           if (more > 0) {
             char mbuf[28];
             snprintf(mbuf, sizeof(mbuf), "+%d meer vandaag", more);
-            it.print(340, 446, id(roboto_m24), mbuf);
+            it.print(340, 412, id(roboto_m24), mbuf);
           }
         }
 

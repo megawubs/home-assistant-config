@@ -129,43 +129,64 @@ const char *cal_glyph(char c) {
     case 'm': return "\U000F1077";  // face-woman        (Maninne)
     case 'j': return "\U000F0644";  // face-man-profile  (Jozua)
     case 'a': return "\U000F15CE";  // face-woman-shimmer (Anne-Lize)
+    case 'w': return "\U000F010B";  // car               (BMW)
     default:  return "";
   }
 }
 
-// Eén agenda-regel op het hoofdscherm. Verwerkt BEIDE formaten:
-//   "CODE|HH:MM|titel" (nieuw, met bronkalender-code voor het icoon) en
-//   "HH:MM|titel"      (oud, zonder code) — zo blijft het scherm kloppen ook als
-// firmware en HA-template-deploy even uit de pas lopen. Lege tijd = "Hele dag"-badge.
-// Lege string = niets tekenen. Geeft true terug als er een regel getekend is.
-bool eink_agenda_item(esphome::display::Display *it, const std::string &s, int y,
-                      esphome::font::Font *time_f, esphome::font::Font *title_f,
-                      esphome::font::Font *badge_f, esphome::font::Font *icon_f) {
-  if (s.empty()) return false;
+// Eén geparseerde agenda-regel. tm = "HH:MM" of "HH:MM-HH:MM" (start[-eind]),
+// leeg = hele-dag. code = bronkalender-letter.
+struct AgendaItem {
+  bool valid;
+  char code;
+  std::string tm;
+  std::string title;
+};
+
+// Parse "CODE|tijd|titel" (nieuw) of "tijd|titel" (oud) — tolerant zodat firmware en
+// HA-template-deploy even uit de pas mogen lopen. Lege string -> valid=false.
+AgendaItem agenda_parse(const std::string &s) {
+  AgendaItem a{false, ' ', std::string(""), std::string("")};
+  if (s.empty()) return a;
+  a.valid = true;
   size_t b1 = s.find('|');
   std::string f1 = (b1 == std::string::npos) ? s : s.substr(0, b1);
   std::string rest = (b1 == std::string::npos) ? std::string("") : s.substr(b1 + 1);
-  char code = ' ';
-  std::string tm, title;
-  // Eerste veld is een 1-teken broncode? -> nieuw formaat; anders oud (veld = tijd).
   if (f1.size() == 1 && (f1[0] == 'g' || f1[0] == 'b' || f1[0] == 'm' ||
-                         f1[0] == 'j' || f1[0] == 'a')) {
-    code = f1[0];
+                         f1[0] == 'j' || f1[0] == 'a' || f1[0] == 'w')) {
+    a.code = f1[0];
     size_t b2 = rest.find('|');
-    tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);
-    title = (b2 == std::string::npos) ? rest : rest.substr(b2 + 1);
+    a.tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);
+    a.title = (b2 == std::string::npos) ? rest : rest.substr(b2 + 1);
   } else {
-    tm = f1;
-    title = rest;
+    a.tm = f1;
+    a.title = rest;
   }
-  if (tm.empty()) {
+  return a;
+}
+
+// Startminuten sinds middernacht uit tm ("HH:MM..."); hele-dag/onbekend -> 0
+// (sorteert als "vroegst", dus boven de nu-lijn).
+int agenda_start_min(const AgendaItem &a) {
+  if (a.tm.size() < 5 || a.tm[2] != ':') return 0;
+  int hh = (a.tm[0] - '0') * 10 + (a.tm[1] - '0');
+  int mm = (a.tm[3] - '0') * 10 + (a.tm[4] - '0');
+  if (hh < 0 || hh > 23 || mm < 0 || mm > 59) return 0;
+  return hh * 60 + mm;
+}
+
+// Teken één agenda-regel: tijd(range) @340 · bron-icoon @500 · titel @540.
+void eink_agenda_draw(esphome::display::Display *it, const AgendaItem &a, int y,
+                      esphome::font::Font *time_f, esphome::font::Font *title_f,
+                      esphome::font::Font *badge_f, esphome::font::Font *icon_f) {
+  if (!a.valid) return;
+  if (a.tm.empty()) {
     eink_rect(it, 340, y - 4, 112, 40, 2);
     it->print(396, y + 16, badge_f, TextAlign::CENTER, "Hele dag");
   } else {
-    it->print(340, y, time_f, tm.c_str());
+    it->print(340, y, time_f, a.tm.c_str());
   }
-  const char *g = cal_glyph(code);
-  if (g[0] != '\0') it->print(470, y, icon_f, g);
-  it->print(506, y, title_f, title.c_str());
-  return true;
+  const char *g = cal_glyph(a.code);
+  if (g[0] != '\0') it->print(500, y, icon_f, g);
+  it->print(540, y, title_f, a.title.c_str());
 }

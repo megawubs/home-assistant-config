@@ -1056,6 +1056,7 @@
           - calendar.maninne
           - calendar.jozua
           - calendar.anne_lize
+          - calendar.bmw
       data:
         start_date_time: "{{ now() }}"
         end_date_time: "{{ today_at('23:59:59') }}"
@@ -1075,28 +1076,28 @@
           {{ [ns.n - 4, 0] | max }}
         i1: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
-          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.bmw':'w'} -%}
+          {%- if s | length > 0 -%}{%- set ev = s[0] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
         i2: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
-          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.bmw':'w'} -%}
+          {%- if s | length > 1 -%}{%- set ev = s[1] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
         i3: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
-          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.bmw':'w'} -%}
+          {%- if s | length > 2 -%}{%- set ev = s[2] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
         i4: >-
           {%- set ns = namespace(l=[]) -%}
-          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
+          {%- for cal, d in agenda.items() -%}{%- for e in d.events -%}{%- set ns.l = ns.l + [{'s': e.start, 'e': e.end | default(''), 't': e.summary | default('(geen titel)'), 'c': cal}] -%}{%- endfor -%}{%- endfor -%}
           {%- set s = ns.l | sort(attribute='s') -%}
-          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a'} -%}
-          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else ev.s[11:16]) ~ '|' ~ (ev.t | truncate(30, True)) }}{%- endif -%}
+          {%- set codes = {'calendar.gezin':'g','calendar.bram':'b','calendar.maninne':'m','calendar.jozua':'j','calendar.anne_lize':'a','calendar.bmw':'w'} -%}
+          {%- if s | length > 3 -%}{%- set ev = s[3] -%}{{ codes.get(ev.c,'') ~ '|' ~ ('' if 'T' not in ev.s else (ev.s[11:16] ~ ('-' ~ ev.e[11:16] if (ev.e and 'T' in ev.e) else ''))) ~ '|' ~ (ev.t | truncate(24, True)) }}{%- endif -%}
 
 # ---------------------------------------------------------------------------
 # RLCD Bureaudisplay agenda: Bram's komende afspraken (werk + persoonlijk),
