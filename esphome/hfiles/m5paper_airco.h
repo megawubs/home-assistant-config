@@ -133,19 +133,31 @@ const char *cal_glyph(char c) {
   }
 }
 
-// Eén agenda-regel op het hoofdscherm. `s` = "CODE|HH:MM|titel" (lege tijd voor de
-// 2e '|' = hele-dag -> "Hele dag"-badge; CODE = bronkalender voor het icoon).
+// Eén agenda-regel op het hoofdscherm. Verwerkt BEIDE formaten:
+//   "CODE|HH:MM|titel" (nieuw, met bronkalender-code voor het icoon) en
+//   "HH:MM|titel"      (oud, zonder code) — zo blijft het scherm kloppen ook als
+// firmware en HA-template-deploy even uit de pas lopen. Lege tijd = "Hele dag"-badge.
 // Lege string = niets tekenen. Geeft true terug als er een regel getekend is.
 bool eink_agenda_item(esphome::display::Display *it, const std::string &s, int y,
                       esphome::font::Font *time_f, esphome::font::Font *title_f,
                       esphome::font::Font *badge_f, esphome::font::Font *icon_f) {
   if (s.empty()) return false;
   size_t b1 = s.find('|');
-  char code = (b1 != std::string::npos && b1 > 0) ? s[0] : ' ';
-  std::string rest = (b1 == std::string::npos) ? s : s.substr(b1 + 1);
-  size_t b2 = rest.find('|');
-  std::string tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);
-  std::string title = (b2 == std::string::npos) ? rest : rest.substr(b2 + 1);
+  std::string f1 = (b1 == std::string::npos) ? s : s.substr(0, b1);
+  std::string rest = (b1 == std::string::npos) ? std::string("") : s.substr(b1 + 1);
+  char code = ' ';
+  std::string tm, title;
+  // Eerste veld is een 1-teken broncode? -> nieuw formaat; anders oud (veld = tijd).
+  if (f1.size() == 1 && (f1[0] == 'g' || f1[0] == 'b' || f1[0] == 'm' ||
+                         f1[0] == 'j' || f1[0] == 'a')) {
+    code = f1[0];
+    size_t b2 = rest.find('|');
+    tm = (b2 == std::string::npos) ? std::string("") : rest.substr(0, b2);
+    title = (b2 == std::string::npos) ? rest : rest.substr(b2 + 1);
+  } else {
+    tm = f1;
+    title = rest;
+  }
   if (tm.empty()) {
     eink_rect(it, 340, y - 4, 112, 40, 2);
     it->print(396, y + 16, badge_f, TextAlign::CENTER, "Hele dag");
