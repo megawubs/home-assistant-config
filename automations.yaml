@@ -3011,6 +3011,53 @@
               swing_mode: Up/Down Auto
             target:
               label_id: airco_beneden
+        - alias: 'Airco uit of idle: aanzetten en gaan ventileren (zomer)'
+          conditions:
+          - condition: not
+            conditions:
+            - condition: state
+              entity_id: climate.airco_woonkamer
+              state: fan_only
+          sequence:
+          - action: climate.turn_on
+            data: {}
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_hvac_mode
+            data:
+              hvac_mode: fan_only
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: 2 Low
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_swing_mode
+            data:
+              swing_mode: Up/Down Auto
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_woonkamer_horizontal_swing_direction
+          - delay:
+              seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_keuken_horizontal_swing_direction
     - conditions:
       - condition: trigger
         id:
