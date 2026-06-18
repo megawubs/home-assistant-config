@@ -2825,6 +2825,33 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: Airco woonkamer is uitgezet
+    - alias: 'Ventileren gestopt: airco uit als er niets anders te doen is'
+      conditions:
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_ventileren
+        state: 'off'
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_afkoelen
+        state: 'off'
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_verwarmen
+        state: 'off'
+      - condition: state
+        entity_id: climate.airco_woonkamer
+        state: fan_only
+      sequence:
+      - action: input_datetime.set_datetime
+        data:
+          timestamp: '{{ now().timestamp() }}'
+        target:
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - action: climate.turn_off
+        data: {}
+        target:
+          label_id: airco_beneden
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: Airco woonkamer uitgezet (ventileren niet meer nodig)
     - alias: Verwarmen
       conditions:
       - condition: state
