@@ -1037,6 +1037,57 @@
           {% endif %}
         {% endif %}
 
+    - default_entity_id: sensor.airco_boven_target_temperatuur
+      unique_id: airco_boven_target_temperatuur
+      name: "Airco Boven Target Temperatuur"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      state: >-
+        {# Coöperatief setpoint voor automation.airco_boven_handmatig. Proportionele
+           lus rond de drempel op de BETROUWBARE kamersensor; de airco-interne meting
+           is onbetrouwbaar en wordt bewust niet gelezen. dyn mag negatief worden →
+           zakt de kamer onder de koel-drempel (overkoeling) dan stijgt het setpoint. #}
+        {% set kamer = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set drempel_koelen = states('input_number.airco_boven_drempelwaarde_koelen') | float(18) %}
+        {% set drempel_verwarmen = states('input_number.airco_boven_drempelwaarde_verwarmen') | float(19) %}
+        {% set nudge = states('input_number.airco_boven_temperatuur_offset') | float(0) %}
+        {% set K = 2.0 %}
+        {% set CAP = 3.0 %}
+        {% if is_state('climate.airco_boven', 'heat') %}
+          {% if kamer is none %}
+            {{ [[16, drempel_verwarmen + nudge] | max, 30] | min | round(1) }}
+          {% else %}
+            {% set dyn = [[-CAP, K * (drempel_verwarmen - kamer)] | max, CAP] | min %}
+            {{ [[16, drempel_verwarmen + dyn + nudge] | max, 30] | min | round(1) }}
+          {% endif %}
+        {% else %}
+          {% if kamer is none %}
+            {{ [[16, drempel_koelen - nudge] | max, 30] | min | round(1) }}
+          {% else %}
+            {% set dyn = [[-CAP, K * (kamer - drempel_koelen)] | max, CAP] | min %}
+            {{ [[16, drempel_koelen - dyn - nudge] | max, 30] | min | round(1) }}
+          {% endif %}
+        {% endif %}
+      icon: mdi:thermometer-auto
+      attributes:
+        kamer: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') }}"
+        modus: "{{ states('climate.airco_boven') }}"
+        handmatige_nudge: "{{ states('input_number.airco_boven_temperatuur_offset') }}"
+        dyn_offset: >-
+          {% set kamer = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+          {% set K = 2.0 %}
+          {% set CAP = 3.0 %}
+          {% if kamer is none %}
+            0
+          {% elif is_state('climate.airco_boven', 'heat') %}
+            {% set fout = states('input_number.airco_boven_drempelwaarde_verwarmen') | float(19) - kamer %}
+            {{ [[-CAP, K * fout] | max, CAP] | min | round(2) }}
+          {% else %}
+            {% set fout = kamer - states('input_number.airco_boven_drempelwaarde_koelen') | float(18) %}
+            {{ [[-CAP, K * fout] | max, CAP] | min | round(2) }}
+          {% endif %}
+
 # ---------------------------------------------------------------------------
 # M5Paper hoofdscherm-agenda: vandaag-events uit de gezins-/persoonskalenders,
 # samengevoegd + op tijd gesorteerd, afgevlakt naar i1..i4 + count + more.
