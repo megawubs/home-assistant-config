@@ -95,7 +95,7 @@ globals:
     restore_value: no
     initial_value: '0'
   # Optimistic UI: verwachte staat direct tonen bij een tik; gewist zodra HA bevestigt.
-  - id: opt_mode         # -1 = geen, 0 = cool, 1 = heat, 2 = dry, 3 = off
+  - id: opt_mode         # -1 = geen, 0 = cool, 1 = heat, 2 = fan_only, 3 = off
     type: int
     restore_value: no
     initial_value: '-1'
@@ -170,7 +170,7 @@ font:
     glyphs:
       - "\U000F0717"  # snowflake (koel)
       - "\U000F0238"  # fire (warm)
-      - "\U000F058D"  # water-off (droog)
+      - "\U000F0210"  # fan (ventileren)
       - "\U000F0425"  # power (uit)
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: ic38
@@ -327,7 +327,7 @@ text_sensor:
       - lambda: |-
           int m = -1;
           if (x == "cool") m = 0; else if (x == "heat") m = 1;
-          else if (x == "dry") m = 2; else if (x == "off") m = 3;
+          else if (x == "fan_only") m = 2; else if (x == "off") m = 3;
           bool skip = (id(opt_mode) >= 0) && (id(opt_mode) == m);
           id(opt_mode) = -1;
           if (!skip) id(m5paper_display).update();
@@ -573,7 +573,7 @@ binary_sensor:
                   hvac_mode: heat
 
   - platform: touchscreen
-    name: "Mode Droog"
+    name: "Mode Ventileren"
     internal: true
     x_min: 40
     x_max: 164
@@ -590,7 +590,7 @@ binary_sensor:
                 action: climate.set_hvac_mode
                 data:
                   entity_id: ${climate_entity}
-                  hvac_mode: dry
+                  hvac_mode: fan_only
 
   - platform: touchscreen
     name: "Mode Uit"
@@ -887,21 +887,21 @@ display:
         it.print(404, 152, id(roboto_r72), "--,-°");
       it.print(356, 236, id(roboto_22), "Doeltemperatuur");
 
-      // mode-grid 2x2 (links, onder de grote temp): Koel/Warm (y322) · Droog/Uit (y416)
-      bool cool_on, heat_on, dry_on, off_on;
+      // mode-grid 2x2 (links, onder de grote temp): Koel/Warm (y322) · Ventileren/Uit (y416)
+      bool cool_on, heat_on, vent_on, off_on;
       if (id(opt_mode) >= 0) {  // optimistic: toon de zojuist getikte mode direct
         cool_on = id(opt_mode) == 0; heat_on = id(opt_mode) == 1;
-        dry_on  = id(opt_mode) == 2; off_on  = id(opt_mode) == 3;
+        vent_on = id(opt_mode) == 2; off_on  = id(opt_mode) == 3;
       } else {
         cool_on = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "cool";
         heat_on = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat";
-        dry_on  = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "dry";
+        vent_on = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "fan_only";
         off_on  = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "off";
       }
-      eink_mode_btn(&it,  40, 322, 124, 84, id(ic36), "\U000F0717", id(roboto_m24), "Koel",  cool_on);
-      eink_mode_btn(&it, 180, 322, 124, 84, id(ic36), "\U000F0238", id(roboto_m24), "Warm",  heat_on);
-      eink_mode_btn(&it,  40, 416, 124, 84, id(ic36), "\U000F058D", id(roboto_m24), "Droog", dry_on);
-      eink_mode_btn(&it, 180, 416, 124, 84, id(ic36), "\U000F0425", id(roboto_m24), "Uit",   off_on);
+      eink_mode_btn(&it,  40, 322, 124, 84, id(ic36), "\U000F0717", id(roboto_m24), "Koel",       cool_on);
+      eink_mode_btn(&it, 180, 322, 124, 84, id(ic36), "\U000F0238", id(roboto_m24), "Warm",       heat_on);
+      eink_mode_btn(&it,  40, 416, 124, 84, id(ic36), "\U000F0210", id(roboto_m24), "Ventileren", vent_on);
+      eink_mode_btn(&it, 180, 416, 124, 84, id(ic36), "\U000F0425", id(roboto_m24), "Uit",        off_on);
 
       // temp-stepper als icoon-trio op de bovenste mode-rij (y322): [-] [thermostaat] [+]
       eink_rect(&it, 330, 322, 72, 84, 3);
