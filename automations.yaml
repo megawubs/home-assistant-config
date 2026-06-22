@@ -2825,33 +2825,6 @@
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: Airco woonkamer is uitgezet
-    - alias: 'Ventileren gestopt: airco uit als er niets anders te doen is'
-      conditions:
-      - condition: state
-        entity_id: binary_sensor.airco_woonkamer_mag_ventileren
-        state: 'off'
-      - condition: state
-        entity_id: binary_sensor.airco_woonkamer_mag_afkoelen
-        state: 'off'
-      - condition: state
-        entity_id: binary_sensor.airco_woonkamer_mag_verwarmen
-        state: 'off'
-      - condition: state
-        entity_id: climate.airco_woonkamer
-        state: fan_only
-      sequence:
-      - action: input_datetime.set_datetime
-        data:
-          timestamp: '{{ now().timestamp() }}'
-        target:
-          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
-      - action: climate.turn_off
-        data: {}
-        target:
-          label_id: airco_beneden
-      - action: notify.mobile_app_iphone_van_bram
-        data:
-          message: Airco woonkamer uitgezet (ventileren niet meer nodig)
     - alias: Verwarmen
       conditions:
       - condition: state
@@ -3038,53 +3011,6 @@
               swing_mode: Up/Down Auto
             target:
               label_id: airco_beneden
-        - alias: 'Airco uit of idle: aanzetten en gaan ventileren (zomer)'
-          conditions:
-          - condition: not
-            conditions:
-            - condition: state
-              entity_id: climate.airco_woonkamer
-              state: fan_only
-          sequence:
-          - action: climate.turn_on
-            data: {}
-            target:
-              label_id: airco_beneden
-          - delay:
-              seconds: 2
-          - action: climate.set_hvac_mode
-            data:
-              hvac_mode: fan_only
-            target:
-              label_id: airco_beneden
-          - delay:
-              seconds: 2
-          - action: climate.set_fan_mode
-            data:
-              fan_mode: 2 Low
-            target:
-              label_id: airco_beneden
-          - delay:
-              seconds: 2
-          - action: climate.set_swing_mode
-            data:
-              swing_mode: Up/Down Auto
-            target:
-              label_id: airco_beneden
-          - delay:
-              seconds: 2
-          - action: select.select_option
-            data:
-              option: Left/Right Auto
-            target:
-              entity_id: select.airco_woonkamer_horizontal_swing_direction
-          - delay:
-              seconds: 2
-          - action: select.select_option
-            data:
-              option: Left/Right Auto
-            target:
-              entity_id: select.airco_keuken_horizontal_swing_direction
     - conditions:
       - condition: trigger
         id:
@@ -3536,187 +3462,6 @@
     target:
       entity_id: sensor.kwh_meter_id_5_netto_vermogen_daily_energy_cost
   mode: single
-- id: '1755599276669'
-  alias: Boiler opwarmen als het goedkoop is
-  description: ''
-  triggers:
-  - trigger: time_pattern
-    hours: '*'
-    minutes: /2
-    enabled: false
-  - trigger: state
-    entity_id:
-    - binary_sensor.ariston_mag_aan_op_basis_van_tijd
-  - trigger: state
-    entity_id:
-    - binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
-    to: 'on'
-    for:
-      hours: 0
-      minutes: 1
-      seconds: 0
-    enabled: false
-  - trigger: state
-    entity_id:
-    - binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
-    to: 'off'
-    for:
-      hours: 0
-      minutes: 5
-      seconds: 0
-    enabled: false
-  - trigger: state
-    entity_id:
-    - input_boolean.ariston_moet_uit
-  - trigger: state
-    entity_id:
-    - sensor.ariston_opgewarmd_in
-    id: Opgewarmd In
-  - trigger: state
-    entity_id:
-    - water_heater.boiler
-    to: unavailable
-  - trigger: state
-    entity_id:
-    - input_boolean.ariston_moet_uit
-  - trigger: state
-    entity_id:
-    - input_boolean.ariston_moet_aan
-  conditions: []
-  actions:
-  - if:
-    - condition: state
-      entity_id: water_heater.boiler
-      state: unavailable
-    then:
-    - action: homeassistant.update_entity
-      metadata: {}
-      data:
-        entity_id:
-        - water_heater.boiler
-    - wait_for_trigger:
-      - trigger: state
-        entity_id:
-        - water_heater.boiler
-        to:
-        from: unavailable
-      continue_on_timeout: false
-      enabled: true
-      timeout:
-        hours: 0
-        minutes: 0
-        seconds: 50
-        milliseconds: 0
-  - if:
-    - condition: state
-      entity_id: binary_sensor.ariston_is_heating
-      state: 'off'
-    then:
-    - action: switch.turn_on
-      metadata: {}
-      data: {}
-      target:
-        entity_id: switch.ariston_power
-    enabled: false
-  - if:
-    - condition: and
-      conditions:
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
-          state: 'on'
-        - condition: state
-          entity_id: binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
-          state: 'on'
-      - condition: or
-        conditions:
-        - condition: state
-          entity_id: switch.ariston_power
-          state: 'off'
-        - condition: state
-          entity_id: water_heater.boiler
-          state: GREEN
-    then:
-    - action: switch.turn_on
-      metadata: {}
-      data: {}
-      target:
-        entity_id: switch.ariston_power
-    - action: water_heater.set_operation_mode
-      metadata: {}
-      data:
-        operation_mode: BOOST
-      target:
-        entity_id: water_heater.boiler
-    - action: water_heater.set_temperature
-      metadata: {}
-      data:
-        temperature: 75
-      target:
-        device_id: de7b74355666694e40775f40a187191e
-    - metadata: {}
-      data:
-        datetime: '{{now()+timedelta(hours=states("sensor.ariston_opgewarmd_in")|
-          int )}}'
-      target:
-        entity_id: input_datetime.ariston_verwachte_eind_tijd
-      action: input_datetime.set_datetime
-  - if:
-    - condition: and
-      conditions:
-      - condition: state
-        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
-        state: 'off'
-      - condition: state
-        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_zonneoverschot
-        state: 'off'
-      - condition: state
-        entity_id: switch.ariston_power
-        state: 'on'
-    then:
-    - metadata: {}
-      data: {}
-      target:
-        entity_id: switch.ariston_power
-      enabled: false
-      action: switch.turn_off
-    - metadata: {}
-      data:
-        operation_mode: GREEN
-      target:
-        entity_id: water_heater.boiler
-      action: water_heater.set_operation_mode
-  - if:
-    - condition: and
-      conditions:
-      - condition: trigger
-        id:
-        - Opgewarmd In
-        enabled: true
-      - condition: state
-        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
-        state: 'off'
-        enabled: false
-    then:
-    - metadata: {}
-      data:
-        datetime: '{% if states(''sensor.boiler_opwarmen'') | as_datetime > now()
-          %}
-
-          {{ (states(''sensor.boiler_opwarmen'') | as_datetime | as_local) + timedelta(hours=states("sensor.ariston_opgewarmd_in")|
-          float )  }}
-
-          {% else %}
-
-          {{now()+timedelta(hours=states("sensor.ariston_opgewarmd_in")| float )}}
-
-          {% endif %}'
-      target:
-        entity_id: input_datetime.ariston_verwachte_eind_tijd
-      action: input_datetime.set_datetime
-    enabled: false
-  mode: restart
 - id: '1757710929956'
   alias: HomeWizard Batterij Beheer
   description: 'Beheert de batterij modus: laadt op goedkoopste moment, ontlaadt (nul
@@ -3957,132 +3702,6 @@
         entity_id: d1b071a27d769061708eed2a10e73c69
         domain: switch
   mode: single
-- id: '1759521136361'
-  alias: Boiler - Compleet Cyclus Management
-  description: Herijkt de opwarmduur, start en stopt de boiler op het optimale moment,
-    zelfs als hij offline was.
-  triggers:
-  - at:
-    - '10:00:00'
-    - '11:00:00'
-    - '12:00:00'
-    - '13:00:00'
-    id: herijken
-    trigger: time
-  - entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
-    id: cyclus_controle
-    trigger: state
-    to: 'on'
-  - entity_id: water_heater.boiler
-    from: unavailable
-    id: boiler_online
-    trigger: state
-  - entity_id: input_boolean.vakantie_modus
-    to: 'on'
-    id: vakantie_aan
-    trigger: state
-  actions:
-  - choose:
-    - conditions:
-      - condition: trigger
-        id: herijken
-      - condition: state
-        entity_id: input_boolean.ariston_verwarmingscyclus_actief
-        state: 'off'
-      sequence:
-      - target:
-          entity_id: input_number.ariston_vastgezette_opwarmduur
-        data:
-          value: '{{ states("sensor.ariston_opgewarmd_in") | float(0) }}'
-        action: input_number.set_value
-    - conditions:
-      - condition: trigger
-        id: cyclus_controle
-      - condition: state
-        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
-        state: 'on'
-      - condition: state
-        entity_id: input_boolean.ariston_verwarmingscyclus_actief
-        state: 'off'
-      - condition: state
-        entity_id: input_boolean.vakantie_modus
-        state: 'off'
-      sequence:
-      - target:
-          entity_id: input_boolean.boiler_verwarmingscyclus_actief
-        action: input_boolean.turn_on
-      - target:
-          entity_id: switch.ariston_power
-        action: switch.turn_on
-      - data:
-          operation_mode: BOOST
-        target:
-          entity_id: water_heater.boiler
-        action: water_heater.set_operation_mode
-    - conditions:
-      - condition: trigger
-        id: cyclus_controle
-      - condition: state
-        entity_id: binary_sensor.ariston_mag_aan_op_basis_van_tijd
-        state: 'off'
-      - condition: state
-        entity_id: input_boolean.ariston_verwarmingscyclus_actief
-        state: 'on'
-      sequence:
-      - data:
-          operation_mode: GREEN
-        target:
-          entity_id: water_heater.boiler
-        action: water_heater.set_operation_mode
-      - target:
-          entity_id: switch.ariston_power
-        action: switch.turn_off
-      - target:
-          entity_id: input_boolean.boiler_verwarmingscyclus_actief
-        action: input_boolean.turn_off
-      - target:
-          entity_id: input_number.vastgezette_opwarmduur
-        data:
-          value: 0
-        action: input_number.set_value
-    - conditions:
-      - condition: trigger
-        id: boiler_online
-      - condition: state
-        entity_id: input_boolean.ariston_verwarmingscyclus_actief
-        state: 'on'
-      - condition: state
-        entity_id: input_boolean.vakantie_modus
-        state: 'off'
-      sequence:
-      - target:
-          entity_id: switch.ariston_power
-        action: switch.turn_on
-        data: {}
-      - data:
-          operation_mode: BOOST
-        target:
-          entity_id: water_heater.boiler
-        action: water_heater.set_operation_mode
-    - conditions:
-      - condition: trigger
-        id: vakantie_aan
-      sequence:
-      - action: water_heater.set_operation_mode
-        target:
-          entity_id: water_heater.boiler
-        data:
-          operation_mode: GREEN
-      - if:
-        - condition: state
-          entity_id: input_boolean.boiler_verwarmingscyclus_actief
-          state: 'on'
-        then:
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.boiler_verwarmingscyclus_actief
-          data: {}
-  mode: restart
 - id: '1759527385163'
   alias: Wasmachine en Droger - Slim Plannen en Starten
   description: Plant en start de wasmachine of droger op het goedkoopste moment in
@@ -5047,51 +4666,51 @@
     - climate.airco_boven
     from: 'off'
     id: Airco Aan
-    platform: state
+    trigger: state
   - entity_id:
     - binary_sensor.airco_boven_mag_afkoelen
     id: Afkoelen
-    platform: state
     to: 'on'
+    trigger: state
   - entity_id:
     - binary_sensor.airco_boven_mag_verwarmen
     id: Verwarmen
-    platform: state
     to: 'on'
+    trigger: state
   - entity_id:
     - binary_sensor.airco_boven_mag_ventileren
     id: Ventileren
-    platform: state
     to: 'on'
+    trigger: state
   - entity_id:
     - sensor.airco_boven_indoor
     - sensor.luchtkwaliteitsensor_zolder_temperatuur
     id: Temperatuur Veranderd
-    platform: state
+    trigger: state
   - entity_id:
     - climate.airco_boven
     from: unavailable
     id: Beschikbaar
-    platform: state
+    trigger: state
   - hours: '*'
     minutes: /5
-    platform: time_pattern
     seconds: '0'
+    trigger: time_pattern
   - entity_id:
     - input_boolean.airco_boven_moet_afkoelen
     id: moet afkoelen gaat aan
-    platform: state
     to: 'on'
+    trigger: state
   - entity_id:
     - input_boolean.airco_boven_moet_verwarmen
     id: moet verwarmen gaat aan
-    platform: state
     to: 'on'
+    trigger: state
   - entity_id:
     - input_boolean.airco_boven_boost_modus
     for:
       seconds: 5
-    platform: state
+    trigger: state
   conditions:
   - condition: not
     conditions:
@@ -5116,7 +4735,8 @@
       sequence:
       - action: climate.set_temperature
         data:
-          temperature: '{{ states(''sensor.airco_boven_target_temperatuur'') | float }}'
+          temperature: '{{ states(''sensor.airco_boven_target_temperatuur'') | float
+            }}'
         target:
           entity_id: climate.airco_boven
     - alias: Afkoelen
@@ -5148,7 +4768,8 @@
           seconds: 2
       - action: climate.set_temperature
         data:
-          temperature: '{{ states(''sensor.airco_boven_target_temperatuur'') | float }}'
+          temperature: '{{ states(''sensor.airco_boven_target_temperatuur'') | float
+            }}'
         target:
           entity_id: climate.airco_boven
       - delay:
@@ -5191,7 +4812,8 @@
           seconds: 2
       - action: climate.set_temperature
         data:
-          temperature: '{{ states(''sensor.airco_boven_target_temperatuur'') | float }}'
+          temperature: '{{ states(''sensor.airco_boven_target_temperatuur'') | float
+            }}'
         target:
           entity_id: climate.airco_boven
       - delay:
@@ -5388,110 +5010,6 @@
       payload: 'true'
     action: mqtt.publish
   mode: single
-- id: '1770755404060'
-  alias: 'Boiler: Manual Override - Extra Opwarmen'
-  description: 'Als je laat thuis komt of een extra douche wilt: zet deze knop aan
-    voor directe BOOST (45 min)'
-  triggers:
-  - platform: state
-    entity_id: input_boolean.boiler_extra_opwarmen_nu
-    to: 'on'
-  actions:
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      operation_mode: BOOST
-    action: water_heater.set_operation_mode
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      temperature: 75
-    action: water_heater.set_temperature
-  - delay:
-      minutes: 45
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      operation_mode: GREEN
-    action: water_heater.set_operation_mode
-  - target:
-      entity_id: input_boolean.boiler_extra_opwarmen_nu
-    action: input_boolean.turn_off
-  mode: restart
-- id: '1770793174832'
-  alias: 'Boiler: Pre-Ochtend Check (05:30)'
-  description: 'Controleert om 05:30 of boiler warm genoeg is voor ochtend douche
-    om ~07:00. Als <72°C: forceer naar 75°C. Boiler blijft altijd op BOOST mode.'
-  triggers:
-  - platform: time
-    at: 05:30:00
-  conditions:
-  - condition: numeric_state
-    entity_id: water_heater.boiler
-    attribute: current_temperature
-    below: 72
-  actions:
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      operation_mode: BOOST
-    action: water_heater.set_operation_mode
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      temperature: 75
-    action: water_heater.set_temperature
-  mode: single
-- id: '1770793183079'
-  alias: 'Boiler: Pre-Avond Check (15:30)'
-  description: 'Controleert om 15:30 of boiler warm genoeg is voor avond douches (17:00-21:00).
-    Als <72°C: forceer naar 75°C. Boiler blijft altijd op BOOST mode.'
-  triggers:
-  - platform: time
-    at: '15:30:00'
-  conditions:
-  - condition: numeric_state
-    entity_id: water_heater.boiler
-    attribute: current_temperature
-    below: 72
-  actions:
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      operation_mode: BOOST
-    action: water_heater.set_operation_mode
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      temperature: 75
-    action: water_heater.set_temperature
-  mode: single
-- id: '1770793191518'
-  alias: 'Boiler: Keeper - Blijf Op BOOST'
-  description: Zorgt ervoor dat boiler ALTIJD op BOOST blijft. Als boiler om een of
-    andere reden op GREEN/PROGRAM komt, zet hem direct terug op BOOST.
-  triggers:
-  - platform: state
-    entity_id: water_heater.boiler
-    attribute: operation_mode
-    to:
-    - GREEN
-    - PROGRAM
-    - IMEMORY
-    for:
-      seconds: 30
-  actions:
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      operation_mode: BOOST
-    action: water_heater.set_operation_mode
-  - target:
-      entity_id: water_heater.boiler
-    data:
-      temperature: 75
-    action: water_heater.set_temperature
-  mode: restart
 - id: '1771498333793'
   alias: 'Afstandsbediening: Stoel Bram'
   description: ''
@@ -5998,3 +5516,731 @@
     target:
       entity_id: scene.douche_lampen_herstel
   mode: restart
+- id: '1781806587179'
+  alias: Boiler - automatisch weer aan zodra niet duur
+  description: Als de boiler is uitgezet (GREEN) en het Zonneplan-tariefuur is niet
+    'high', zet de boiler weer op BOOST en stuur een melding. Respecteert handmatige
+    override input_boolean.ariston_moet_uit (dan niet aanzetten). Force-on (ariston_moet_aan)
+    wordt door de aparte override-automatisering afgehandeld.
+  triggers:
+  - id: periodieke_check
+    minutes: /15
+    trigger: time_pattern
+  - entity_id: sensor.current_tariff
+    id: tarief_wissel
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: water_heater.boiler
+    state: GREEN
+  - condition: state
+    entity_id: input_boolean.ariston_moet_uit
+    state: 'off'
+  - condition: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''high'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ ns.group != ''high'' }}'
+  actions:
+  - action: water_heater.set_operation_mode
+    data:
+      operation_mode: BOOST
+    target:
+      entity_id: water_heater.boiler
+  - action: water_heater.set_temperature
+    data:
+      temperature: 75
+    target:
+      entity_id: water_heater.boiler
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      data:
+        tag: boiler_weer_aan
+      message: De stroom is niet meer duur (€{{ states('sensor.current_tariff') |
+        float | round(2) }}/kWh) — boiler staat weer op BOOST.
+      title: Boiler warmt weer op
+  mode: single
+- id: '1781806866325'
+  alias: Boiler - uit bij dure stroom (vraag, of direct in slaapmodus)
+  description: 'Zodra het Zonneplan-tariefuur naar ''high'' gaat en de boiler aan
+    staat (niet GREEN): in slaapmodus (input_boolean.modus_slaap) meteen naar GREEN
+    zonder melding; anders actionable notificatie en pas bij ''Ja, zet uit'' naar
+    GREEN. Respecteert handmatige override input_boolean.ariston_moet_aan (dan nooit
+    uitzetten, ook niet in slaapmodus). Werkt samen met ''Boiler - automatisch weer
+    aan zodra niet duur''.'
+  triggers:
+  - id: piek_start
+    trigger: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''unknown'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ ns.group == ''high'' }}'
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: water_heater.boiler
+      state: GREEN
+  - condition: state
+    entity_id: input_boolean.ariston_moet_aan
+    state: 'off'
+  actions:
+  - else:
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        data:
+          actions:
+          - action: BOILER_UIT_JA
+            title: Ja, zet uit
+          tag: boiler_dure_piek
+        message: Het tarief staat op 'high' (€{{ states('sensor.current_tariff') |
+          float | round(2) }}/kWh). Boiler uitzetten?
+        title: Stroom is nu duur
+    - continue_on_timeout: true
+      timeout:
+        minutes: 60
+      wait_for_trigger:
+      - event_data:
+          action: BOILER_UIT_JA
+        event_type: mobile_app_notification_action
+        trigger: event
+    - if:
+      - condition: template
+        value_template: '{{ wait.completed }}'
+      then:
+      - action: water_heater.set_operation_mode
+        data:
+          operation_mode: GREEN
+        target:
+          entity_id: water_heater.boiler
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          data:
+            tag: boiler_dure_piek
+          message: Boiler staat uit (GREEN). Hij gaat vanzelf weer aan zodra de stroom
+            niet meer duur is.
+    if:
+    - condition: state
+      entity_id: input_boolean.modus_slaap
+      state: 'on'
+    then:
+    - action: water_heater.set_operation_mode
+      data:
+        operation_mode: GREEN
+      target:
+        entity_id: water_heater.boiler
+  mode: single
+- id: '1781807893633'
+  alias: Boiler - handmatige override (moet aan / moet uit)
+  description: Past de handmatige overrides direct toe. 'Ariston moet aan' -> boiler
+    op BOOST + 75 en zet 'moet uit' uit. 'Ariston moet uit' -> boiler op GREEN en
+    zet 'moet aan' uit. De twee overrides sluiten elkaar zo wederzijds uit en gaan
+    vóór de prijslogica.
+  triggers:
+  - id: moet_aan
+    trigger: state
+    entity_id: input_boolean.ariston_moet_aan
+    from: 'off'
+    to: 'on'
+  - id: moet_uit
+    trigger: state
+    entity_id: input_boolean.ariston_moet_uit
+    from: 'off'
+    to: 'on'
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: moet_aan
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ariston_moet_uit
+      - action: water_heater.set_operation_mode
+        data:
+          operation_mode: BOOST
+        target:
+          entity_id: water_heater.boiler
+      - action: water_heater.set_temperature
+        data:
+          temperature: 75
+        target:
+          entity_id: water_heater.boiler
+    - conditions:
+      - condition: trigger
+        id: moet_uit
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.ariston_moet_aan
+      - action: water_heater.set_operation_mode
+        data:
+          operation_mode: GREEN
+        target:
+          entity_id: water_heater.boiler
+  mode: queued
+  max: 4
+- id: '1781812324291'
+  alias: Airco beneden - pauze bij dure stroom (via moet uit)
+  description: 'Zodra het Zonneplan-tariefuur naar ''high'' gaat: zet input_boolean.airco_woonkamer_moet_uit
+    aan (de bestaande beneden-logica zet de woonkamer+keuken dan uit). In slaapmodus
+    meteen, anders via actionable notificatie. Respecteert airco_woonkamer_moet_aan
+    (force-on). Eigen vlag airco_beneden_prijs_pauze onthoudt dat WIJ de pauze hebben
+    gezet, zodat alleen die wordt teruggedraaid.'
+  triggers:
+  - id: piek_start
+    trigger: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''unknown'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ ns.group == ''high'' }}'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.airco_woonkamer_moet_uit
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.airco_woonkamer_moet_aan
+    state: 'off'
+  actions:
+  - if:
+    - condition: state
+      entity_id: input_boolean.modus_slaap
+      state: 'on'
+    then:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.airco_woonkamer_moet_uit
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.airco_beneden_prijs_pauze
+    else:
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        title: Stroom is nu duur
+        message: Het tarief staat op 'high' (€{{ states('sensor.current_tariff') |
+          float | round(2) }}/kWh). Airco beneden pauzeren?
+        data:
+          tag: airco_beneden_piek
+          actions:
+          - action: AIRCO_BENEDEN_UIT_JA
+            title: Ja, pauzeer
+    - wait_for_trigger:
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: AIRCO_BENEDEN_UIT_JA
+      timeout:
+        minutes: 60
+      continue_on_timeout: true
+    - if:
+      - condition: template
+        value_template: '{{ wait.completed }}'
+      then:
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.airco_woonkamer_moet_uit
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.airco_beneden_prijs_pauze
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          data:
+            tag: airco_beneden_piek
+          message: Airco beneden gepauzeerd. Gaat vanzelf weer vrij zodra de stroom
+            niet meer duur is.
+  mode: single
+- id: '1781812339046'
+  alias: Airco beneden - vrijgeven zodra niet duur
+  description: 'Draait alleen onze eigen prijs-pauze terug: als vlag airco_beneden_prijs_pauze
+    aan staat en het is niet meer ''high'' (of airco_woonkamer_moet_aan is aangezet),
+    zet input_boolean.airco_woonkamer_moet_uit en de vlag uit. De bestaande beneden-logica
+    hervat dan normaal. Een handmatig gezette moet_uit zonder onze vlag blijft ongemoeid.'
+  triggers:
+  - id: periodieke_check
+    minutes: /15
+    trigger: time_pattern
+  - entity_id: sensor.current_tariff
+    id: tarief_wissel
+    trigger: state
+  - entity_id: input_boolean.airco_woonkamer_moet_aan
+    from: 'off'
+    id: force_aan
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.airco_beneden_prijs_pauze
+    state: 'on'
+  - condition: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''high'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ is_state(''input_boolean.airco_woonkamer_moet_aan'',''on'') or ns.group !=
+      ''high'' }}'
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.airco_woonkamer_moet_uit
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.airco_beneden_prijs_pauze
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      data:
+        tag: airco_beneden_piek
+      message: Airco beneden weer vrijgegeven — staat weer onder normale aansturing.
+  mode: single
+- id: '1781888518687'
+  alias: Airco boven - pauze bij dure stroom (onthoud + uit)
+  description: 'Zodra het Zonneplan-tariefuur naar ''high'' gaat en de airco boven
+    aan staat: bewaar de huidige stand in scene.airco_boven_herstel en zet ''m uit.
+    In slaapmodus meteen, anders via actionable notificatie. Respecteert overrides
+    airco_boven_moet_aan/moet_uit. Vlag airco_boven_prijs_pauze onthoudt dat WIJ pauzeerden
+    (voor automatisch herstel).'
+  triggers:
+  - id: piek_start
+    trigger: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''unknown'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ ns.group == ''high'' }}'
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: climate.airco_boven
+      state: 'off'
+  - condition: state
+    entity_id: input_boolean.airco_boven_moet_aan
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.airco_boven_moet_uit
+    state: 'off'
+  actions:
+  - action: scene.create
+    data:
+      scene_id: airco_boven_herstel
+      snapshot_entities:
+      - climate.airco_boven
+  - if:
+    - condition: state
+      entity_id: input_boolean.modus_slaap
+      state: 'on'
+    then:
+    - action: climate.turn_off
+      target:
+        entity_id: climate.airco_boven
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.airco_boven_prijs_pauze
+    else:
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        data:
+          actions:
+          - action: AIRCO_BOVEN_UIT_JA
+            title: Ja, pauzeer
+          tag: airco_boven_piek
+        message: Het tarief staat op 'high' (€{{ states('sensor.current_tariff') |
+          float | round(2) }}/kWh). Airco boven pauzeren?
+        title: Stroom is nu duur
+    - continue_on_timeout: true
+      timeout:
+        minutes: 60
+      wait_for_trigger:
+      - event_data:
+          action: AIRCO_BOVEN_UIT_JA
+        event_type: mobile_app_notification_action
+        trigger: event
+    - if:
+      - condition: template
+        value_template: '{{ wait.completed }}'
+      then:
+      - action: climate.turn_off
+        target:
+          entity_id: climate.airco_boven
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.airco_boven_prijs_pauze
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          data:
+            tag: airco_boven_piek
+          message: Airco boven gepauzeerd. Herstelt vanzelf naar de vorige stand zodra
+            de stroom niet meer duur is.
+  mode: single
+- id: '1781888531334'
+  alias: Airco boven - herstel zodra niet duur
+  description: Herstelt de airco boven naar de bewaarde stand (scene.airco_boven_herstel)
+    zodra het niet meer 'high' is (of airco_boven_moet_aan wordt aangezet), mits WIJ
+    pauzeerden (vlag airco_boven_prijs_pauze aan) en moet_uit niet aan staat. Zet
+    daarna de vlag uit.
+  triggers:
+  - id: periodieke_check
+    minutes: /15
+    trigger: time_pattern
+  - entity_id: sensor.current_tariff
+    id: tarief_wissel
+    trigger: state
+  - entity_id: input_boolean.airco_boven_moet_aan
+    from: 'off'
+    id: force_aan
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.airco_boven_prijs_pauze
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.airco_boven_moet_uit
+    state: 'off'
+  - condition: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''high'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ is_state(''input_boolean.airco_boven_moet_aan'',''on'') or ns.group != ''high''
+      }}'
+  actions:
+  - action: scene.turn_on
+    target:
+      entity_id: scene.airco_boven_herstel
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.airco_boven_prijs_pauze
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      data:
+        tag: airco_boven_piek
+      message: Airco boven hersteld naar de vorige stand — stroom is niet meer duur.
+  mode: single
+- id: '1781888549673'
+  alias: Airco zolder - pauze bij dure stroom (onthoud + uit)
+  description: 'Zodra het Zonneplan-tariefuur naar ''high'' gaat en de airco zolder
+    aan staat: bewaar de huidige stand in scene.airco_zolder_herstel en zet ''m uit.
+    In slaapmodus meteen, anders via actionable notificatie. Respecteert overrides
+    airco_zolder_moet_aan/moet_uit. Vlag airco_zolder_prijs_pauze onthoudt dat WIJ
+    pauzeerden (voor automatisch herstel).'
+  triggers:
+  - id: piek_start
+    trigger: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''unknown'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ ns.group == ''high'' }}'
+  conditions:
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: climate.airco_zolder
+      state: 'off'
+  - condition: state
+    entity_id: input_boolean.airco_zolder_moet_aan
+    state: 'off'
+  - condition: state
+    entity_id: input_boolean.airco_zolder_moet_uit
+    state: 'off'
+  actions:
+  - action: scene.create
+    data:
+      scene_id: airco_zolder_herstel
+      snapshot_entities:
+      - climate.airco_zolder
+  - else:
+    - action: notify.mobile_app_iphone_van_bram
+      data:
+        data:
+          actions:
+          - action: AIRCO_ZOLDER_UIT_JA
+            title: Ja, pauzeer
+          tag: airco_zolder_piek
+        message: Het tarief staat op 'high' (€{{ states('sensor.current_tariff') |
+          float | round(2) }}/kWh). Airco zolder pauzeren?
+        title: Stroom is nu duur
+    - continue_on_timeout: true
+      timeout:
+        minutes: 60
+      wait_for_trigger:
+      - event_data:
+          action: AIRCO_ZOLDER_UIT_JA
+        event_type: mobile_app_notification_action
+        trigger: event
+    - if:
+      - condition: template
+        value_template: '{{ wait.completed }}'
+      then:
+      - action: climate.turn_off
+        target:
+          entity_id: climate.airco_zolder
+      - action: input_boolean.turn_on
+        target:
+          entity_id: input_boolean.airco_zolder_prijs_pauze
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          data:
+            tag: airco_zolder_piek
+          message: Airco zolder gepauzeerd. Herstelt vanzelf naar de vorige stand
+            zodra de stroom niet meer duur is.
+    if:
+    - condition: state
+      entity_id: input_boolean.modus_slaap
+      state: 'on'
+    then:
+    - action: climate.turn_off
+      target:
+        entity_id: climate.airco_zolder
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.airco_zolder_prijs_pauze
+  mode: single
+- id: '1781888561832'
+  alias: Airco zolder - herstel zodra niet duur
+  description: Herstelt de airco zolder naar de bewaarde stand (scene.airco_zolder_herstel)
+    zodra het niet meer 'high' is (of airco_zolder_moet_aan wordt aangezet), mits
+    WIJ pauzeerden (vlag airco_zolder_prijs_pauze aan) en moet_uit niet aan staat.
+    Zet daarna de vlag uit.
+  triggers:
+  - id: periodieke_check
+    minutes: /15
+    trigger: time_pattern
+  - entity_id: sensor.current_tariff
+    id: tarief_wissel
+    trigger: state
+  - entity_id: input_boolean.airco_zolder_moet_aan
+    from: 'off'
+    id: force_aan
+    to: 'on'
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.airco_zolder_prijs_pauze
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.airco_zolder_moet_uit
+    state: 'off'
+  - condition: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}
+
+      {% set ns = namespace(group=''high'') %}
+
+      {% for e in fc %}
+
+      {% if as_timestamp(e.datetime) <= as_timestamp(now()) < as_timestamp(e.datetime)
+      + 3600 %}
+
+      {% set ns.group = e.tariff_group %}
+
+      {% endif %}
+
+      {% endfor %}
+
+      {{ is_state(''input_boolean.airco_zolder_moet_aan'',''on'') or ns.group != ''high''
+      }}'
+  actions:
+  - action: scene.turn_on
+    target:
+      entity_id: scene.airco_zolder_herstel
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.airco_zolder_prijs_pauze
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      data:
+        tag: airco_zolder_piek
+      message: Airco zolder hersteld naar de vorige stand — stroom is niet meer duur.
+  mode: single
+- id: '1781888575627'
+  alias: Airco boven + zolder - handmatige override (moet aan / moet uit)
+  description: Past de handmatige overrides per zone direct toe. 'moet uit' aan ->
+    airco uit, 'moet aan' uit, en prijs-pauze-vlag uit (geen auto-herstel). 'moet
+    aan' aan -> 'moet uit' uit; eventueel herstel wordt door de herstel-automatisering
+    opgepakt. De twee overrides sluiten elkaar zo wederzijds uit en gaan vóór de prijslogica.
+  triggers:
+  - entity_id: input_boolean.airco_boven_moet_uit
+    from: 'off'
+    id: boven_uit
+    to: 'on'
+    trigger: state
+  - entity_id: input_boolean.airco_boven_moet_aan
+    from: 'off'
+    id: boven_aan
+    to: 'on'
+    trigger: state
+  - entity_id: input_boolean.airco_zolder_moet_uit
+    from: 'off'
+    id: zolder_uit
+    to: 'on'
+    trigger: state
+  - entity_id: input_boolean.airco_zolder_moet_aan
+    from: 'off'
+    id: zolder_aan
+    to: 'on'
+    trigger: state
+  actions:
+  - choose:
+    - conditions:
+      - condition: trigger
+        id: boven_uit
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_boven_moet_aan
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_boven_prijs_pauze
+      - action: climate.turn_off
+        target:
+          entity_id: climate.airco_boven
+    - conditions:
+      - condition: trigger
+        id: boven_aan
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_boven_moet_uit
+    - conditions:
+      - condition: trigger
+        id: zolder_uit
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_zolder_moet_aan
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_zolder_prijs_pauze
+      - action: climate.turn_off
+        target:
+          entity_id: climate.airco_zolder
+    - conditions:
+      - condition: trigger
+        id: zolder_aan
+      sequence:
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.airco_zolder_moet_uit
+  mode: queued
+  max: 6
+- id: '1782041383297'
+  alias: Zwembadpomp
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.zwembad_pomp_aan
+    to:
+    - 'off'
+    id: Uit
+  - trigger: state
+    entity_id:
+    - binary_sensor.zwembad_pomp_aan
+    to:
+    - 'on'
+    id: Aan
+  conditions: []
+  actions:
+  - if:
+    - condition: trigger
+      id:
+      - Uit
+    then:
+    - type: turn_off
+      device_id: f3798ca5e01905feb27db01bb26458ed
+      entity_id: 0de01807d2b430848cf8736306977c39
+      domain: switch
+    else:
+    - type: turn_on
+      device_id: f3798ca5e01905feb27db01bb26458ed
+      entity_id: 0de01807d2b430848cf8736306977c39
+      domain: switch
+  mode: single
