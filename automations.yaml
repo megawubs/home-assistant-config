@@ -4757,8 +4757,7 @@
     to: 'on'
     trigger: state
   - entity_id:
-    - sensor.airco_boven_indoor
-    - sensor.luchtkwaliteitsensor_zolder_temperatuur
+    - sensor.airco_boven_target_temperatuur
     id: Temperatuur Veranderd
     trigger: state
   - entity_id:
