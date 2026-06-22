@@ -285,15 +285,30 @@ sensor:
     on_value:
       - component.update: m5paper_display
 
-  # Airco doeltemperatuur
+  # Airco-doel = de drempelwaarde (coöperatief): de stepper verzet de drempel, niet
+  # de rauwe climate-setpoint. automation.airco_boven_handmatig leidt daar de echte
+  # setpoint uit af (drempel ∓ offset). We lezen beide drempels en tonen/sturen de
+  # actieve op basis van de hvac-mode (cool→koelen, heat→verwarmen).
   - platform: homeassistant
-    id: airco_target_temp
-    entity_id: ${climate_entity}
-    attribute: temperature
+    id: airco_drempel_koelen
+    entity_id: input_number.airco_boven_drempelwaarde_koelen
     internal: true
     on_value:
-      # Reconcile: sla de tweede flash over als HA de optimistic gok bevestigt
+      # Reconcile: alleen relevant tijdens koelen; sla de 2e flash over als HA de gok bevestigt
       - lambda: |-
+          if (!(id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "cool")) return;
+          bool skip = (id(opt_target) >= 0.0f) && (fabsf(id(opt_target) - x) < 0.05f);
+          id(opt_target) = -1;
+          if (!skip) id(m5paper_display).update();
+
+  - platform: homeassistant
+    id: airco_drempel_verwarmen
+    entity_id: input_number.airco_boven_drempelwaarde_verwarmen
+    internal: true
+    on_value:
+      # Reconcile: alleen relevant tijdens verwarmen
+      - lambda: |-
+          if (!(id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat")) return;
           bool skip = (id(opt_target) >= 0.0f) && (fabsf(id(opt_target) - x) < 0.05f);
           id(opt_target) = -1;
           if (!skip) id(m5paper_display).update();
@@ -437,18 +452,28 @@ binary_sensor:
             lambda: 'return id(current_screen) == 1;'
           then:
             - lambda: |-
-                float base = (id(opt_target) >= 0.0f) ? id(opt_target) : id(airco_target_temp).state;
-                if (isnan(base)) base = 20.0f;
-                id(opt_target) = base - 0.5f;
+                bool heat = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat";
+                float cur = heat ? id(airco_drempel_verwarmen).state : id(airco_drempel_koelen).state;
+                float base = (id(opt_target) >= 0.0f) ? id(opt_target) : cur;
+                if (isnan(base)) base = heat ? 19.0f : 24.0f;
+                float lo = heat ? 10.0f : 18.0f;
+                float hi = heat ? 30.0f : 35.0f;
+                float v = base - 0.5f;
+                if (v < lo) v = lo;
+                if (v > hi) v = hi;
+                id(opt_target) = v;
             - component.update: m5paper_display
             - homeassistant.action:
-                action: climate.set_temperature
-                data:
-                  entity_id: ${climate_entity}
+                action: input_number.set_value
                 data_template:
-                  temperature: "{{ t }}"
+                  entity_id: "{{ ent }}"
+                  value: "{{ v }}"
                 variables:
-                  t: !lambda 'return id(opt_target);'
+                  ent: !lambda |-
+                    return (id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat")
+                      ? "input_number.airco_boven_drempelwaarde_verwarmen"
+                      : "input_number.airco_boven_drempelwaarde_koelen";
+                  v: !lambda 'return id(opt_target);'
 
   - platform: touchscreen
     name: "Temp Plus"
@@ -463,18 +488,28 @@ binary_sensor:
             lambda: 'return id(current_screen) == 1;'
           then:
             - lambda: |-
-                float base = (id(opt_target) >= 0.0f) ? id(opt_target) : id(airco_target_temp).state;
-                if (isnan(base)) base = 20.0f;
-                id(opt_target) = base + 0.5f;
+                bool heat = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat";
+                float cur = heat ? id(airco_drempel_verwarmen).state : id(airco_drempel_koelen).state;
+                float base = (id(opt_target) >= 0.0f) ? id(opt_target) : cur;
+                if (isnan(base)) base = heat ? 19.0f : 24.0f;
+                float lo = heat ? 10.0f : 18.0f;
+                float hi = heat ? 30.0f : 35.0f;
+                float v = base + 0.5f;
+                if (v < lo) v = lo;
+                if (v > hi) v = hi;
+                id(opt_target) = v;
             - component.update: m5paper_display
             - homeassistant.action:
-                action: climate.set_temperature
-                data:
-                  entity_id: ${climate_entity}
+                action: input_number.set_value
                 data_template:
-                  temperature: "{{ t }}"
+                  entity_id: "{{ ent }}"
+                  value: "{{ v }}"
                 variables:
-                  t: !lambda 'return id(opt_target);'
+                  ent: !lambda |-
+                    return (id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat")
+                      ? "input_number.airco_boven_drempelwaarde_verwarmen"
+                      : "input_number.airco_boven_drempelwaarde_koelen";
+                  v: !lambda 'return id(opt_target);'
 
   # --- Ventilatorsnelheid-trio (alleen airco-scherm) ---
   - platform: touchscreen
@@ -878,9 +913,12 @@ display:
         it.print(28, 152, id(roboto_l120), "--,-°");
       it.print(40, 282, id(roboto_22), "Huidige temperatuur");
 
-      // doeltemperatuur als readout rechtsboven (kleiner dan huidige temp)
+      // doeltemperatuur als readout rechtsboven (kleiner dan huidige temp).
+      // Toont de drempelwaarde (= wat de stepper verzet), mode-afhankelijk.
       it.print(352, 168, id(ic40), "\U000F0393");  // thermostaat
-      float tgt = (id(opt_target) >= 0.0f) ? id(opt_target) : id(airco_target_temp).state;
+      bool tgt_heat = id(airco_hvac_mode).has_state() && id(airco_hvac_mode).state == "heat";
+      float tgt_drempel = tgt_heat ? id(airco_drempel_verwarmen).state : id(airco_drempel_koelen).state;
+      float tgt = (id(opt_target) >= 0.0f) ? id(opt_target) : tgt_drempel;
       if (!isnan(tgt))
         eink_val(&it, 404, 152, id(roboto_r72), TextAlign::TOP_LEFT, tgt, 1, "°");
       else
