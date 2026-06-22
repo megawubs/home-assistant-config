@@ -285,7 +285,7 @@
       state: >
         {{ not is_state('climate.airco_boven', 'off') and
            (is_state('input_boolean.airco_boven_moet_afkoelen', 'on') or
-            (states('sensor.airco_boven_indoor') | float(0) > states('input_number.airco_boven_drempelwaarde_koelen') | float(26))) }}
+            is_state('binary_sensor.temperatuur_boven_is_boven_koel_drempel', 'on')) }}
       icon: mdi:snowflake
 
     # Airco Boven Mag Verwarmen
@@ -305,7 +305,7 @@
            not is_state('input_boolean.airco_boven_moet_afkoelen', 'on') and
            not is_state('input_boolean.airco_boven_moet_verwarmen', 'on') and
            (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
-           (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) <= states('input_number.airco_boven_drempelwaarde_koelen') | float(26)) and
+           is_state('binary_sensor.temperatuur_boven_is_boven_koel_drempel', 'off') and
            states('sensor.airco_boven_outdoor') | float(0) > 15 }}
       icon: mdi:fan
 
@@ -315,6 +315,26 @@
       state: >
         {{ is_state('input_boolean.airco_boven_aan', 'on') }}
       icon: mdi:air-conditioner
+
+    # Hysterese-grens koelen <-> ventileren (voorkomt geflap rond de koel-drempel).
+    # Stateful, zoals de woonkamer: ON bij drempel+0.5, pas weer OFF bij drempel-0.3.
+    # mag_afkoelen hangt aan 'on', mag_ventileren aan 'off' -> schone overgang.
+    - name: "Temperatuur boven is boven koel-drempel"
+      unique_id: temperatuur_boven_is_boven_koeldrempel
+      state: >
+        {% set temp = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set drempel = states('input_number.airco_boven_drempelwaarde_koelen') | float(none) %}
+        {% set boven = 0.5 %}
+        {% set onder = 0.3 %}
+        {% set vorig = this.state if this.state in ['on', 'off'] else 'off' %}
+        {% if temp is none or drempel is none %}
+          {{ vorig }}
+        {% elif vorig == 'on' %}
+          {{ 'on' if temp > drempel - onder else 'off' }}
+        {% else %}
+          {{ 'on' if temp >= drempel + boven else 'off' }}
+        {% endif %}
+      icon: mdi:thermometer-chevron-up
 
     - unique_id: open_verbinding_naar_buiten_badkamer
       name: "Open verbinding naar buiten badkamer"
