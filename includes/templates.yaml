@@ -304,8 +304,9 @@
         {{ is_state('input_boolean.airco_boven_aan', 'on') and
            not is_state('input_boolean.airco_boven_moet_afkoelen', 'on') and
            not is_state('input_boolean.airco_boven_moet_verwarmen', 'on') and
-           (states('sensor.airco_boven_indoor') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
-           (states('sensor.airco_boven_indoor') | float(0) <= states('input_number.airco_boven_drempelwaarde_koelen') | float(26)) }}
+           (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
+           (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) <= states('input_number.airco_boven_drempelwaarde_koelen') | float(26)) and
+           states('sensor.airco_boven_outdoor') | float(0) > 15 }}
       icon: mdi:fan
 
     # Airco Boven Mag Aan
