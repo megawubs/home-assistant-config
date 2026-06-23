@@ -6729,3 +6729,55 @@
       message: Airco zolder automatisch aangezet (zomeravond, {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur')
         }}° ≥ drempel)
   mode: single
+- id: '1782247187786'
+  alias: Airco Woonkamer Voorkoelen voor dure periode
+  description: Zet de voorkoel-offset op de ingestelde diepte zodra binnen de lead-tijd
+    een 'high'-tariefblok aankomt (detector binary_sensor.duur_venster_nabij), en
+    terug op 0 zodra het dure venster begint of de feature uit gaat. Voorkoelt alleen
+    als de woonkamer-airco niet uit staat.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.duur_venster_nabij
+    to: 'on'
+    id: naderen
+  - trigger: state
+    entity_id: binary_sensor.duur_venster_nabij
+    to: 'off'
+    id: voorbij
+  - trigger: state
+    entity_id: input_boolean.airco_voorkoelen_enabled
+    to: 'off'
+    id: uit
+  conditions: []
+  actions:
+  - choose:
+    - alias: Voorkoelen starten
+      conditions:
+      - condition: trigger
+        id: naderen
+      - condition: state
+        entity_id: input_boolean.airco_voorkoelen_enabled
+        state: 'on'
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: 'off'
+      sequence:
+      - action: input_number.set_value
+        target:
+          entity_id: input_number.airco_woonkamer_voorkoel_offset
+        data:
+          value: '{{ states(''input_number.airco_voorkoel_diepte'') | float(1.0) }}'
+      - action: notify.mobile_app_iphone_van_bram
+        data:
+          message: 'Woonkamer voorkoelen gestart: dure periode nadert, offset {{ states(''input_number.airco_voorkoel_diepte'')
+            }}°C'
+    default:
+    - action: input_number.set_value
+      target:
+        entity_id: input_number.airco_woonkamer_voorkoel_offset
+      data:
+        value: 0
+  mode: queued
+  max: 5

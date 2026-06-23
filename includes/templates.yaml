@@ -456,7 +456,9 @@
       delay_off: "00:03:00"
       state: >
         {% set temp = states('sensor.tstat_9d4027_current_temperature') | float(none) %}
-        {% set drempel = states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(none) %}
+        {% set drempel_basis = states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(none) %}
+        {% set voorkoel = states('input_number.airco_woonkamer_voorkoel_offset') | float(0) %}
+        {% set drempel = (drempel_basis - voorkoel) if drempel_basis is not none else none %}
         {% set boven = states('input_number.airco_woonkamer_hysterese_boven') | float(0.5) %}
         {% set onder = states('input_number.airco_woonkamer_hysterese_onder') | float(0.3) %}
         {% set vorig = this.state if this.state in ['on', 'off'] else 'off' %}
@@ -1030,7 +1032,7 @@
       state: >-
         {% set huidige_temp = states('sensor.tstat_9d4027_current_temperature') | float(18) %}
         {% set drempel_verwarmen = states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(19) %}
-        {% set drempel_koelen = states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(23) %}
+        {% set drempel_koelen = (states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(23)) - (states('input_number.airco_woonkamer_voorkoel_offset') | float(0)) %}
         {% set offset = states('sensor.airco_woonkamer_dynamische_offset') | float(4.0) %}
         {% set overshoot = 0.5 %}
         {% if is_state('input_boolean.vakantie_modus', 'on') %}
