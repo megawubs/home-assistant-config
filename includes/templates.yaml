@@ -304,7 +304,7 @@
         {{ not is_state('climate.airco_boven', 'off') and
            not is_state('input_boolean.airco_boven_moet_afkoelen', 'on') and
            not is_state('input_boolean.airco_boven_moet_verwarmen', 'on') and
-           (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
+           (states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(0) >= states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18)) and
            is_state('binary_sensor.temperatuur_boven_is_boven_koel_drempel', 'off') and
            states('sensor.airco_boven_outdoor') | float(0) > 15 }}
       icon: mdi:fan
@@ -322,7 +322,7 @@
     - name: "Temperatuur boven is boven koel-drempel"
       unique_id: temperatuur_boven_is_boven_koeldrempel
       state: >
-        {% set temp = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set temp = states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) %}
         {% set drempel = states('input_number.airco_boven_drempelwaarde_koelen') | float(none) %}
         {% set boven = 0.5 %}
         {% set onder = 0.3 %}
@@ -1069,7 +1069,7 @@
            lus rond de drempel op de BETROUWBARE kamersensor; de airco-interne meting
            is onbetrouwbaar en wordt bewust niet gelezen. dyn mag negatief worden →
            zakt de kamer onder de koel-drempel (overkoeling) dan stijgt het setpoint. #}
-        {% set kamer = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set kamer = states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) %}
         {% set drempel_koelen = states('input_number.airco_boven_drempelwaarde_koelen') | float(18) %}
         {% set drempel_verwarmen = states('input_number.airco_boven_drempelwaarde_verwarmen') | float(19) %}
         {% set nudge = states('input_number.airco_boven_temperatuur_offset') | float(0) %}
@@ -1092,11 +1092,11 @@
         {% endif %}
       icon: mdi:thermometer-auto
       attributes:
-        kamer: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') }}"
+        kamer: "{{ states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') }}"
         modus: "{{ states('climate.airco_boven') }}"
         handmatige_nudge: "{{ states('input_number.airco_boven_temperatuur_offset') }}"
         dyn_offset: >-
-          {% set kamer = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+          {% set kamer = states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) %}
           {% set K = 2.0 %}
           {% set CAP = 3.0 %}
           {% if kamer is none %}

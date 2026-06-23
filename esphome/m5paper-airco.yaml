@@ -4,7 +4,7 @@ substitutions:
   climate_entity: climate.airco_boven
   # Losse kamersensor (nauwkeuriger dan de airco-interne meting). Ondanks de naam
   # is dit de sensor in de master bedroom.
-  room_temp_entity: sensor.luchtkwaliteitsensor_zolder_temperatuur
+  room_temp_entity: sensor.luchtkwaliteitsensor_slaapkamer_temperatuur
   # Hoofdscherm-agenda (door HA samengevoegd uit gezins-/persoonskalenders).
   agenda_entity: sensor.m5paper_agenda
 
