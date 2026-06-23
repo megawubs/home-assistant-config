@@ -6652,3 +6652,69 @@
         entity_id: input_boolean.airco_zolder_moet_afkoelen
   mode: queued
   max: 10
+- id: '1782218414629'
+  alias: Airco Zolder Auto Aan (zomeravond)
+  description: Zet climate.airco_zolder 's zomers vanaf 18:00 automatisch aan om te
+    koelen/ventileren als de zoldertemp tegen/boven de koel-drempel zit en het raam
+    dicht is. Daarna neemt airco_zolder_handmatig het over. Start alleen als de airco
+    uit staat; triggert op 18:00 + drempel-kruising (geen poll), dus een handmatige
+    uitschakeling wordt gerespecteerd tot de temp opnieuw stijgt of de volgende dag
+    18:00.
+  triggers:
+  - trigger: time
+    at: '18:00:00'
+    id: tijd_18
+  - trigger: numeric_state
+    entity_id: sensor.luchtkwaliteitsensor_zolder_temperatuur
+    above: input_number.airco_zolder_drempelwaarde_koelen
+    id: te_warm
+  conditions:
+  - condition: time
+    after: '18:00:00'
+  - condition: numeric_state
+    entity_id: sensor.airco_zolder_outdoor
+    above: 15
+  - condition: not
+    conditions:
+    - condition: numeric_state
+      entity_id: sensor.luchtkwaliteitsensor_zolder_temperatuur
+      below: input_number.airco_zolder_drempelwaarde_koelen
+  - condition: state
+    entity_id: binary_sensor.zolder_raam_openen
+    state: 'off'
+  - condition: state
+    entity_id: climate.airco_zolder
+    state: 'off'
+  actions:
+  - action: climate.set_hvac_mode
+    data:
+      hvac_mode: cool
+    target:
+      entity_id: climate.airco_zolder
+  - delay:
+      seconds: 2
+  - action: climate.set_temperature
+    data:
+      temperature: '{{ states(''sensor.airco_zolder_target_temperatuur'') | float
+        }}'
+    target:
+      entity_id: climate.airco_zolder
+  - delay:
+      seconds: 2
+  - action: climate.set_swing_mode
+    data:
+      swing_mode: Up/Down Auto
+    target:
+      entity_id: climate.airco_zolder
+  - delay:
+      seconds: 2
+  - action: select.select_option
+    data:
+      option: Left/Right Auto
+    target:
+      entity_id: select.airco_zolder_horizontal_swing_direction
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: Airco zolder automatisch aangezet (zomeravond, {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur')
+        }}° ≥ drempel)
+  mode: single
