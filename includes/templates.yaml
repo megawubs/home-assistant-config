@@ -228,30 +228,35 @@
         }}
       delay_on: 00:00:10
 
+    # Zolder-airco: gepoort op de fysieke airco-staat (climate.airco_zolder != off),
+    # net als de slaapkamer — nooit uit zichzelf starten, beheren zodra 'ie aan staat.
+    # Temperatuur op de betrouwbare kamersensor (luchtkwaliteitsensor_zolder, verplaatst).
     - unique_id: airco_zolder_mag_afkoelen
       name: "Airco zolder mag afkoelen"
       state: >
-        {{
-          is_state('binary_sensor.temperatuur_zolder_is_boven_drempel_waarden', 'on')
-          and is_state('binary_sensor.temperatuur_zolder_is_onder_drempel_waarden_verwarmen', 'off')
-          and is_state('binary_sensor.airco_zolder_mag_aan', 'on')
-        }}
+        {{ not is_state('climate.airco_zolder', 'off') and
+           (is_state('input_boolean.airco_zolder_moet_afkoelen', 'on') or
+            is_state('binary_sensor.temperatuur_zolder_is_boven_koel_drempel', 'on')) }}
+      icon: mdi:snowflake
 
     - unique_id: airco_zolder_mag_verwarmen
       name: "Airco zolder mag verwarmen"
       state: >
-        {{
-           is_state('binary_sensor.airco_zolder_mag_aan', 'on')
-        }}
+        {{ not is_state('climate.airco_zolder', 'off') and
+           (is_state('input_boolean.airco_zolder_moet_verwarmen', 'on') or
+            (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) < states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18))) }}
+      icon: mdi:fire
 
     - unique_id: airco_zolder_mag_ventileren
       name: "Airco zolder mag ventileren"
       state: >
-        {{
-          is_state('binary_sensor.arco_woonkamer_mag_verwarmen', 'on')
-          and is_state('binary_sensor.airco_zolder_mag_aan', 'on')
-          and states('sensor.airco_woonkamer_outdoor') | float(0) > 15
-        }}
+        {{ not is_state('climate.airco_zolder', 'off') and
+           not is_state('input_boolean.airco_zolder_moet_afkoelen', 'on') and
+           not is_state('input_boolean.airco_zolder_moet_verwarmen', 'on') and
+           (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) >= states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18)) and
+           is_state('binary_sensor.temperatuur_zolder_is_boven_koel_drempel', 'off') and
+           states('sensor.airco_zolder_outdoor') | float(0) > 15 }}
+      icon: mdi:fan
 
     - unique_id: airco_zolder_mag_aan
       name: "Airco zolder mag aan"
@@ -269,15 +274,24 @@
           is_state('binary_sensor.zolder_raam_openen', 'on')
         }}
 
-    - unique_id: temperatuur_zolder_is_boven_drempel_waarden
-      name: "Temperatuur zolder is boven drempel waarden"
+    # Hysterese-grens koelen <-> ventileren (zolder), op de betrouwbare kamersensor.
+    # ON bij koel-drempel+0.5, pas weer OFF bij drempel-0.3 (zoals de slaapkamer).
+    - unique_id: temperatuur_zolder_is_boven_koel_drempel
+      name: "Temperatuur zolder is boven koel-drempel"
       state: >
-        {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | int >= (states('input_number.airco_zolder_drempelwaarde_koelen') | int) }}
-
-    - unique_id: temperatuur_zolder_is_onder_drempel_waarden_verwarmen
-      name: "Temperatuur zolder is onder drempel waarden verwarmen"
-      state: >
-        {{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float <= (states('input_number.airco_zolder_drempelwaarde_verwarmen') | float) }}
+        {% set temp = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set drempel = states('input_number.airco_zolder_drempelwaarde_koelen') | float(none) %}
+        {% set boven = 0.5 %}
+        {% set onder = 0.3 %}
+        {% set vorig = this.state if this.state in ['on', 'off'] else 'off' %}
+        {% if temp is none or drempel is none %}
+          {{ vorig }}
+        {% elif vorig == 'on' %}
+          {{ 'on' if temp > drempel - onder else 'off' }}
+        {% else %}
+          {{ 'on' if temp >= drempel + boven else 'off' }}
+        {% endif %}
+      icon: mdi:thermometer-chevron-up
 
     # Airco Boven Mag Afkoelen
     - name: "Airco Boven Mag Afkoelen"
@@ -1057,6 +1071,42 @@
             {{ (extern + compensatie) | round(1) }}
           {% endif %}
         {% endif %}
+
+    - default_entity_id: sensor.airco_zolder_target_temperatuur
+      unique_id: airco_zolder_target_temperatuur
+      name: "Airco Zolder Target Temperatuur"
+      unit_of_measurement: "°C"
+      device_class: temperature
+      state_class: measurement
+      state: >-
+        {# Coöperatief setpoint voor automation.airco_zolder_handmatig. Proportionele
+           lus rond de drempel op de betrouwbare (verplaatste) kamersensor. #}
+        {% set kamer = states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) %}
+        {% set drempel_koelen = states('input_number.airco_zolder_drempelwaarde_koelen') | float(26) %}
+        {% set drempel_verwarmen = states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18) %}
+        {% set nudge = states('input_number.airco_zolder_temperatuur_offset') | float(0) %}
+        {% set K = 2.0 %}
+        {% set CAP = 3.0 %}
+        {% if is_state('climate.airco_zolder', 'heat') %}
+          {% if kamer is none %}
+            {{ [[16, drempel_verwarmen + nudge] | max, 30] | min | round(1) }}
+          {% else %}
+            {% set dyn = [[-CAP, K * (drempel_verwarmen - kamer)] | max, CAP] | min %}
+            {{ [[16, drempel_verwarmen + dyn + nudge] | max, 30] | min | round(1) }}
+          {% endif %}
+        {% else %}
+          {% if kamer is none %}
+            {{ [[16, drempel_koelen - nudge] | max, 30] | min | round(1) }}
+          {% else %}
+            {% set dyn = [[-CAP, K * (kamer - drempel_koelen)] | max, CAP] | min %}
+            {{ [[16, drempel_koelen - dyn - nudge] | max, 30] | min | round(1) }}
+          {% endif %}
+        {% endif %}
+      icon: mdi:thermometer-auto
+      attributes:
+        kamer: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') }}"
+        modus: "{{ states('climate.airco_zolder') }}"
+        handmatige_nudge: "{{ states('input_number.airco_zolder_temperatuur_offset') }}"
 
     - default_entity_id: sensor.airco_boven_target_temperatuur
       unique_id: airco_boven_target_temperatuur
