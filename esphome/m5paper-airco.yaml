@@ -157,8 +157,10 @@ font:
       - "\U000F058E"  # water-percent
       - "\U000F0210"  # fan (ventilator-trio)
       - "\U000F0F92"  # water-boiler (boiler-temp statusbalk)
-      - "\U000F0238"  # fire (boiler verwarmt)
+      - "\U000F0238"  # fire (boiler verwarmt / airco-modus warm)
       - "\U000F09A0"  # shower (douche-timer)
+      - "\U000F0717"  # snowflake (airco-modus koel)
+      - "\U000F0425"  # power (airco-modus uit)
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: ic32
     size: 32
@@ -788,10 +790,22 @@ display:
       snprintf(tbuf, sizeof(tbuf), "%02d:%02d", t.hour, t.minute);
       it.print(24, 11, id(roboto_m40), tbuf);
 
+      // huidige airco-modus (icoon + kort label)
+      if (id(airco_hvac_mode).has_state()) {
+        std::string am = id(airco_hvac_mode).state;
+        if (am == "cool")          { it.print(150, 14, id(ic30), "\U000F0717"); it.print(186, 18, id(roboto_28), "Koel"); }
+        else if (am == "heat")     { it.print(150, 14, id(ic30), "\U000F0238"); it.print(186, 18, id(roboto_28), "Warm"); }
+        else if (am == "fan_only") { it.print(150, 14, id(ic30), "\U000F0210"); it.print(186, 18, id(roboto_28), "Vent"); }
+        else if (am == "off")      { it.print(150, 14, id(ic30), "\U000F0425"); it.print(186, 18, id(roboto_28), "Uit"); }
+        else if (am == "dry")      { it.print(186, 18, id(roboto_28), "Droog"); }
+        else if (am == "auto")     { it.print(186, 18, id(roboto_28), "Auto"); }
+      }
+
+      // kamertemperatuur (betrouwbare sensor, niet de M5Paper-interne SHT30)
       it.print(344, 14, id(ic30), "\U000F050F");
-      if (!isnan(id(m5paper_temperature).state))
+      if (!isnan(id(airco_room_temp).state))
         eink_val(&it, 384, 18, id(roboto_28), TextAlign::TOP_LEFT,
-                 id(m5paper_temperature).state, 1, "°C");
+                 id(airco_room_temp).state, 1, "°C");
 
       it.print(556, 14, id(ic30), "\U000F058E");
       if (!isnan(id(m5paper_humidity).state))
