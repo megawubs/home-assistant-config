@@ -4921,38 +4921,6 @@
         state: 'on'
       sequence:
       - choose:
-        - alias: 'Na koelen (zomer): fan_only'
-          conditions:
-          - condition: state
-            entity_id: climate.airco_boven
-            state: cool
-          sequence:
-          - action: climate.set_hvac_mode
-            data:
-              hvac_mode: fan_only
-            target:
-              entity_id: climate.airco_boven
-          - delay:
-              seconds: 2
-          - action: climate.set_fan_mode
-            data:
-              fan_mode: 2 Low
-            target:
-              entity_id: climate.airco_boven
-          - delay:
-              seconds: 2
-          - action: climate.set_swing_mode
-            data:
-              swing_mode: Up/Down Auto
-            target:
-              entity_id: climate.airco_boven
-          - delay:
-              seconds: 2
-          - action: select.select_option
-            data:
-              option: Left/Right Auto
-            target:
-              entity_id: select.airco_boven_horizontal_swing_direction
         - alias: 'Na verwarmen + buiten koud (winter): moduleren'
           conditions:
           - condition: state
@@ -4975,7 +4943,46 @@
               swing_mode: Up/Down Auto
             target:
               entity_id: climate.airco_boven
-        - alias: 'Op temperatuur, draait al: ga ventileren (zomer)'
+        - alias: 'Vochtig: ontvochtigen (dry)'
+          conditions:
+          - condition: state
+            entity_id: input_boolean.airco_boven_dry_test
+            state: 'on'
+          - condition: or
+            conditions:
+            - condition: numeric_state
+              entity_id: sensor.luchtkwaliteitsensor_slaapkamer_luchtvochtigheid
+              above: 58
+            - condition: and
+              conditions:
+              - condition: state
+                entity_id: climate.airco_boven
+                state: dry
+              - condition: numeric_state
+                entity_id: sensor.luchtkwaliteitsensor_slaapkamer_luchtvochtigheid
+                above: 52
+          - condition: not
+            conditions:
+            - condition: state
+              entity_id: climate.airco_boven
+              state: dry
+          sequence:
+          - action: climate.set_hvac_mode
+            data:
+              hvac_mode: dry
+            target:
+              entity_id: climate.airco_boven
+          - delay:
+              seconds: 2
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: 2 Low
+            target:
+              entity_id: climate.airco_boven
+          - action: notify.mobile_app_iphone_van_bram
+            data:
+              message: 'Airco boven: ontvochtigen (dry) aan'
+        - alias: 'Op temperatuur: ventileren'
           conditions:
           - condition: not
             conditions:
@@ -4987,6 +4994,24 @@
             - condition: state
               entity_id: climate.airco_boven
               state: fan_only
+          - condition: not
+            conditions:
+            - condition: state
+              entity_id: input_boolean.airco_boven_dry_test
+              state: 'on'
+            - condition: or
+              conditions:
+              - condition: numeric_state
+                entity_id: sensor.luchtkwaliteitsensor_slaapkamer_luchtvochtigheid
+                above: 58
+              - condition: and
+                conditions:
+                - condition: state
+                  entity_id: climate.airco_boven
+                  state: dry
+                - condition: numeric_state
+                  entity_id: sensor.luchtkwaliteitsensor_slaapkamer_luchtvochtigheid
+                  above: 52
           sequence:
           - action: climate.set_hvac_mode
             data:
@@ -5000,20 +5025,6 @@
               fan_mode: 2 Low
             target:
               entity_id: climate.airco_boven
-          - delay:
-              seconds: 2
-          - action: climate.set_swing_mode
-            data:
-              swing_mode: Up/Down Auto
-            target:
-              entity_id: climate.airco_boven
-          - delay:
-              seconds: 2
-          - action: select.select_option
-            data:
-              option: Left/Right Auto
-            target:
-              entity_id: select.airco_boven_horizontal_swing_direction
   - if:
     - condition: trigger
       id:
