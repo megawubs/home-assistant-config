@@ -6359,11 +6359,11 @@
   max: 5
 - id: '1782285550425'
   alias: Stroom duur - samenvatting pauze
-  description: 'Eén samenvattende melding zodra het Zonneplan-tariefuur ''high'' wordt.
+  description: Eén samenvattende melding zodra het Zonneplan-tariefuur 'high' wordt.
     De losse pauze-automatiseringen doen het werk (auto); deze bundelt de melding.
-    Knoppen: [Zolder ook uit] (zolder helemaal uit i.p.v. ventileren) en [Alles aan
-    laten] (override via moet_aan + marker prijs_aan_laten_actief; wordt automatisch
-    gereset zodra niet meer duur). Stil in slaapmodus.'
+    Knop [Alles aan laten] = override via moet_aan + marker prijs_aan_laten_actief
+    (auto-reset zodra niet meer duur). Zolder draait door (niet gepauzeerd). Stil
+    in slaapmodus.
   triggers:
   - id: piek_start
     trigger: template
@@ -6391,21 +6391,13 @@
           %}{% set p.l = p.l + [''airco beneden''] %}{% endif %}{% if is_state(''input_boolean.airco_boven_prijs_pauze'',''on'')
           %}{% set p.l = p.l + [''airco boven''] %}{% endif %}Tarief €{{ states(''sensor.current_tariff'')
           | float | round(2) }}/kWh.{% if p.l %} Uit: {{ p.l | join('', '') }}.{%
-          endif %}{% if is_state(''input_boolean.airco_zolder_moet_ventileren'',''on'')
-          %} Zolder ventileert.{% endif %}'
+          else %} Niets te pauzeren.{% endif %}'
         data:
           tag: stroom_duur_samenvatting
           actions:
-          - action: ZOLDER_OOK_UIT
-            title: Zolder ook uit
           - action: ALLES_AAN_LATEN
             title: Alles aan laten
     - wait_for_trigger:
-      - id: zolder_uit
-        trigger: event
-        event_type: mobile_app_notification_action
-        event_data:
-          action: ZOLDER_OOK_UIT
       - id: alles_aan
         trigger: event
         event_type: mobile_app_notification_action
@@ -6414,45 +6406,26 @@
       timeout:
         minutes: 90
       continue_on_timeout: true
-    - choose:
-      - conditions:
-        - condition: template
-          value_template: '{{ wait.completed and wait.trigger.id == ''zolder_uit''
-            }}'
-        sequence:
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.airco_zolder_moet_ventileren
-        - action: climate.turn_off
-          target:
-            entity_id: climate.airco_zolder
-        - action: notify.mobile_app_iphone_van_bram
+    - if:
+      - condition: template
+        value_template: '{{ wait.completed }}'
+      then:
+      - action: input_boolean.turn_on
+        target:
+          entity_id:
+          - input_boolean.ariston_moet_aan
+          - input_boolean.airco_woonkamer_moet_aan
+          - input_boolean.airco_boven_moet_aan
+          - input_boolean.prijs_aan_laten_actief
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.prijs_pauze_groep_actief
+      - action: notify.mobile_app_iphone_van_bram
+        data:
           data:
-            data:
-              tag: stroom_duur_samenvatting
-            message: Zolder is ook uitgezet.
-      - conditions:
-        - condition: template
-          value_template: '{{ wait.completed and wait.trigger.id == ''alles_aan''
-            }}'
-        sequence:
-        - action: input_boolean.turn_on
-          target:
-            entity_id:
-            - input_boolean.ariston_moet_aan
-            - input_boolean.airco_woonkamer_moet_aan
-            - input_boolean.airco_boven_moet_aan
-            - input_boolean.airco_zolder_moet_aan
-            - input_boolean.prijs_aan_laten_actief
-        - action: input_boolean.turn_off
-          target:
-            entity_id: input_boolean.prijs_pauze_groep_actief
-        - action: notify.mobile_app_iphone_van_bram
-          data:
-            data:
-              tag: stroom_duur_samenvatting
-            message: Alles blijft aan ondanks de dure stroom. Reset vanzelf zodra
-              het tarief weer normaal is.
+            tag: stroom_duur_samenvatting
+          message: Alles blijft aan ondanks de dure stroom. Reset vanzelf zodra het
+            tarief weer normaal is.
   mode: single
 - id: '1782285569009'
   alias: Stroom duur - samenvatting herstel
