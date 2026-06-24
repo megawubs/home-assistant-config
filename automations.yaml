@@ -2804,9 +2804,14 @@
       - condition: state
         entity_id: binary_sensor.airco_woonkamer_mag_verwarmen
         state: 'off'
-      - condition: state
-        entity_id: climate.airco_woonkamer
-        state: fan_only
+      - condition: or
+        conditions:
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: fan_only
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: dry
       sequence:
       - action: input_datetime.set_datetime
         data:
@@ -2939,11 +2944,38 @@
         target:
           entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
       - choose:
-        - alias: 'Na koelen (zomer): altijd fan_only voor luchtstroom'
+        - alias: 'Winter: na verwarmen + buiten koud, moduleren op lage stand'
           conditions:
           - condition: state
             entity_id: climate.airco_woonkamer
-            state: cool
+            state: heat
+          - attribute: temperature
+            below: input_number.airco_ventileren_buitentemp_drempel
+            condition: numeric_state
+            entity_id: weather.home
+          sequence:
+          - action: climate.set_fan_mode
+            data:
+              fan_mode: auto
+            target:
+              label_id: airco_beneden
+          - delay:
+              seconds: 2
+          - action: climate.set_swing_mode
+            data:
+              swing_mode: Up/Down Auto
+            target:
+              label_id: airco_beneden
+        - alias: 'Vochtig: ontvochtigen (dry) i.p.v. ventileren'
+          conditions:
+          - condition: state
+            entity_id: input_boolean.airco_woonkamer_dry
+            state: 'on'
+          - condition: not
+            conditions:
+            - condition: state
+              entity_id: climate.airco_woonkamer
+              state: dry
           sequence:
           - action: climate.turn_on
             data: {}
@@ -2953,7 +2985,7 @@
               seconds: 2
           - action: climate.set_hvac_mode
             data:
-              hvac_mode: fan_only
+              hvac_mode: dry
             target:
               label_id: airco_beneden
           - delay:
@@ -2984,30 +3016,14 @@
               option: Left/Right Auto
             target:
               entity_id: select.airco_keuken_horizontal_swing_direction
-        - alias: 'Na verwarmen + buiten koud (winter): moduleren op lage stand'
+          - action: notify.mobile_app_iphone_van_bram
+            data:
+              message: 'Airco woonkamer: ontvochtigen (dry) aan'
+        - alias: 'Droog uit: ventileren (fan_only) voor luchtstroom'
           conditions:
           - condition: state
-            entity_id: climate.airco_woonkamer
-            state: heat
-          - attribute: temperature
-            below: input_number.airco_ventileren_buitentemp_drempel
-            condition: numeric_state
-            entity_id: weather.home
-          sequence:
-          - action: climate.set_fan_mode
-            data:
-              fan_mode: auto
-            target:
-              label_id: airco_beneden
-          - delay:
-              seconds: 2
-          - action: climate.set_swing_mode
-            data:
-              swing_mode: Up/Down Auto
-            target:
-              label_id: airco_beneden
-        - alias: 'Airco uit of idle: aanzetten en gaan ventileren (zomer)'
-          conditions:
+            entity_id: input_boolean.airco_woonkamer_dry
+            state: 'off'
           - condition: not
             conditions:
             - condition: state
