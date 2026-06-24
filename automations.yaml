@@ -6362,8 +6362,8 @@
   description: 'Eén samenvattende melding zodra het Zonneplan-tariefuur ''high'' wordt.
     De losse pauze-automatiseringen doen het werk (auto); deze bundelt de melding.
     Knoppen: [Zolder ook uit] (zolder helemaal uit i.p.v. ventileren) en [Alles aan
-    laten] (override via moet_aan: alles blijft draaien ondanks dure stroom). Stil
-    in slaapmodus.'
+    laten] (override via moet_aan + marker prijs_aan_laten_actief; wordt automatisch
+    gereset zodra niet meer duur). Stil in slaapmodus.'
   triggers:
   - id: piek_start
     trigger: template
@@ -6443,6 +6443,7 @@
             - input_boolean.airco_woonkamer_moet_aan
             - input_boolean.airco_boven_moet_aan
             - input_boolean.airco_zolder_moet_aan
+            - input_boolean.prijs_aan_laten_actief
         - action: input_boolean.turn_off
           target:
             entity_id: input_boolean.prijs_pauze_groep_actief
@@ -6450,7 +6451,8 @@
           data:
             data:
               tag: stroom_duur_samenvatting
-            message: Alles blijft aan ondanks de dure stroom (handmatige override).
+            message: Alles blijft aan ondanks de dure stroom. Reset vanzelf zodra
+              het tarief weer normaal is.
   mode: single
 - id: '1782285569009'
   alias: Stroom duur - samenvatting herstel
@@ -6486,4 +6488,32 @@
           — boiler en airco's worden weer hersteld.
         data:
           tag: stroom_duur_samenvatting
+  mode: single
+- id: '1782312126857'
+  alias: Stroom duur - reset 'alles aan laten' override
+  description: Zodra het Zonneplan-tariefuur niet meer 'high' is, en de [Alles aan
+    laten]-override liep (marker prijs_aan_laten_actief aan), worden de daardoor gezette
+    moet_aan-overrides weer opgeheven, zodat bij de volgende dure periode alles weer
+    normaal auto-pauzeert. Stil. Raakt handmatig gezette moet_aan niet aan (alleen
+    als de marker aan staat).
+  triggers:
+  - id: niet_meer_duur
+    trigger: template
+    value_template: '{% set fc = state_attr(''sensor.current_tariff'',''forecast'')
+      %}{% set ns = namespace(group=''high'') %}{% for e in fc %}{% if as_timestamp(e.datetime)
+      <= as_timestamp(now()) < as_timestamp(e.datetime) + 3600 %}{% set ns.group =
+      e.tariff_group %}{% endif %}{% endfor %}{{ ns.group != ''high'' }}'
+  conditions:
+  - condition: state
+    entity_id: input_boolean.prijs_aan_laten_actief
+    state: 'on'
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id:
+      - input_boolean.ariston_moet_aan
+      - input_boolean.airco_woonkamer_moet_aan
+      - input_boolean.airco_boven_moet_aan
+      - input_boolean.airco_zolder_moet_aan
+      - input_boolean.prijs_aan_laten_actief
   mode: single
