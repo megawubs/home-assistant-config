@@ -6272,6 +6272,14 @@
   - condition: state
     entity_id: climate.airco_zolder
     state: 'off'
+  - condition: or
+    conditions:
+    - condition: state
+      entity_id: input_boolean.modus_weg
+      state: 'off'
+    - condition: state
+      entity_id: input_boolean.modus_gast
+      state: 'on'
   actions:
   - action: climate.set_hvac_mode
     data:
