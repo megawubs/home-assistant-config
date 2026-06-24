@@ -235,6 +235,7 @@
       name: "Airco zolder mag afkoelen"
       state: >
         {{ not is_state('climate.airco_zolder', 'off') and
+           not is_state('input_boolean.airco_zolder_moet_ventileren', 'on') and
            (is_state('input_boolean.airco_zolder_moet_afkoelen', 'on') or
             is_state('binary_sensor.temperatuur_zolder_is_boven_koel_drempel', 'on')) }}
       icon: mdi:snowflake
@@ -243,6 +244,7 @@
       name: "Airco zolder mag verwarmen"
       state: >
         {{ not is_state('climate.airco_zolder', 'off') and
+           not is_state('input_boolean.airco_zolder_moet_ventileren', 'on') and
            (is_state('input_boolean.airco_zolder_moet_verwarmen', 'on') or
             (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) < states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18))) }}
       icon: mdi:fire
@@ -251,11 +253,12 @@
       name: "Airco zolder mag ventileren"
       state: >
         {{ not is_state('climate.airco_zolder', 'off') and
-           not is_state('input_boolean.airco_zolder_moet_afkoelen', 'on') and
            not is_state('input_boolean.airco_zolder_moet_verwarmen', 'on') and
-           (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) >= states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18)) and
-           is_state('binary_sensor.temperatuur_zolder_is_boven_koel_drempel', 'off') and
-           states('sensor.airco_zolder_outdoor') | float(0) > 15 }}
+           (is_state('input_boolean.airco_zolder_moet_ventileren', 'on') or
+            (not is_state('input_boolean.airco_zolder_moet_afkoelen', 'on') and
+             (states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(0) >= states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18)) and
+             is_state('binary_sensor.temperatuur_zolder_is_boven_koel_drempel', 'off') and
+             states('sensor.airco_zolder_outdoor') | float(0) > 15)) }}
       icon: mdi:fan
 
     - unique_id: airco_zolder_mag_aan
