@@ -401,6 +401,12 @@ text_sensor:
     attribute: more
     internal: true
 
+  # Eindtijd van het huidige/eerstvolgende dure (high) blok, "HH:MM" (leeg = geen)
+  - platform: homeassistant
+    id: prijs_high_einde
+    entity_id: sensor.prijs_high_blok_einde
+    internal: true
+
 # ---------------------------------------------------------------------------
 # Binary sensors
 # ---------------------------------------------------------------------------
@@ -410,6 +416,14 @@ binary_sensor:
     id: boiler_heating
     entity_id: binary_sensor.ariston_is_heating
     internal: true
+
+  # Prijs-pauze actief (dure stroom) -> banner op het hoofdscherm
+  - platform: homeassistant
+    id: prijs_pauze
+    entity_id: input_boolean.prijs_pauze_groep_actief
+    internal: true
+    on_state:
+      - component.update: m5paper_display
 
   # Fysieke BTN-knop (G38): forceer volledige verversing (ghosting wissen)
   - platform: gpio
@@ -797,7 +811,7 @@ display:
         else if (am == "heat")     { it.print(150, 14, id(ic30), "\U000F0238"); it.print(186, 18, id(roboto_28), "Warm"); }
         else if (am == "fan_only") { it.print(150, 14, id(ic30), "\U000F0210"); it.print(186, 18, id(roboto_28), "Vent"); }
         else if (am == "off")      { it.print(150, 14, id(ic30), "\U000F0425"); it.print(186, 18, id(roboto_28), "Uit"); }
-        else if (am == "dry")      { it.print(186, 18, id(roboto_28), "Droog"); }
+        else if (am == "dry")      { it.print(150, 14, id(ic30), "\U000F058E"); it.print(186, 18, id(roboto_28), "Droog"); }
         else if (am == "auto")     { it.print(186, 18, id(roboto_28), "Auto"); }
       }
 
@@ -848,6 +862,17 @@ display:
         snprintf(cbuf, sizeof(cbuf), "%d afspra%s", cnt, (cnt == 1) ? "ak" : "ken");
         it.print(40, 380, id(roboto_b28), cbuf);
         it.print(40, 420, id(roboto_22), "vandaag");
+
+        // prijs-pauze banner (alleen tijdens duur tarief), onderin het datum-paneel
+        if (id(prijs_pauze).state) {
+          it.filled_rectangle(18, 454, 296, 68);
+          esphome::Color wpz(0, 0, 0);  // = WIT op deze driver
+          it.print(40, 460, id(roboto_b28), wpz, "Stroom duur");
+          if (id(prijs_high_einde).has_state() && id(prijs_high_einde).state.length() > 0) {
+            std::string pzl = "tot " + id(prijs_high_einde).state;
+            it.print(40, 492, id(roboto_22), wpz, pzl.c_str());
+          }
+        }
 
         // agenda rechts
         it.print(340, 92, id(roboto_b28), "Vandaag");
