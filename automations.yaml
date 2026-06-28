@@ -2780,6 +2780,21 @@
           - condition: state
             entity_id: climate.airco_woonkamer
             state: heat
+          - condition: state
+            entity_id: climate.airco_keuken
+            state: cool
+          - condition: state
+            entity_id: climate.airco_keuken
+            state: fan_only
+          - condition: state
+            entity_id: climate.airco_keuken
+            state: dry
+          - condition: state
+            entity_id: climate.airco_keuken
+            state: auto
+          - condition: state
+            entity_id: climate.airco_keuken
+            state: heat
       sequence:
       - action: input_datetime.set_datetime
         data:
@@ -2971,6 +2986,10 @@
           - condition: state
             entity_id: input_boolean.airco_woonkamer_dry
             state: 'on'
+          - condition: template
+            value_template: '{{ states(''sensor.tstat_9d4027_current_temperature'')|float(0)
+              >= states(''input_number.airco_woonkamer_drempelwaarde_koelen'')|float(26)
+              - 1.5 }}'
           - condition: not
             conditions:
             - condition: state
@@ -3019,11 +3038,17 @@
           - action: notify.mobile_app_iphone_van_bram
             data:
               message: 'Airco woonkamer: ontvochtigen (dry) aan'
-        - alias: 'Droog uit: ventileren (fan_only) voor luchtstroom'
+        - alias: 'Droog uit of te koud: ventileren (fan_only)'
           conditions:
-          - condition: state
-            entity_id: input_boolean.airco_woonkamer_dry
-            state: 'off'
+          - condition: or
+            conditions:
+            - condition: state
+              entity_id: input_boolean.airco_woonkamer_dry
+              state: 'off'
+            - condition: template
+              value_template: '{{ states(''sensor.tstat_9d4027_current_temperature'')|float(99)
+                <= states(''input_number.airco_woonkamer_drempelwaarde_koelen'')|float(26)
+                - 2.0 }}'
           - condition: not
             conditions:
             - condition: state
@@ -4645,7 +4670,7 @@
           seconds: 2
       - action: climate.set_swing_mode
         data:
-          swing_mode: Up/Down Auto
+          swing_mode: Highest
         target:
           entity_id: climate.airco_boven
       - delay:
@@ -4697,7 +4722,7 @@
           seconds: 2
       - action: climate.set_swing_mode
         data:
-          swing_mode: Up/Down Auto
+          swing_mode: Lowest
         target:
           entity_id: climate.airco_boven
       - delay:
@@ -6414,8 +6439,9 @@
           %}{% set p.l = p.l + [''boiler''] %}{% endif %}{% if is_state(''input_boolean.airco_beneden_prijs_pauze'',''on'')
           %}{% set p.l = p.l + [''airco beneden''] %}{% endif %}{% if is_state(''input_boolean.airco_boven_prijs_pauze'',''on'')
           %}{% set p.l = p.l + [''airco boven''] %}{% endif %}Tarief €{{ states(''sensor.current_tariff'')
-          | float | round(2) }}/kWh.{% if p.l %} Uit: {{ p.l | join('', '') }}.{%
-          else %} Niets te pauzeren.{% endif %}'
+          | float | round(2) }}/kWh{% if states(''sensor.prijs_high_blok_einde'')
+          %} tot {{ states(''sensor.prijs_high_blok_einde'') }}{% endif %}.{% if p.l
+          %} Uit: {{ p.l | join('', '') }}.{% else %} Niets te pauzeren.{% endif %}'
         data:
           tag: stroom_duur_samenvatting
           actions:
