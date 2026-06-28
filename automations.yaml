@@ -2795,6 +2795,15 @@
           - condition: state
             entity_id: climate.airco_keuken
             state: heat
+        - condition: state
+          entity_id: input_boolean.airco_woonkamer_moet_afkoelen
+          state: 'off'
+        - condition: state
+          entity_id: input_boolean.airco_woonkamer_moet_verwarmen
+          state: 'off'
+        - condition: state
+          entity_id: input_boolean.airco_woonkamer_moet_aan
+          state: 'off'
       sequence:
       - action: input_datetime.set_datetime
         data:

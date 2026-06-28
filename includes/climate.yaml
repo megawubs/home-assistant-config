@@ -1,0 +1,95 @@
+# Virtuele "kamer-thermostaat" voor de woonkamer (partner-vriendelijk).
+# Toont de standaard HA-thermostaatkaart, maar bedient onderwater onze helpers
+# (drempelwaarden + moet_*-vlaggen). De echte climate.airco_woonkamer blijft van
+# automation.afkoelen_woonkamer; deze entiteit raakt die NOOIT direct aan.
+#
+# Mapping:
+#   - Huidige temp  -> sensor.tstat_9d4027_current_temperature (kamersensor)
+#   - Doeltemp      -> drempelwaarde_koelen (cool/auto) of _verwarmen (heat)
+#   - Uit           -> moet_uit aan  (ruimte uit; prijs-pauze gebruikt dezelfde vlag)
+#   - Auto          -> alle moet_*-forces uit -> volgt het huis (schema/prijs/drempels/dry-floor)
+#   - Koelen        -> moet_afkoelen aan (forceert koelen naar de ingestelde temp; overruled schema, niet prijs-pauze)
+#   - Verwarmen     -> moet_verwarmen aan
+# Modus is optimistisch (onthoudt haar keuze, ook tijdens een prijs-pauze);
+# hvac_action toont wat de echte airco op dat moment doet.
+- platform: climate_template
+  name: Woonkamer
+  unique_id: woonkamer_klimaat
+  icon_template: mdi:sofa
+  modes:
+    - "off"
+    - cool
+    - heat
+    - auto
+  min_temp: 16
+  max_temp: 30
+  temp_step: 0.5
+  current_temperature_template: "{{ states('sensor.tstat_9d4027_current_temperature') | float(none) }}"
+  target_temperature_template: >-
+    {% if is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') %}
+      {{ states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(20) }}
+    {% else %}
+      {{ states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(24) }}
+    {% endif %}
+  hvac_action_template: >-
+    {% set s = states('climate.airco_woonkamer') %}
+    {% if s == 'cool' %}cooling
+    {% elif s == 'dry' %}drying
+    {% elif s == 'heat' %}heating
+    {% elif s == 'fan_only' %}fan
+    {% elif s == 'off' %}off
+    {% else %}idle{% endif %}
+  set_temperature:
+    - choose:
+        - conditions: "{{ is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.airco_woonkamer_drempelwaarde_verwarmen
+              data:
+                value: "{{ temperature }}"
+      default:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.airco_woonkamer_drempelwaarde_koelen
+          data:
+            value: "{{ temperature }}"
+  set_hvac_mode:
+    - choose:
+        - conditions: "{{ hvac_mode == 'off' }}"
+          sequence:
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.airco_woonkamer_moet_uit
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_woonkamer_moet_afkoelen
+                  - input_boolean.airco_woonkamer_moet_verwarmen
+        - conditions: "{{ hvac_mode == 'cool' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_woonkamer_moet_uit
+                  - input_boolean.airco_woonkamer_moet_verwarmen
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.airco_woonkamer_moet_afkoelen
+        - conditions: "{{ hvac_mode == 'heat' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_woonkamer_moet_uit
+                  - input_boolean.airco_woonkamer_moet_afkoelen
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.airco_woonkamer_moet_verwarmen
+      default:
+        - action: input_boolean.turn_off
+          target:
+            entity_id:
+              - input_boolean.airco_woonkamer_moet_uit
+              - input_boolean.airco_woonkamer_moet_afkoelen
+              - input_boolean.airco_woonkamer_moet_verwarmen
