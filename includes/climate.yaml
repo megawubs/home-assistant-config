@@ -93,3 +93,207 @@
               - input_boolean.airco_woonkamer_moet_uit
               - input_boolean.airco_woonkamer_moet_afkoelen
               - input_boolean.airco_woonkamer_moet_verwarmen
+
+# --- Slaapkamer (climate.airco_boven) -------------------------------------
+# Aan/uit via de moet_aan/moet_uit-override; de unit start niet vanzelf, dus
+# cool/heat/auto zetten 'm fysiek aan. De Handmatig-automatisering beheert daarna.
+- platform: climate_template
+  name: Slaapkamer
+  unique_id: slaapkamer_klimaat
+  icon_template: mdi:bed
+  modes:
+    - "off"
+    - cool
+    - heat
+    - auto
+  min_temp: 16
+  max_temp: 30
+  temp_step: 0.5
+  current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) }}"
+  target_temperature_template: >-
+    {% if is_state('input_boolean.airco_boven_moet_verwarmen','on') %}
+      {{ states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18) }}
+    {% else %}
+      {{ states('input_number.airco_boven_drempelwaarde_koelen') | float(24) }}
+    {% endif %}
+  hvac_action_template: >-
+    {% set s = states('climate.airco_boven') %}
+    {% if s == 'cool' %}cooling
+    {% elif s == 'dry' %}drying
+    {% elif s == 'heat' %}heating
+    {% elif s == 'fan_only' %}fan
+    {% elif s == 'off' %}off
+    {% else %}idle{% endif %}
+  set_temperature:
+    - choose:
+        - conditions: "{{ is_state('input_boolean.airco_boven_moet_verwarmen','on') }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.airco_boven_drempelwaarde_verwarmen
+              data:
+                value: "{{ temperature }}"
+      default:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.airco_boven_drempelwaarde_koelen
+          data:
+            value: "{{ temperature }}"
+  set_hvac_mode:
+    - choose:
+        - conditions: "{{ hvac_mode == 'off' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_boven_moet_afkoelen
+                  - input_boolean.airco_boven_moet_verwarmen
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.airco_boven_moet_uit
+        - conditions: "{{ hvac_mode == 'cool' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_boven_moet_uit
+                  - input_boolean.airco_boven_moet_verwarmen
+            - action: input_boolean.turn_on
+              target:
+                entity_id:
+                  - input_boolean.airco_boven_moet_aan
+                  - input_boolean.airco_boven_moet_afkoelen
+            - action: climate.turn_on
+              target:
+                entity_id: climate.airco_boven
+        - conditions: "{{ hvac_mode == 'heat' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_boven_moet_uit
+                  - input_boolean.airco_boven_moet_afkoelen
+            - action: input_boolean.turn_on
+              target:
+                entity_id:
+                  - input_boolean.airco_boven_moet_aan
+                  - input_boolean.airco_boven_moet_verwarmen
+            - action: climate.turn_on
+              target:
+                entity_id: climate.airco_boven
+      default:
+        - action: input_boolean.turn_off
+          target:
+            entity_id:
+              - input_boolean.airco_boven_moet_uit
+              - input_boolean.airco_boven_moet_afkoelen
+              - input_boolean.airco_boven_moet_verwarmen
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.airco_boven_moet_aan
+        - action: climate.turn_on
+          target:
+            entity_id: climate.airco_boven
+
+# --- Zolder (climate.airco_zolder) ----------------------------------------
+- platform: climate_template
+  name: Zolder
+  unique_id: zolder_klimaat
+  icon_template: mdi:home-roof
+  modes:
+    - "off"
+    - cool
+    - heat
+    - auto
+  min_temp: 16
+  max_temp: 30
+  temp_step: 0.5
+  current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) }}"
+  target_temperature_template: >-
+    {% if is_state('input_boolean.airco_zolder_moet_verwarmen','on') %}
+      {{ states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18) }}
+    {% else %}
+      {{ states('input_number.airco_zolder_drempelwaarde_koelen') | float(24) }}
+    {% endif %}
+  hvac_action_template: >-
+    {% set s = states('climate.airco_zolder') %}
+    {% if s == 'cool' %}cooling
+    {% elif s == 'dry' %}drying
+    {% elif s == 'heat' %}heating
+    {% elif s == 'fan_only' %}fan
+    {% elif s == 'off' %}off
+    {% else %}idle{% endif %}
+  set_temperature:
+    - choose:
+        - conditions: "{{ is_state('input_boolean.airco_zolder_moet_verwarmen','on') }}"
+          sequence:
+            - action: input_number.set_value
+              target:
+                entity_id: input_number.airco_zolder_drempelwaarde_verwarmen
+              data:
+                value: "{{ temperature }}"
+      default:
+        - action: input_number.set_value
+          target:
+            entity_id: input_number.airco_zolder_drempelwaarde_koelen
+          data:
+            value: "{{ temperature }}"
+  set_hvac_mode:
+    - choose:
+        - conditions: "{{ hvac_mode == 'off' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_zolder_moet_afkoelen
+                  - input_boolean.airco_zolder_moet_verwarmen
+                  - input_boolean.airco_zolder_moet_ventileren
+            - action: input_boolean.turn_on
+              target:
+                entity_id: input_boolean.airco_zolder_moet_uit
+        - conditions: "{{ hvac_mode == 'cool' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_zolder_moet_uit
+                  - input_boolean.airco_zolder_moet_verwarmen
+                  - input_boolean.airco_zolder_moet_ventileren
+            - action: input_boolean.turn_on
+              target:
+                entity_id:
+                  - input_boolean.airco_zolder_moet_aan
+                  - input_boolean.airco_zolder_moet_afkoelen
+            - action: climate.turn_on
+              target:
+                entity_id: climate.airco_zolder
+        - conditions: "{{ hvac_mode == 'heat' }}"
+          sequence:
+            - action: input_boolean.turn_off
+              target:
+                entity_id:
+                  - input_boolean.airco_zolder_moet_uit
+                  - input_boolean.airco_zolder_moet_afkoelen
+                  - input_boolean.airco_zolder_moet_ventileren
+            - action: input_boolean.turn_on
+              target:
+                entity_id:
+                  - input_boolean.airco_zolder_moet_aan
+                  - input_boolean.airco_zolder_moet_verwarmen
+            - action: climate.turn_on
+              target:
+                entity_id: climate.airco_zolder
+      default:
+        - action: input_boolean.turn_off
+          target:
+            entity_id:
+              - input_boolean.airco_zolder_moet_uit
+              - input_boolean.airco_zolder_moet_afkoelen
+              - input_boolean.airco_zolder_moet_verwarmen
+              - input_boolean.airco_zolder_moet_ventileren
+        - action: input_boolean.turn_on
+          target:
+            entity_id: input_boolean.airco_zolder_moet_aan
+        - action: climate.turn_on
+          target:
+            entity_id: climate.airco_zolder
