@@ -25,6 +25,15 @@
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.tstat_9d4027_current_temperature') | float(none) }}"
+  # Stand volgt de werkelijkheid: vlag-intentie eerst, anders de echte unit.
+  # Aan zonder force-vlag (bv. via M5Paper/handmatig) => 'auto'.
+  hvac_mode_template: >-
+    {% if is_state('input_boolean.airco_woonkamer_moet_uit','on') %}off
+    {% elif is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') %}heat
+    {% elif is_state('input_boolean.airco_woonkamer_moet_afkoelen','on') %}cool
+    {% elif is_state('climate.airco_woonkamer','off') %}off
+    {% elif is_state('climate.airco_woonkamer','heat') %}heat
+    {% else %}auto{% endif %}
   target_temperature_template: >-
     {% if is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') %}
       {{ states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(20) }}
@@ -110,6 +119,13 @@
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) }}"
+  hvac_mode_template: >-
+    {% if is_state('input_boolean.airco_boven_moet_uit','on') %}off
+    {% elif is_state('input_boolean.airco_boven_moet_verwarmen','on') %}heat
+    {% elif is_state('input_boolean.airco_boven_moet_afkoelen','on') %}cool
+    {% elif is_state('climate.airco_boven','off') %}off
+    {% elif is_state('climate.airco_boven','heat') %}heat
+    {% else %}auto{% endif %}
   target_temperature_template: >-
     {% if is_state('input_boolean.airco_boven_moet_verwarmen','on') %}
       {{ states('input_number.airco_boven_drempelwaarde_verwarmen') | float(18) }}
@@ -209,6 +225,13 @@
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) }}"
+  hvac_mode_template: >-
+    {% if is_state('input_boolean.airco_zolder_moet_uit','on') %}off
+    {% elif is_state('input_boolean.airco_zolder_moet_verwarmen','on') %}heat
+    {% elif is_state('input_boolean.airco_zolder_moet_afkoelen','on') %}cool
+    {% elif is_state('climate.airco_zolder','off') %}off
+    {% elif is_state('climate.airco_zolder','heat') %}heat
+    {% else %}auto{% endif %}
   target_temperature_template: >-
     {% if is_state('input_boolean.airco_zolder_moet_verwarmen','on') %}
       {{ states('input_number.airco_zolder_drempelwaarde_verwarmen') | float(18) }}
