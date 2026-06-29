@@ -3047,17 +3047,39 @@
           - action: notify.mobile_app_iphone_van_bram
             data:
               message: 'Airco woonkamer: ontvochtigen (dry) aan'
-        - alias: 'Droog uit of te koud: ventileren (fan_only)'
+        - alias: 'Te koud: airco uit (ruim onder doeltemp)'
           conditions:
-          - condition: or
+          - condition: template
+            value_template: '{{ states(''sensor.tstat_9d4027_current_temperature'')|float(99)
+              <= states(''input_number.airco_woonkamer_drempelwaarde_koelen'')|float(26)
+              - 2.0 }}'
+          - condition: not
             conditions:
             - condition: state
-              entity_id: input_boolean.airco_woonkamer_dry
+              entity_id: climate.airco_woonkamer
               state: 'off'
-            - condition: template
-              value_template: '{{ states(''sensor.tstat_9d4027_current_temperature'')|float(99)
-                <= states(''input_number.airco_woonkamer_drempelwaarde_koelen'')|float(26)
-                - 2.0 }}'
+          sequence:
+          - action: input_datetime.set_datetime
+            data:
+              timestamp: '{{ now().timestamp() }}'
+            target:
+              entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+          - action: climate.turn_off
+            data: {}
+            target:
+              label_id: airco_beneden
+          - action: notify.mobile_app_iphone_van_bram
+            data:
+              message: 'Airco woonkamer uit: ruim onder de doeltemperatuur'
+        - alias: 'Droog uit: ventileren (fan_only)'
+          conditions:
+          - condition: state
+            entity_id: input_boolean.airco_woonkamer_dry
+            state: 'off'
+          - condition: template
+            value_template: '{{ states(''sensor.tstat_9d4027_current_temperature'')|float(0)
+              > states(''input_number.airco_woonkamer_drempelwaarde_koelen'')|float(26)
+              - 2.0 }}'
           - condition: not
             conditions:
             - condition: state
@@ -6348,14 +6370,14 @@
       seconds: 2
   - action: climate.set_swing_mode
     data:
-      swing_mode: Up/Down Auto
+      swing_mode: Highest
     target:
       entity_id: climate.airco_zolder
   - delay:
       seconds: 2
   - action: select.select_option
     data:
-      option: Left/Right Auto
+      option: Center-Center
     target:
       entity_id: select.airco_zolder_horizontal_swing_direction
   - action: notify.mobile_app_iphone_van_bram
