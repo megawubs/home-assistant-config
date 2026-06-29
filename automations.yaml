@@ -2670,7 +2670,7 @@
           temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
-          entity_id: climate.airco_woonkamer
+          label_id: airco_beneden
     - alias: Afkoelen
       conditions:
       - condition: state
@@ -2698,10 +2698,6 @@
           state: 'off'
         enabled: true
       sequence:
-      - action: climate.turn_off
-        data: {}
-        target:
-          entity_id: climate.airco_keuken
       - action: input_datetime.set_datetime
         data:
           timestamp: '{{ now().timestamp() }}'
@@ -2716,7 +2712,7 @@
         data:
           hvac_mode: cool
         target:
-          entity_id: climate.airco_woonkamer
+          label_id: airco_beneden
       - delay:
           seconds: 2
       - action: climate.set_temperature
@@ -2724,14 +2720,14 @@
           temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
         target:
-          entity_id: climate.airco_woonkamer
+          label_id: airco_beneden
       - delay:
           seconds: 2
       - action: climate.set_swing_mode
         data:
           swing_mode: Up/Down Auto
         target:
-          entity_id: climate.airco_woonkamer
+          label_id: airco_beneden
       - delay:
           seconds: 2
       - action: select.select_option
@@ -2741,6 +2737,11 @@
           entity_id: select.airco_woonkamer_horizontal_swing_direction
       - delay:
           seconds: 2
+      - action: select.select_option
+        data:
+          option: Left/Right Auto
+        target:
+          entity_id: select.airco_keuken_horizontal_swing_direction
       - action: notify.mobile_app_iphone_van_bram
         data:
           message: 'Airco woonkamer is gaan koelen '
@@ -3004,35 +3005,31 @@
               entity_id: climate.airco_woonkamer
               state: dry
           sequence:
-          - action: climate.turn_off
-            data: {}
-            target:
-              entity_id: climate.airco_keuken
           - action: climate.turn_on
             data: {}
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: climate.set_hvac_mode
             data:
               hvac_mode: dry
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: climate.set_fan_mode
             data:
               fan_mode: 2 Low
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: climate.set_swing_mode
             data:
               swing_mode: Up/Down Auto
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: select.select_option
@@ -3042,6 +3039,11 @@
               entity_id: select.airco_woonkamer_horizontal_swing_direction
           - delay:
               seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_keuken_horizontal_swing_direction
           - action: notify.mobile_app_iphone_van_bram
             data:
               message: 'Airco woonkamer: ontvochtigen (dry) aan'
@@ -3084,35 +3086,31 @@
               entity_id: climate.airco_woonkamer
               state: fan_only
           sequence:
-          - action: climate.turn_off
-            data: {}
-            target:
-              entity_id: climate.airco_keuken
           - action: climate.turn_on
             data: {}
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: climate.set_hvac_mode
             data:
               hvac_mode: fan_only
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: climate.set_fan_mode
             data:
               fan_mode: 2 Low
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: climate.set_swing_mode
             data:
               swing_mode: Up/Down Auto
             target:
-              entity_id: climate.airco_woonkamer
+              label_id: airco_beneden
           - delay:
               seconds: 2
           - action: select.select_option
@@ -3122,6 +3120,11 @@
               entity_id: select.airco_woonkamer_horizontal_swing_direction
           - delay:
               seconds: 2
+          - action: select.select_option
+            data:
+              option: Left/Right Auto
+            target:
+              entity_id: select.airco_keuken_horizontal_swing_direction
     - conditions:
       - condition: trigger
         id:
