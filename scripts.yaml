@@ -157,31 +157,49 @@ woonkamer_aan:
   icon: mdi:sofa
 media_groepeer_woonkamer:
   alias: 'media: Groepeer Woonkamer'
+  icon: mdi:speaker-multiple
+  mode: single
+  description: Groepeert woonkamer (master) + eettafel (+ keuken indien beschikbaar).
+    Joint alleen als de groep nog niet klopt. LinkPlay vult group_members niet; groep-detectie
+    via source=='Follower' op de volgers. Voorkomt onnodig haperen bij een dubbele
+    join.
   sequence:
+  - variables:
+      desired: '{{ [''media_player.eettafel''] if is_state(''media_player.keuken'',
+        ''unavailable'') else [''media_player.eettafel'', ''media_player.keuken'']
+        }}'
   - if:
-    - condition: and
+    - condition: or
       conditions:
       - condition: state
-        entity_id: media_player.keuken
-        state: unavailable
+        entity_id: media_player.woonkamer
+        attribute: source
+        state: Follower
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: media_player.eettafel
+          attribute: source
+          state: Follower
+      - condition: and
+        conditions:
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: media_player.keuken
+            state: unavailable
+        - condition: not
+          conditions:
+          - condition: state
+            entity_id: media_player.keuken
+            attribute: source
+            state: Follower
     then:
-    - data:
-        group_members:
-        - media_player.eettafel
-      action: media_player.join
+    - action: media_player.join
       target:
         entity_id: media_player.woonkamer
-    else:
-    - data:
-        group_members:
-        - media_player.eettafel
-        - media_player.keuken
-      action: media_player.join
-      target:
-        entity_id: media_player.woonkamer
-  mode: single
-  icon: mdi:speaker-multiple
-  description: ''
+      data:
+        group_members: '{{ desired }}'
 woonkamer_uit:
   alias: woonkamer uit
   sequence:
@@ -256,19 +274,6 @@ apple_tv_aan:
       entity_id: media_player.woonkamer_tv
     data: {}
   description: ''
-welterusten:
-  alias: Welterusten
-  description: Zet alles uit voor de nacht
-  icon: mdi:weather-night
-  sequence:
-    - action: light.turn_off
-      target:
-        floor_id: beneden
-    - action: media_player.media_pause
-      target:
-        entity_id: media_player.benedenverdieping
-  mode: single
-
 airco_moet_omschakelen:
   sequence:
   - if:
