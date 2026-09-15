@@ -97,31 +97,34 @@ wakker_worden:
   sequence:
   - data: {}
     action: script.media_groepeer_woonkamer
-  - metadata: {}
-    data:
-      value: 0.01
+    enabled: false
+  - action: media_player.volume_set
+    metadata: {}
     target:
-      entity_id: input_number.volume_benedenverdieping
-    action: input_number.set_value
-  - target:
-      entity_id: media_player.woonkamer
+      entity_id: media_player.benedenverdieping_2
     data:
-      media_content_id: media-source://radio_browser/ead62101-c57c-4841-9677-8500f9097091
-      media_content_type: audio/mpeg
-    metadata:
-      title: Groot Nieuws Radio
-      thumbnail: https://www.grootnieuwsradio.nl/favicons/favicon-1-180x180.png
-      media_class: music
-      children_media_class:
-      navigateIds:
-      - {}
-      - media_content_type: app
-        media_content_id: media-source://radio_browser
-      - media_content_type: music
-        media_content_id: media-source://radio_browser/language
-      - media_content_type: music
-        media_content_id: media-source://radio_browser/language/nl
+      volume_level: 0.02
+  - data:
+      media:
+        media_content_id: media-source://radio_browser/ead62101-c57c-4841-9677-8500f9097091
+        media_content_type: audio/mpeg
+        metadata:
+          title: Groot Nieuws Radio
+          thumbnail: https://www.grootnieuwsradio.nl/favicons/favicon-1-180x180.png
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://radio_browser
+          - media_content_type: music
+            media_content_id: media-source://radio_browser/language
+          - media_content_type: music
+            media_content_id: media-source://radio_browser/language/nl
+      enqueue: play
     action: media_player.play_media
+    target:
+      entity_id: media_player.benedenverdieping_2
   mode: single
 speel_geselecteerde_playlist_af:
   alias: Speel geselecteerde playlist af

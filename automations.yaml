@@ -739,23 +739,23 @@
 - id: '1609198996224'
   alias: 'Schakelaar: modus weg'
   description: ''
-  trigger:
-  - platform: state
-    entity_id: group.bewoners
+  triggers:
+  - entity_id: group.bewoners
     from: home
-    to: away
+    to: not_home
     for: 04:00:00
-  condition:
+    trigger: state
+  conditions:
   - condition: state
     entity_id: input_boolean.modus_gast
     state: 'off'
-  action:
-  - service: input_boolean.turn_on
-    data: {}
-    entity_id: input_boolean.modus_gast
-  - service: notify.bram
-    data:
+  actions:
+  - data: {}
+    entity_id: input_boolean.modus_weg
+    action: input_boolean.turn_on
+  - data:
       message: Modus weg ingeschakeld
+    action: notify.bram
   - wait_for_trigger:
     - platform: zone
       entity_id: person.maninne_wubs
@@ -766,12 +766,12 @@
       zone: zone.home
       event: enter
     continue_on_timeout: false
-  - service: input_boolean.turn_off
-    data: {}
+  - data: {}
     entity_id: input_boolean.modus_weg
-  - service: notify.bram
-    data:
+    action: input_boolean.turn_off
+  - data:
       message: Modus weg uitgeschakeld
+    action: notify.bram
   mode: single
 - id: '1609372546866'
   alias: 'Schakelaar: Slaap Modus'
@@ -1667,6 +1667,7 @@
             or []) or is_state(''media_player.keuken'',''unavailable''))) }}'
           enabled: false
       enabled: false
+    enabled: false
   - if:
     - condition: trigger
       id: ma-stops
@@ -1694,6 +1695,7 @@
           value_template: '{{ repeat.index >= 5 or ((state_attr(''media_player.keuken'',''group_members'')
             or [])|length == 0 and (state_attr(''media_player.eettafel'',''group_members'')
             or [])|length == 0) }}'
+      enabled: false
   mode: queued
   max: 5
 - id: '1672482812086'
@@ -4134,8 +4136,10 @@
         ''message'') }}'
 - id: '1735398400000'
   alias: 'Vakantie: Automatisch uit voor thuiskomst'
-  description: Schakelt vakantie modus uit 4 uur voor einde van vakantie event zodat
-    huis kan opwarmen
+  description: 'Schakelt vakantie modus uit 3 uur voor einde van vakantie event zodat
+    de aircos het huis op tijd kunnen verwarmen of koelen. De boiler heeft een langere
+    aanlooptijd en wordt apart geregeld door "Vakantie: Boiler voorverwarmen voor
+    thuiskomst".'
   triggers:
   - trigger: time_pattern
     hours: '*'
@@ -4152,7 +4156,7 @@
       | lower }}'
   - condition: template
     value_template: "{% set end_time = state_attr('calendar.gezin', 'end_time') %}
-      {% if end_time %}\n  {{ now() >= (end_time | as_datetime | as_local) - timedelta(hours=4)
+      {% if end_time %}\n  {{ now() >= (end_time | as_datetime | as_local) - timedelta(hours=3)
       }}\n{% else %}\n  false\n{% endif %}\n"
   actions:
   - action: input_boolean.turn_off
@@ -4162,7 +4166,8 @@
   - action: notify.mobile_app_iphone_van_bram
     data:
       title: Vakantie modus uitgeschakeld
-      message: Het huis wordt voorverwarmd voor jullie thuiskomst over ~4 uur!
+      message: Het huis wordt op temperatuur gebracht voor jullie thuiskomst over
+        ~3 uur!
 - id: '1735398500000'
   alias: 'Vakantie: Backup detectie lange afwezigheid'
   description: Vraagt of vakantie modus aan moet als jullie lang weg zijn zonder agenda
@@ -5562,7 +5567,8 @@
   description: Als de boiler is uitgezet (GREEN) en het Zonneplan-tariefuur is niet
     'high', zet de boiler weer op BOOST en stuur een melding. Respecteert handmatige
     override input_boolean.ariston_moet_uit (dan niet aanzetten). Force-on (ariston_moet_aan)
-    wordt door de aparte override-automatisering afgehandeld.
+    wordt door de aparte override-automatisering afgehandeld. Doet niets tijdens vakantie
+    modus (input_boolean.vakantie_modus aan).
   triggers:
   - id: periodieke_check
     minutes: /15
@@ -5574,6 +5580,9 @@
   - condition: state
     entity_id: water_heater.boiler
     state: GREEN
+  - condition: state
+    entity_id: input_boolean.vakantie_modus
+    state: 'off'
   - condition: state
     entity_id: input_boolean.ariston_moet_uit
     state: 'off'
@@ -6478,6 +6487,9 @@
     - condition: state
       entity_id: input_boolean.modus_gast
       state: 'on'
+  - condition: state
+    entity_id: input_boolean.vakantie_modus
+    state: 'off'
   actions:
   - action: climate.set_hvac_mode
     data:
@@ -6718,3 +6730,145 @@
         lege batterij of van het Zigbee-netwerk gevallen.'
   mode: parallel
   max: 5
+- id: '1785051041677'
+  alias: 'Vakantie: Boiler voorverwarmen voor thuiskomst'
+  description: Zet om 06:00 op de dag van thuiskomst (de laatste dag van het vakantie-event
+    in calendar.gezin) de override input_boolean.ariston_moet_aan aan. Die override
+    laat de bestaande override-automatisering de boiler op BOOST + 75 zetten en zorgt
+    dat 'Boiler - uit bij dure stroom' hem met rust laat, zodat er warm water is ongeacht
+    het tarief en ongeacht hoe laat op de dag jullie thuiskomen. De override wordt
+    weer opgeheven bij thuiskomst (group.bewoners naar home) of zodra de boiler 70
+    graden haalt.
+  triggers:
+  - trigger: time
+    at: 06:00:00
+  conditions:
+  - condition: state
+    entity_id: input_boolean.vakantie_modus
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.ariston_moet_aan
+    state: 'off'
+  - condition: state
+    entity_id: calendar.gezin
+    state: 'on'
+  - condition: template
+    value_template: '{{ ''vakantie'' in state_attr(''calendar.gezin'', ''message'')
+      | lower }}'
+  - condition: template
+    value_template: "{% set end_time = state_attr('calendar.gezin', 'end_time') %}\n{%
+      if end_time %}\n  {{ now() >= (end_time | as_datetime | as_local) - timedelta(hours=24)
+      }}\n{% else %}\n  false\n{% endif %}\n"
+  actions:
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.ariston_moet_aan
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: Jullie komen vandaag thuis - de boiler gaat op BOOST 75 graden. Nu
+        {{ state_attr('water_heater.boiler', 'current_temperature') }} graden.
+      title: Boiler warmt op voor thuiskomst
+  mode: single
+- id: '1785051055790'
+  alias: 'Vakantie: Boiler override opheffen'
+  description: Zet input_boolean.ariston_moet_aan weer uit zodra de boiler op temperatuur
+    is (70 graden) of zodra de bewoners thuis zijn. Zonder dit blijft de vakantie-voorverwarming
+    de prijslogica permanent overrulen en blijft de boiler op BOOST 75 hangen.
+  triggers:
+  - above: 70
+    attribute: current_temperature
+    entity_id: water_heater.boiler
+    id: op_temperatuur
+    trigger: numeric_state
+  - entity_id: group.bewoners
+    id: thuis
+    to: home
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.ariston_moet_aan
+    state: 'on'
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.ariston_moet_aan
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: De vakantie-override is opgeheven, de boiler volgt weer het Zonneplan-tarief.
+        Watertemperatuur nu {{ state_attr('water_heater.boiler', 'current_temperature')
+        }} graden.
+      title: Boiler weer op prijslogica
+  mode: single
+- id: '1785051485501'
+  alias: 'Vakantie: Klimaat hervatten bij reis naar huis'
+  description: 'Zet de vakantiemodus uit zodra de bewoners op de dag van thuiskomst
+    daadwerkelijk richting huis bewegen (proximity dir_of_travel ''towards'' gedurende
+    10 minuten). De aircos hebben genoeg aan de reistijd om het huis te koelen of
+    te verwarmen, dus dit is nauwkeuriger dan een vaste voorsprong. De conditie op
+    de laatste dag van het vakantie-event voorkomt dat een dagtripje richting huis
+    dit al eerder in de vakantie afvuurt. Fallback: ''Vakantie: Automatisch uit voor
+    thuiskomst'' (T-3u) en ''Vakantie: Modus automatisch uit bij thuiskomst''.'
+  triggers:
+  - entity_id: sensor.merelstraat_14_nearest_direction_of_travel
+    for:
+      minutes: 10
+    to: towards
+    trigger: state
+  conditions:
+  - condition: state
+    entity_id: input_boolean.vakantie_modus
+    state: 'on'
+  - condition: state
+    entity_id: calendar.gezin
+    state: 'on'
+  - condition: template
+    value_template: '{{ ''vakantie'' in state_attr(''calendar.gezin'', ''message'')
+      | lower }}'
+  - condition: template
+    value_template: "{% set end_time = state_attr('calendar.gezin', 'end_time') %}\n{%
+      if end_time %}\n  {{ now() >= (end_time | as_datetime | as_local) - timedelta(hours=24)
+      }}\n{% else %}\n  false\n{% endif %}\n"
+  actions:
+  - action: input_boolean.turn_off
+    target:
+      entity_id: input_boolean.vakantie_modus
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: Jullie zijn onderweg naar huis, dus de vakantiemodus is uitgezet. Woonkamer
+        nu {{ states('sensor.woonkamer_temperatuur') }} graden, nog {{ (states('sensor.merelstraat_14_nearest_distance')
+        | float(0) / 1000) | round(0) }} km te gaan.
+      title: Klimaat hervat - jullie komen eraan
+  mode: single
+- id: '1785052111191'
+  alias: 'Vakantie: Dagelijkse controle boilerstand'
+  description: 'Waakhond op de vakantie-boilerlogica. Controleert elke avond om 20:00
+    of de boiler tijdens vakantie daadwerkelijk op GREEN staat. Als hij dat niet doet
+    zonder dat de voorverwarm-override (input_boolean.ariston_moet_aan) actief is,
+    is er een automatisering die hem terugzet en krijg je een melding. Precies de
+    faalmodus die op 26 juli aan het licht kwam: ''Boiler - automatisch weer aan zodra
+    niet duur'' zette hem elk kwartier terug op BOOST 75 tijdens vakantie.'
+  triggers:
+  - at: '20:00:00'
+    trigger: time
+  conditions:
+  - condition: state
+    entity_id: input_boolean.vakantie_modus
+    state: 'on'
+  - condition: state
+    entity_id: input_boolean.ariston_moet_aan
+    state: 'off'
+  - condition: not
+    conditions:
+    - condition: state
+      entity_id: water_heater.boiler
+      state: GREEN
+  actions:
+  - action: notify.mobile_app_iphone_van_bram
+    data:
+      message: De boiler staat op {{ states('water_heater.boiler') }} met setpoint
+        {{ state_attr('water_heater.boiler','temperature') }} graden terwijl de vakantiemodus
+        aan staat en er geen override actief is. Verwacht was GREEN op 40. Watertemperatuur
+        nu {{ state_attr('water_heater.boiler','current_temperature') }} graden.
+      title: 'Vakantiecheck: boiler staat niet zuinig'
+  mode: single
+>>>>>>> 40f4a71 (AI updates. No more from now on)

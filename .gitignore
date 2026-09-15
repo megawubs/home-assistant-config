@@ -54,3 +54,4 @@ addons_autoscripts
 
 # Context files (local work notes)
 .context
+*.yaml.bak*
