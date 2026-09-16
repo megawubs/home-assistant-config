@@ -6871,4 +6871,3 @@
         nu {{ state_attr('water_heater.boiler','current_temperature') }} graden.
       title: 'Vakantiecheck: boiler staat niet zuinig'
   mode: single
->>>>>>> 40f4a71 (AI updates. No more from now on)
