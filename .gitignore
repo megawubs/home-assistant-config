@@ -55,3 +55,6 @@ addons_autoscripts
 # Context files (local work notes)
 .context
 *.yaml.bak*
+.mcp.json
+.idea/
+.DS_store
