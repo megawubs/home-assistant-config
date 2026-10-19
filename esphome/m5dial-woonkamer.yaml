@@ -1,0 +1,1290 @@
+# =============================================================================
+#  M5 Dial — Woonkamer controller  (ESPHome LVGL)
+#  Implementatie van "M5 Dial Design System" (Claude design handoff).
+#
+#  Hardware-pinout gesalvaged uit de oude roomdial-woonkamer.yaml (identiek HW).
+#  Rond GC9A01 240×240, draaiknop-eerst. Donker thema, vier pagina's:
+#    Hub (carousel) → Airco → Muziek → Licht.
+#
+#  Interactie (eigen state-machine via globals, NIET LVGL encoder-groups):
+#    draaien        = pas hoofd-waarde van de huidige pagina aan
+#    korte druk     = bevestigen / togglen / focus wisselen
+#    lange druk     = terug naar de hub
+#
+#  HA-integratie = COÖPERATIEF (voedt helpers, stuurt niet rauw):
+#    Airco  → moet_*/offset/boost helpers (zie mode-matrix onderaan)
+#    Muziek → input_number.volume_woonkamer (increment) + transport direct
+#    Licht  → light.woonkamer (brightness_step_pct) + scènes (stubs)
+#
+#  ⚠️  Eindvalidatie is on-device: `esphome run m5dial-woonkamer.yaml`.
+#      Compile downloadt fonts (MDI-TTF + Montserrat). Codepoints zijn
+#      designer-gekozen (MDI v7.x); verifieer glyphs visueel na de eerste flash.
+# =============================================================================
+
+substitutions:
+  device_name: m5dial-woonkamer
+  friendly_name: "M5 Dial Woonkamer"
+
+  # --- Design tokens: kleuren (donker thema) ---
+  c_bg:        "0x050607"
+  c_surface:   "0x15181D"
+  c_surface2:  "0x1F242B"   # arc-track
+  c_line:      "0x2A2F38"
+  c_text:      "0xF4F6F8"
+  c_text2:     "0xA4ADB8"
+  c_text3:     "0x646D79"
+  c_cool:      "0x38BDF8"   # koelen
+  c_warm:      "0xFF7A45"   # verwarmen
+  c_auto:      "0x54D6A6"   # auto
+  c_off:       "0x6B7682"   # uit
+  c_music:     "0xA98BFF"   # muziek
+  c_light:     "0xFFB23E"   # licht
+  c_focus:     "0xEAF2FF"   # neutrale focus
+  c_dark:      "0x07090B"   # donkere glyph op gevuld accent
+
+  # --- HA-entiteiten (integratie-contract) ---
+  ent_offset:   input_number.airco_woonkamer_temperatuur_offset
+  ent_target:   sensor.airco_woonkamer_target_temperatuur
+  ent_binnen:   climate.airco_woonkamer            # attribute current_temperature
+  ent_buiten:   sensor.airco_woonkamer_outdoor
+  ent_boost:    input_boolean.airco_woonkamer_boost_modus
+  ent_volume:   input_number.volume_woonkamer
+  ent_media:    media_player.woonkamer
+  ent_light:    light.woonkamer_oud   # Conbee Zigbee-groep (broadcast = snel); NIET light.woonkamer (trage HA-groep)
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  on_boot:
+    priority: -100
+    then:
+      - lvgl.page.show: page_hub
+      - script.execute: render_hub
+      - script.execute: render_pager
+
+esp32:
+  board: esp32-s3-devkitc-1
+  framework:
+    type: esp-idf
+
+logger:
+  level: INFO
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    on_time:
+      - seconds: 0
+        then:
+          - script.execute: refresh_clock
+
+# -----------------------------------------------------------------------------
+#  BUS / DISPLAY / TOUCH  (pinout uit oude config — identieke hardware)
+# -----------------------------------------------------------------------------
+spi:
+  clk_pin: GPIO6
+  mosi_pin: GPIO5
+
+i2c:
+  sda: GPIO11
+  scl: GPIO12
+  scan: false
+
+output:
+  - platform: ledc
+    pin: GPIO9
+    id: backlight_output
+
+light:
+  - platform: monochromatic
+    output: backlight_output
+    id: backlight
+    internal: true          # NIET als HA-entiteit → geen groep/Adaptive-Lighting kan 'm meetrekken
+    restore_mode: ALWAYS_ON
+    default_transition_length: 200ms
+
+display:
+  - platform: ili9xxx
+    model: gc9a01a
+    id: m5_display
+    cs_pin: GPIO7
+    dc_pin: GPIO4
+    reset_pin: GPIO8
+    invert_colors: true
+    auto_clear_enabled: false
+    update_interval: never
+
+touchscreen:
+  - platform: ft5x06
+    id: m5_touch
+    transform:
+      mirror_x: false
+      mirror_y: false
+
+# -----------------------------------------------------------------------------
+#  INPUT — draaiknop + drukknop
+# -----------------------------------------------------------------------------
+sensor:
+  - platform: rotary_encoder
+    id: m5_encoder
+    resolution: 1
+    pin_a:
+      number: GPIO40
+      mode: { input: true, pullup: true }
+    pin_b:
+      number: GPIO41
+      mode: { input: true, pullup: true }
+    on_clockwise:
+      - script.execute:
+          id: on_rotate
+          dir: 1
+    on_anticlockwise:
+      - script.execute:
+          id: on_rotate
+          dir: -1
+
+  # --- HA-waarden (numeriek) ---
+  - platform: homeassistant
+    id: ha_offset
+    entity_id: ${ent_offset}
+    on_value:
+      - lvgl.label.update:
+          id: lbl_ac_offset
+          text: !lambda |-
+            char b[12]; snprintf(b, sizeof(b), "%+.1f°", x); return std::string(b);
+      - lvgl.arc.update:
+          id: arc_ac
+          value: !lambda "return (x + 5.0) * 10.0;"
+      - script.execute: refresh_ac_context
+
+  - platform: homeassistant
+    id: ha_target
+    entity_id: ${ent_target}
+    on_value:
+      - script.execute: refresh_ac_context
+
+  - platform: homeassistant
+    id: ha_binnen
+    entity_id: ${ent_binnen}
+    attribute: current_temperature
+    on_value:
+      - script.execute: refresh_clock
+
+  - platform: homeassistant
+    id: ha_buiten
+    entity_id: ${ent_buiten}
+    on_value:
+      - script.execute: refresh_ac_context
+
+  - platform: homeassistant
+    id: ha_volume
+    entity_id: ${ent_volume}
+    on_value:
+      - lvgl.label.update:
+          id: lbl_music_vol
+          text: !lambda |-
+            char b[8]; snprintf(b, sizeof(b), "%d%%", (int)lround(x * 100.0)); return std::string(b);
+      - lvgl.arc.update:
+          id: arc_music
+          value: !lambda "return x * 100.0;"
+
+  - platform: homeassistant
+    id: ha_brightness
+    entity_id: ${ent_light}
+    attribute: brightness
+    on_value:
+      # reconcile alleen als de gebruiker niet net heeft gedraaid (anders snapt het scherm terug)
+      - lambda: |-
+          // reconcile alleen als niet net gedraaid; nan (lamp uit) NIET overnemen
+          if ((millis() - id(light_adjust_ms) > 1500) && !std::isnan(x))
+            id(light_target) = (int) lround(x / 255.0 * 100.0);
+      - script.execute: refresh_light
+
+binary_sensor:
+  - platform: gpio
+    id: m5_button
+    pin:
+      number: GPIO42
+      inverted: true
+    on_multi_click:
+      - timing:           # korte druk
+          - ON for at most 0.6s
+          - OFF for at least 0.05s
+        then:
+          - script.execute: on_press
+      - timing:           # lange druk
+          - ON for at least 0.7s
+        then:
+          - script.execute: on_long_press
+
+  # --- HA-states (aan/uit) ---
+  - platform: homeassistant
+    id: ha_moet_afkoelen
+    entity_id: input_boolean.airco_woonkamer_moet_afkoelen
+    on_state:
+      - script.execute: refresh_ac_mode
+  - platform: homeassistant
+    id: ha_moet_verwarmen
+    entity_id: input_boolean.airco_woonkamer_moet_verwarmen
+    on_state:
+      - script.execute: refresh_ac_mode
+  - platform: homeassistant
+    id: ha_moet_uit
+    entity_id: input_boolean.airco_woonkamer_moet_uit
+    on_state:
+      - script.execute: refresh_ac_mode
+  - platform: homeassistant
+    id: ha_boost
+    entity_id: ${ent_boost}
+    on_state:
+      - script.execute: refresh_boost
+  - platform: homeassistant
+    id: ha_light_on
+    entity_id: ${ent_light}
+    on_state:
+      - script.execute: refresh_light
+
+text_sensor:
+  - platform: homeassistant
+    id: ha_media_state
+    entity_id: ${ent_media}
+    on_value:
+      - lvgl.label.update:
+          id: lbl_music_play
+          text: !lambda |-
+            return std::string(x == "playing" ? "\U000F03E4" : "\U000F040A");
+  - platform: homeassistant
+    id: ha_media_title
+    entity_id: ${ent_media}
+    attribute: media_title
+    on_value:
+      - lvgl.label.update:
+          id: lbl_music_title
+          text: !lambda "return x.empty() ? std::string(\"—\") : x;"
+
+# -----------------------------------------------------------------------------
+#  STATE  (mirror van de prototype-state-machine)
+# -----------------------------------------------------------------------------
+globals:
+  - id: current_page          # 0 hub · 1 airco · 2 music · 3 light
+    type: int
+    initial_value: "0"
+  - id: hub_index             # 0 airco · 1 music · 2 light
+    type: int
+    initial_value: "0"
+  - id: ac_focus              # 0 value (offset) · 1 mode
+    type: int
+    initial_value: "0"
+  - id: ac_mode_hl            # highlight bij mode-focus: 0 auto 1 cool 2 heat 3 off
+    type: int
+    initial_value: "1"
+  - id: light_tab             # 0 dim · 1 scenes
+    type: int
+    initial_value: "0"
+  - id: scene_index
+    type: int
+    initial_value: "0"
+  - id: light_target          # lokale helderheids-teller (0-100), race-vrij
+    type: int
+    initial_value: "64"
+  - id: light_adjust_ms       # millis() van laatste draai (voor reconcile-window)
+    type: uint32_t
+    initial_value: "0"
+  - id: source_index          # gefocuste bron in de carousel (genormaliseerd door render_sources)
+    type: int
+    initial_value: "0"
+  - id: current_src_opt        # input_select-optie van de gefocuste bron (render_sources zet 'm)
+    type: std::string
+
+# -----------------------------------------------------------------------------
+#  FONTS  (Montserrat-tekst + MDI-iconen; codepoints uit het design)
+# -----------------------------------------------------------------------------
+font:
+  - file: { type: gfonts, family: Montserrat, weight: 600 }
+    id: f_label
+    size: 14
+    glyphs: ' !%''()+,-./0123456789:°·—ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzèé'
+  - file: { type: gfonts, family: Montserrat, weight: 600 }
+    id: f_sec
+    # ruimere set: media_title komt uit HA en kan & ? ! " accenten bevatten
+    size: 20
+    glyphs: ' !"#&''()*+,-./0123456789:;?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]abcdefghijklmnopqrstuvwxyz°·—àáâäçèéêëíîïñóôöùúûü'
+  - file: { type: gfonts, family: Montserrat, weight: 600 }
+    id: f_title
+    size: 28
+    glyphs: ' !%''()+,-./0123456789:°·—ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyzèé'
+  - file: { type: gfonts, family: Montserrat, weight: 700 }
+    id: f_hero
+    size: 50
+    glyphs: ' +-.0123456789°%Uit'
+
+  # MDI-icoonfonts (alle gebruikte glyphs in elke maat)
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: f_icon20
+    size: 20
+    bpp: 4
+    glyphs: &mdi_glyphs
+      - "\U000F0717"   # snowflake
+      - "\U000F0238"   # fire
+      - "\U000F006A"   # autorenew
+      - "\U000F0425"   # power
+      - "\U000F050F"   # thermometer
+      - "\U000F14DE"   # rocket-launch
+      - "\U000F040A"   # play
+      - "\U000F03E4"   # pause
+      - "\U000F04AD"   # skip-next
+      - "\U000F04AE"   # skip-previous
+      - "\U000F057E"   # volume-high
+      - "\U000F0D38"   # speaker-multiple
+      - "\U000F075A"   # music
+      - "\U000F0335"   # lightbulb
+      - "\U000F0336"   # lightbulb-outline
+      - "\U000F00DF"   # brightness-6
+      - "\U000F03D8"   # palette
+      - "\U000F001B"   # air-conditioner
+      - "\U000F05A9"   # wifi
+      - "\U000F0415"   # plus
+      - "\U000F0374"   # minus
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: f_icon28
+    size: 28
+    bpp: 4
+    glyphs: *mdi_glyphs
+  - file: "https://github.com/Templarian/MaterialDesign-Webfont/raw/master/fonts/materialdesignicons-webfont.ttf"
+    id: f_icon52
+    size: 52
+    bpp: 4
+    glyphs: *mdi_glyphs
+
+# -----------------------------------------------------------------------------
+#  AFBEELDINGEN  — bron-covers (meegebakken in flash; M5Dial heeft GEEN PSRAM,
+#  dus geen online_image. TODO vanavond: echte zender-/playlist-logo's bijzetten.)
+# -----------------------------------------------------------------------------
+image:
+  - file: images/src_placeholder.png
+    id: img_src_placeholder
+    type: RGB565
+    resize: 96x96
+
+# -----------------------------------------------------------------------------
+#  LVGL  — tokens als styles + de vier pagina's
+# -----------------------------------------------------------------------------
+lvgl:
+  displays:
+    - m5_display
+  touchscreens:
+    - m5_touch
+  default_font: f_label
+  disp_bg_color: ${c_bg}
+  buffer_size: 25%
+
+  # gedeeld over alle pagina's: statuskop (tijd+temp) boven, pager onder
+  top_layer:
+    widgets:
+      - label:
+          id: lbl_clock
+          text: "--:--"
+          align: TOP_MID
+          y: 16
+          text_color: ${c_text2}
+          text_font: f_label
+      - label:
+          id: lbl_indoor
+          text: ""
+          align: TOP_MID
+          y: 16
+          x: 44
+          text_color: ${c_text2}
+          text_font: f_label
+      # pager: 3 dots onderaan
+      - obj:
+          id: dot0
+          align: BOTTOM_MID
+          x: -16
+          y: -16
+          width: 6
+          height: 6
+          radius: 3
+          bg_color: ${c_line}
+          border_width: 0
+      - obj:
+          id: dot1
+          align: BOTTOM_MID
+          x: 0
+          y: -16
+          width: 6
+          height: 6
+          radius: 3
+          bg_color: ${c_line}
+          border_width: 0
+      - obj:
+          id: dot2
+          align: BOTTOM_MID
+          x: 16
+          y: -16
+          width: 6
+          height: 6
+          radius: 3
+          bg_color: ${c_line}
+          border_width: 0
+
+  pages:
+    # ===================== HUB (carousel) =====================
+    - id: page_hub
+      bg_color: ${c_bg}
+      widgets:
+        # peek vorige functie (links) — draaien/tikken cyclet
+        - button:
+            id: hub_peek_left
+            align: LEFT_MID
+            x: 4
+            y: -6
+            width: 48
+            height: 48
+            radius: 24
+            bg_color: ${c_surface}
+            border_width: 1
+            border_color: ${c_line}
+            opa: 65%
+            on_click:
+              - lambda: "id(hub_index) = (id(hub_index) + 2) % 3;"
+              - script.execute: render_hub
+            widgets:
+              - label:
+                  id: lbl_peek_left
+                  align: CENTER
+                  text: "\U000F075A"
+                  text_font: f_icon20
+                  text_color: ${c_music}
+        # peek volgende functie (rechts)
+        - button:
+            id: hub_peek_right
+            align: RIGHT_MID
+            x: -4
+            y: -6
+            width: 48
+            height: 48
+            radius: 24
+            bg_color: ${c_surface}
+            border_width: 1
+            border_color: ${c_line}
+            opa: 65%
+            on_click:
+              - lambda: "id(hub_index) = (id(hub_index) + 1) % 3;"
+              - script.execute: render_hub
+            widgets:
+              - label:
+                  id: lbl_peek_right
+                  align: CENTER
+                  text: "\U000F0335"
+                  text_font: f_icon20
+                  text_color: ${c_light}
+        # gefocuste functie-ring (midden) — tikken opent
+        - button:
+            id: hub_ring
+            align: CENTER
+            y: -12
+            width: 112
+            height: 112
+            radius: 56
+            bg_color: ${c_surface}
+            border_width: 2
+            border_color: ${c_cool}
+            on_click:
+              - lambda: "id(open_function)->execute(id(hub_index));"
+            widgets:
+              - label:
+                  id: lbl_hub_icon
+                  align: CENTER
+                  text: "\U000F001B"
+                  text_font: f_icon52
+                  text_color: ${c_cool}
+        - label:
+            id: lbl_hub_name
+            align: CENTER
+            y: 66
+            text: "Airco"
+            text_font: f_title
+            text_color: ${c_text}
+
+    # ===================== AIRCO =====================
+    - id: page_airco
+      bg_color: ${c_bg}
+      widgets:
+        - arc:
+            id: arc_ac
+            align: CENTER
+            width: 224
+            height: 224
+            arc_width: 14
+            start_angle: 135
+            end_angle: 45
+            min_value: 0
+            max_value: 100
+            value: 60
+            adjustable: false
+            arc_color: ${c_surface2}
+            indicator:
+              arc_color: ${c_cool}
+              arc_width: 14
+            knob:
+              bg_opa: TRANSP
+        - button:
+            id: pill_boost
+            align: TOP_MID
+            y: 42
+            width: 92
+            height: 24
+            radius: 12
+            bg_color: ${c_surface}
+            border_width: 1
+            border_color: ${c_line}
+            on_click:
+              - homeassistant.action:
+                  action: input_boolean.toggle
+                  data:
+                    entity_id: ${ent_boost}
+            widgets:
+              - label:
+                  id: lbl_boost
+                  align: CENTER
+                  text: "Boost"
+                  text_font: f_label
+                  text_color: ${c_text3}
+        - label:
+            id: lbl_ac_offset
+            align: CENTER
+            y: -16
+            text: "+1.0°"
+            text_font: f_hero
+            text_color: ${c_cool}
+        - label:
+            id: lbl_ac_ctx
+            align: CENTER
+            y: 26
+            text: "Beneden"
+            text_font: f_label
+            text_color: ${c_text3}
+        # mode-chips (4) — bottom row
+        - button:
+            id: chip_auto
+            align: BOTTOM_MID
+            x: -69
+            y: -34
+            width: 40
+            height: 40
+            radius: 12
+            bg_color: ${c_surface}
+            on_click:
+              - lambda: "id(apply_ac_mode)->execute(0);"
+            widgets:
+              - label: { id: g_auto, align: CENTER, text: "\U000F006A", text_font: f_icon28, text_color: "${c_text3}" }
+        - button:
+            id: chip_cool
+            align: BOTTOM_MID
+            x: -23
+            y: -34
+            width: 40
+            height: 40
+            radius: 12
+            bg_color: ${c_surface}
+            on_click:
+              - lambda: "id(apply_ac_mode)->execute(1);"
+            widgets:
+              - label: { id: g_cool, align: CENTER, text: "\U000F0717", text_font: f_icon28, text_color: "${c_text3}" }
+        - button:
+            id: chip_heat
+            align: BOTTOM_MID
+            x: 23
+            y: -34
+            width: 40
+            height: 40
+            radius: 12
+            bg_color: ${c_surface}
+            on_click:
+              - lambda: "id(apply_ac_mode)->execute(2);"
+            widgets:
+              - label: { id: g_heat, align: CENTER, text: "\U000F0238", text_font: f_icon28, text_color: "${c_text3}" }
+        - button:
+            id: chip_off
+            align: BOTTOM_MID
+            x: 69
+            y: -34
+            width: 40
+            height: 40
+            radius: 12
+            bg_color: ${c_surface}
+            on_click:
+              - lambda: "id(apply_ac_mode)->execute(3);"
+            widgets:
+              - label: { id: g_off, align: CENTER, text: "\U000F0425", text_font: f_icon28, text_color: "${c_text3}" }
+
+    # ===================== MUZIEK =====================
+    - id: page_music
+      bg_color: ${c_bg}
+      widgets:
+        - arc:
+            id: arc_music
+            align: CENTER
+            width: 224
+            height: 224
+            arc_width: 14
+            start_angle: 135
+            end_angle: 45
+            min_value: 0
+            max_value: 100
+            value: 42
+            adjustable: false
+            arc_color: ${c_surface2}
+            indicator:
+              arc_color: ${c_music}
+              arc_width: 14
+            knob:
+              bg_opa: TRANSP
+        - button:
+            id: pill_group
+            align: TOP_MID
+            x: -42
+            y: 40
+            width: 74
+            height: 24
+            radius: 12
+            bg_color: ${c_surface}
+            border_width: 1
+            border_color: ${c_line}
+            on_click:
+              - homeassistant.action:
+                  action: script.media_groepeer_woonkamer
+            widgets:
+              - label: { align: CENTER, text: "Groep", text_font: f_label, text_color: "${c_text3}" }
+        - button:
+            id: pill_sources
+            align: TOP_MID
+            x: 42
+            y: 40
+            width: 74
+            height: 24
+            radius: 12
+            bg_color: ${c_surface}
+            border_width: 1
+            border_color: ${c_music}
+            on_click:
+              - script.execute: show_sources
+            widgets:
+              - label: { align: CENTER, text: "Bronnen", text_font: f_label, text_color: "${c_music}" }
+        - label:
+            id: lbl_music_vol
+            align: CENTER
+            y: -28
+            text: "42%"
+            text_font: f_sec
+            text_color: ${c_music}
+        - label:
+            id: lbl_music_title
+            align: CENTER
+            y: 4
+            text: "—"
+            text_font: f_sec
+            text_color: ${c_text}
+        # transport
+        - button:
+            id: btn_prev
+            align: CENTER
+            x: -56
+            y: 44
+            width: 40
+            height: 40
+            radius: 20
+            bg_color: ${c_surface}
+            on_click:
+              - homeassistant.action:
+                  action: media_player.media_previous_track
+                  data: { entity_id: "${ent_media}" }
+            widgets:
+              - label: { align: CENTER, text: "\U000F04AE", text_font: f_icon28, text_color: "${c_text}" }
+        - button:
+            id: btn_play
+            align: CENTER
+            x: 0
+            y: 44
+            width: 52
+            height: 52
+            radius: 26
+            bg_color: ${c_text}
+            on_click:
+              - homeassistant.action:
+                  action: media_player.media_play_pause
+                  data: { entity_id: "${ent_media}" }
+            widgets:
+              - label: { id: lbl_music_play, align: CENTER, text: "\U000F03E4", text_font: f_icon28, text_color: "${c_bg}" }
+        - button:
+            id: btn_next
+            align: CENTER
+            x: 56
+            y: 44
+            width: 40
+            height: 40
+            radius: 20
+            bg_color: ${c_surface}
+            on_click:
+              - homeassistant.action:
+                  action: media_player.media_next_track
+                  data: { entity_id: "${ent_media}" }
+            widgets:
+              - label: { align: CENTER, text: "\U000F04AD", text_font: f_icon28, text_color: "${c_text}" }
+
+    # ===================== LICHT =====================
+    - id: page_light
+      bg_color: ${c_bg}
+      widgets:
+        - arc:
+            id: arc_light
+            align: CENTER
+            width: 224
+            height: 224
+            arc_width: 14
+            start_angle: 135
+            end_angle: 45
+            min_value: 0
+            max_value: 100
+            value: 64
+            adjustable: false
+            arc_color: ${c_surface2}
+            indicator:
+              arc_color: ${c_light}
+              arc_width: 14
+            knob:
+              bg_opa: TRANSP
+        - label:
+            id: lbl_light_head
+            align: CENTER
+            y: -34
+            text: "Woonkamer"
+            text_font: f_label
+            text_color: ${c_text2}
+        - label:
+            id: lbl_light_val
+            align: CENTER
+            y: -2
+            text: "64%"
+            text_font: f_hero
+            text_color: ${c_light}
+        # scène-roller (verborgen tenzij tab=scènes)
+        - roller:
+            id: roller_scenes
+            align: CENTER
+            y: -10
+            width: 160
+            visible_row_count: 3
+            text_font: f_sec
+            hidden: true
+            options:
+              - "Avond"
+              - "Fel"
+              - "Film"
+              - "Ontspannen"
+              - "Uit"
+            on_value:
+              - globals.set:
+                  id: scene_index
+                  value: !lambda "return (int) x;"
+        # tabs Dimmen / Scènes
+        - button:
+            id: tab_dim
+            align: BOTTOM_MID
+            x: -28
+            y: -32
+            width: 52
+            height: 28
+            radius: 14
+            bg_color: ${c_surface2}
+            on_click:
+              - lambda: "id(set_light_tab)->execute(0);"
+            widgets:
+              - label: { align: CENTER, text: "Dimmen", text_font: f_label, text_color: "${c_text}" }
+        - button:
+            id: tab_scenes
+            align: BOTTOM_MID
+            x: 28
+            y: -32
+            width: 52
+            height: 28
+            radius: 14
+            bg_color: ${c_surface}
+            on_click:
+              - lambda: "id(set_light_tab)->execute(1);"
+            widgets:
+              - label: { align: CENTER, text: "Scènes", text_font: f_label, text_color: "${c_text3}" }
+
+    # ===================== BRONNEN (carousel) =====================
+    # Scaffold: grote center-cover + naam + hint. Peek-buren, EQ/playing-state en
+    # exacte plaatsing/zoom worden vanavond op het device getuned.
+    - id: page_sources
+      bg_color: ${c_bg}
+      widgets:
+        - image:
+            id: img_src_center
+            src: img_src_placeholder
+            align: CENTER
+            y: -14
+        - label:
+            id: lbl_src_name
+            align: CENTER
+            y: 48
+            text: "—"
+            text_font: f_sec
+            text_color: ${c_text}
+        - label:
+            id: lbl_src_hint
+            align: BOTTOM_MID
+            y: -34
+            text: "Druk = spelen"
+            text_font: f_label
+            text_color: ${c_text3}
+
+# -----------------------------------------------------------------------------
+#  SCRIPTS  — state-machine + render-helpers
+# -----------------------------------------------------------------------------
+script:
+  # ---------- draaiknop ----------
+  - id: on_rotate
+    parameters:
+      dir: int
+    then:
+      - lambda: |-
+          int p = id(current_page);
+          if (p == 0) {                              // HUB: bladeren
+            id(hub_index) = (id(hub_index) + dir + 3) % 3;
+            id(render_hub)->execute();
+            return;
+          }
+          if (p == 1) {                              // AIRCO
+            if (id(ac_focus) == 1) {                 // mode-focus: highlight verplaatsen
+              id(ac_mode_hl) = (id(ac_mode_hl) + dir + 4) % 4;
+              id(render_ac_highlight)->execute();
+            } else {                                 // value-focus: offset ±0.5
+              id(rotate_offset)->execute(dir);
+            }
+            return;
+          }
+          if (p == 2) {                              // MUZIEK: volume
+            id(rotate_volume)->execute(dir);
+            return;
+          }
+          if (p == 3) {                              // LICHT
+            if (id(light_tab) == 1) {                // scènes: roller
+              int n = 5;
+              id(scene_index) = (id(scene_index) + dir + n) % n;
+              id(roll_scene)->execute();
+            } else {                                 // dimmen: helderheid
+              id(rotate_brightness)->execute(dir);
+            }
+            return;
+          }
+          if (p == 4) {                              // BRONNEN: carousel bladeren
+            id(source_index) += dir;                 // render_sources normaliseert + wrapt
+            id(render_sources)->execute();
+          }
+
+  # offset/volume/brightness als losse scripts zodat de HA-actie statisch blijft
+  - id: rotate_offset
+    parameters: { dir: int }
+    then:
+      - if:
+          condition: { lambda: "return dir > 0;" }
+          then:
+            - homeassistant.action: { action: input_number.increment, data: { entity_id: "${ent_offset}" } }
+          else:
+            - homeassistant.action: { action: input_number.decrement, data: { entity_id: "${ent_offset}" } }
+  - id: rotate_volume
+    parameters: { dir: int }
+    then:
+      - if:
+          condition: { lambda: "return dir > 0;" }
+          then:
+            - homeassistant.action: { action: input_number.increment, data: { entity_id: "${ent_volume}" } }
+          else:
+            - homeassistant.action: { action: input_number.decrement, data: { entity_id: "${ent_volume}" } }
+  - id: rotate_brightness
+    parameters: { dir: int }
+    then:
+      # 1) lokale teller bijwerken + scherm METEEN updaten (optimistisch, geen wachten)
+      - lambda: |-
+          int t = id(light_target) + dir * 5;
+          if (t < 0) t = 0;
+          if (t > 100) t = 100;
+          id(light_target) = t;
+          id(light_adjust_ms) = millis();
+          lv_arc_set_value(id(arc_light), t);
+          lv_obj_set_style_arc_color(id(arc_light), lv_color_hex(0xFFB23E), LV_PART_INDICATOR);
+          char b[8]; snprintf(b, sizeof(b), "%d%%", t);
+          lv_label_set_text(id(lbl_light_val), b);
+          lv_obj_set_style_text_color(id(lbl_light_val), lv_color_hex(0xFFB23E), 0);
+      # 2) debounce: pas na ~150ms stilstand één absoluut commando met de eindwaarde
+      - script.execute: light_commit
+
+  # debounce-script: mode restart cancelt de lopende delay bij elke nieuwe tik,
+  # dus snel draaien stuurt NIET 10 commando's maar 1× de eindstand (race-vrij).
+  - id: light_commit
+    mode: restart
+    then:
+      # 400ms zodat een hele draai-burst tot één commando coalesceert
+      - delay: 400ms
+      - homeassistant.action:
+          action: light.turn_on
+          data_template:
+            entity_id: ${ent_light}
+            brightness_pct: "{{ pct }}"
+            transition: "0"
+          variables:
+            pct: !lambda "return id(light_target);"
+      # vangnet: zou de doelwaarde na 1,5s niet bereikt zijn (gedropt commando) -> hersturen
+      - delay: 1500ms
+      - if:
+          condition:
+            lambda: |-
+              float b = id(ha_brightness).state;
+              if (std::isnan(b)) return id(light_target) > 0;
+              return abs((int) lround(b / 255.0 * 100.0) - id(light_target)) > 3;
+          then:
+            - homeassistant.action:
+                action: light.turn_on
+                data_template:
+                  entity_id: ${ent_light}
+                  brightness_pct: "{{ pct }}"
+                  transition: "0"
+                variables:
+                  pct: !lambda "return id(light_target);"
+
+  # ---------- korte druk ----------
+  - id: on_press
+    then:
+      - lambda: |-
+          int p = id(current_page);
+          if (p == 0) {                              // hub: open functie
+            id(open_function)->execute(id(hub_index));
+            return;
+          }
+          if (p == 1) {                              // airco: value<->mode
+            if (id(ac_focus) == 1) {                 // bevestig highlight
+              id(apply_ac_mode)->execute(id(ac_mode_hl));
+              id(ac_focus) = 0;
+            } else {
+              id(ac_focus) = 1;
+              id(render_ac_highlight)->execute();
+            }
+            return;
+          }
+          if (p == 2) {                              // muziek: play/pause
+            id(press_media)->execute();
+            return;
+          }
+          if (p == 3) {                              // licht
+            if (id(light_tab) == 1) {                // scène activeren → terug naar dimmen
+              id(activate_scene)->execute();
+              id(set_light_tab)->execute(0);
+            } else {
+              id(press_light)->execute();            // aan/uit
+            }
+            return;
+          }
+          if (p == 4) {                              // bron: spelen + terug naar player
+            id(play_source)->execute();
+          }
+
+  - id: press_media
+    then:
+      - homeassistant.action: { action: media_player.media_play_pause, data: { entity_id: "${ent_media}" } }
+  - id: press_light
+    then:
+      - homeassistant.action: { action: light.toggle, data: { entity_id: "${ent_light}" } }
+
+  # ---------- lange druk = terug naar hub ----------
+  - id: on_long_press
+    then:
+      - globals.set: { id: ac_focus, value: "0" }
+      - globals.set: { id: light_tab, value: "0" }
+      - globals.set: { id: current_page, value: "0" }
+      - lvgl.page.show: page_hub
+      - script.execute: render_hub
+
+  # ---------- hub navigatie ----------
+  - id: open_function
+    parameters: { idx: int }
+    then:
+      - lambda: |-
+          if (idx == 0) { id(current_page) = 1; }
+          else if (idx == 1) { id(current_page) = 2; }
+          else { id(current_page) = 3; }
+      - lambda: |-
+          int hi = id(hub_index);
+          if (hi == 0) { id(show_airco)->execute(); }
+          else if (hi == 1) { id(show_music)->execute(); }
+          else { id(show_light)->execute(); }
+      - script.execute: render_pager
+  - id: show_airco
+    then: [ { lvgl.page.show: page_airco } ]
+  - id: show_music
+    then: [ { lvgl.page.show: page_music } ]
+  - id: show_light
+    then: [ { lvgl.page.show: page_light } ]
+
+  # ---------- bronnen-carousel ----------
+  - id: show_sources
+    then:
+      - globals.set: { id: current_page, value: "4" }
+      - lvgl.page.show: page_sources
+      - script.execute: render_sources
+      - script.execute: render_pager
+
+  - id: render_sources
+    then:
+      - lambda: |-
+          struct Src { esphome::image::Image* art; const char* name; const char* opt; };
+          // TODO vanavond: echte bronnen toevoegen. Volgorde MOET gelijk lopen aan de
+          // opties van input_select.woonkamer_media_bron. opt = exacte optie-tekst.
+          const Src srcs[] = {
+            { id(img_src_placeholder), "Placeholder", "" },
+          };
+          int n = sizeof(srcs) / sizeof(srcs[0]);
+          int i = ((id(source_index) % n) + n) % n;
+          id(source_index) = i;                      // normaliseer (één bron van waarheid: n)
+          lv_img_set_src(id(img_src_center), srcs[i].art);
+          lv_label_set_text(id(lbl_src_name), srcs[i].name);
+          id(current_src_opt) = srcs[i].opt;
+
+  - id: play_source
+    then:
+      # coöperatief: kies de bron via de helper; een HA-script vertaalt 'm naar
+      # de juiste media-actie (stream-URL / Spotify). TODO vanavond: helper + script.
+      - if:
+          condition: { lambda: "return !id(current_src_opt).empty();" }
+          then:
+            - homeassistant.action:
+                action: input_select.select_option
+                data_template:
+                  entity_id: input_select.woonkamer_media_bron
+                  option: "{{ o }}"
+                variables:
+                  o: !lambda "return id(current_src_opt);"
+      - globals.set: { id: current_page, value: "2" }
+      - lvgl.page.show: page_music
+      - script.execute: render_pager
+
+  # ---------- render: hub-carousel ----------
+  - id: render_hub
+    then:
+      - lambda: |-
+          struct F { const char* icon; const char* name; uint32_t accent; };
+          static const F fns[3] = {
+            { "\U000F001B", "Airco",  0x38BDF8 },
+            { "\U000F075A", "Muziek", 0xA98BFF },
+            { "\U000F0335", "Licht",  0xFFB23E },
+          };
+          int hi = id(hub_index);
+          const F& f  = fns[hi];
+          const F& pv = fns[(hi + 2) % 3];   // vorige
+          const F& nx = fns[(hi + 1) % 3];   // volgende
+          // midden (gefocust)
+          lv_label_set_text(id(lbl_hub_icon), f.icon);
+          lv_label_set_text(id(lbl_hub_name), f.name);
+          lv_obj_set_style_text_color(id(lbl_hub_icon), lv_color_hex(f.accent), 0);
+          lv_obj_set_style_border_color(id(hub_ring), lv_color_hex(f.accent), 0);
+          // peeks links/rechts
+          lv_label_set_text(id(lbl_peek_left), pv.icon);
+          lv_obj_set_style_text_color(id(lbl_peek_left), lv_color_hex(pv.accent), 0);
+          lv_label_set_text(id(lbl_peek_right), nx.icon);
+          lv_obj_set_style_text_color(id(lbl_peek_right), lv_color_hex(nx.accent), 0);
+      - script.execute: render_pager
+
+  # ---------- render: pager-dots ----------
+  - id: render_pager
+    then:
+      - lambda: |-
+          // op de hub kleurt de actieve hub_index-dot; op een functiepagina de pagina-dot.
+          // bronnen (pagina 4) is een sub-view van muziek → muziek-dot (1) blijft actief.
+          int pg = id(current_page);
+          int active = (pg == 0) ? id(hub_index) : (pg == 4 ? 1 : (pg - 1));
+          static const uint32_t accents[3] = { 0x38BDF8, 0xA98BFF, 0xFFB23E };
+          lv_obj_t* dots[3] = { id(dot0), id(dot1), id(dot2) };
+          for (int i = 0; i < 3; i++) {
+            bool on = (i == active);
+            lv_obj_set_width(dots[i], on ? 18 : 6);
+            lv_obj_set_style_bg_color(dots[i],
+              lv_color_hex(on ? accents[i] : 0x2A2F38), 0);
+          }
+
+  # ---------- render: airco mode + highlight ----------
+  - id: refresh_ac_mode      # leest moet_* en markeert de actieve chip
+    then:
+      - lambda: |-
+          int m = 0; // auto
+          if (id(ha_moet_uit).state) m = 3;
+          else if (id(ha_moet_afkoelen).state) m = 1;
+          else if (id(ha_moet_verwarmen).state) m = 2;
+          id(ac_mode_hl) = m;
+      - script.execute: render_ac_highlight
+  - id: render_ac_highlight
+    then:
+      - lambda: |-
+          struct M { lv_obj_t* chip; lv_obj_t* glyph; uint32_t accent; };
+          const M ms[4] = {
+            { id(chip_auto), id(g_auto), 0x54D6A6 },
+            { id(chip_cool), id(g_cool), 0x38BDF8 },
+            { id(chip_heat), id(g_heat), 0xFF7A45 },
+            { id(chip_off),  id(g_off),  0x6B7682 },
+          };
+          int active = id(ac_mode_hl);
+          bool focusing = (id(ac_focus) == 1);
+          // arc + hero-offset volgen de actieve mode-kleur
+          uint32_t acc = ms[active].accent;
+          lv_obj_set_style_arc_color(id(arc_ac), lv_color_hex(acc), LV_PART_INDICATOR);
+          lv_obj_set_style_text_color(id(lbl_ac_offset), lv_color_hex(acc), 0);
+          for (int i = 0; i < 4; i++) {
+            bool on = (i == active);
+            lv_obj_set_style_bg_color(ms[i].chip,
+              lv_color_hex(on ? ms[i].accent : 0x15181D), 0);
+            lv_obj_set_style_text_color(ms[i].glyph,
+              lv_color_hex(on ? 0x07090B : 0x646D79), 0);
+            // focus-ring alleen tijdens mode-focus op de actieve chip
+            lv_obj_set_style_border_width(ms[i].chip, (focusing && on) ? 2 : 0, 0);
+            lv_obj_set_style_border_color(ms[i].chip, lv_color_hex(0xEAF2FF), 0);
+          }
+
+  # ---------- airco mode toepassen (de geverifieerde helper-matrix) ----------
+  #   Chip      afkoelen verwarmen uit  aan
+  #   Auto      off      off       off  off   → automatisering beslist alles
+  #   Koelen    ON       off       off  ON
+  #   Verwarmen off      ON        off  ON
+  #   Uit       off      off       ON   off
+  - id: apply_ac_mode
+    parameters: { mode: int }   # 0 auto · 1 cool · 2 heat · 3 off
+    then:
+      - lambda: "id(ac_mode_hl) = mode;"
+      # moet_afkoelen — alleen ON bij Koelen
+      - if:
+          condition: { lambda: "return mode == 1;" }
+          then: [ { homeassistant.action: { action: input_boolean.turn_on,  data: { entity_id: input_boolean.airco_woonkamer_moet_afkoelen } } } ]
+          else: [ { homeassistant.action: { action: input_boolean.turn_off, data: { entity_id: input_boolean.airco_woonkamer_moet_afkoelen } } } ]
+      # moet_verwarmen — alleen ON bij Verwarmen
+      - if:
+          condition: { lambda: "return mode == 2;" }
+          then: [ { homeassistant.action: { action: input_boolean.turn_on,  data: { entity_id: input_boolean.airco_woonkamer_moet_verwarmen } } } ]
+          else: [ { homeassistant.action: { action: input_boolean.turn_off, data: { entity_id: input_boolean.airco_woonkamer_moet_verwarmen } } } ]
+      # moet_uit — alleen ON bij Uit
+      - if:
+          condition: { lambda: "return mode == 3;" }
+          then: [ { homeassistant.action: { action: input_boolean.turn_on,  data: { entity_id: input_boolean.airco_woonkamer_moet_uit } } } ]
+          else: [ { homeassistant.action: { action: input_boolean.turn_off, data: { entity_id: input_boolean.airco_woonkamer_moet_uit } } } ]
+      # moet_aan — ON bij Koelen of Verwarmen (forceer dat mag_aan waar wordt)
+      - if:
+          condition: { lambda: "return mode == 1 || mode == 2;" }
+          then: [ { homeassistant.action: { action: input_boolean.turn_on,  data: { entity_id: input_boolean.airco_woonkamer_moet_aan } } } ]
+          else: [ { homeassistant.action: { action: input_boolean.turn_off, data: { entity_id: input_boolean.airco_woonkamer_moet_aan } } } ]
+      - script.execute: render_ac_highlight
+
+  # ---------- render: boost-pill ----------
+  - id: refresh_boost
+    then:
+      - lambda: |-
+          bool on = id(ha_boost).state;
+          lv_obj_set_style_bg_color(id(pill_boost), lv_color_hex(on ? 0x38BDF8 : 0x15181D), 0);
+          lv_label_set_text(id(lbl_boost), on ? "Boost aan" : "Boost");
+          lv_obj_set_style_text_color(id(lbl_boost), lv_color_hex(on ? 0x07090B : 0x646D79), 0);
+
+  # ---------- render: airco contextregel ----------
+  - id: refresh_ac_context
+    then:
+      - lambda: |-
+          char b[48];
+          snprintf(b, sizeof(b), "Beneden · doel %.1f° · buiten %.0f°",
+                   id(ha_target).state, id(ha_buiten).state);
+          lv_label_set_text(id(lbl_ac_ctx), b);
+
+  # ---------- render: licht ----------
+  - id: refresh_light
+    then:
+      - lambda: |-
+          bool on = id(ha_light_on).state;
+          int pct = on ? id(light_target) : 0;   // render vanuit de lokale teller
+          lv_arc_set_value(id(arc_light), pct);
+          lv_obj_set_style_arc_color(id(arc_light),
+            lv_color_hex(on ? 0xFFB23E : 0x6B7682), LV_PART_INDICATOR);
+          if (on) {
+            char b[8]; snprintf(b, sizeof(b), "%d%%", pct);
+            lv_label_set_text(id(lbl_light_val), b);
+            lv_obj_set_style_text_color(id(lbl_light_val), lv_color_hex(0xFFB23E), 0);
+          } else {
+            lv_label_set_text(id(lbl_light_val), "Uit");
+            lv_obj_set_style_text_color(id(lbl_light_val), lv_color_hex(0x6B7682), 0);
+          }
+
+  # ---------- licht: tab + scènes ----------
+  - id: set_light_tab
+    parameters: { tab: int }
+    then:
+      - globals.set: { id: light_tab, value: !lambda "return tab;" }
+      - lambda: |-
+          bool scenes = (tab == 1);
+          lv_obj_set_style_bg_color(id(tab_dim),    lv_color_hex(scenes ? 0x15181D : 0x1F242B), 0);
+          lv_obj_set_style_bg_color(id(tab_scenes), lv_color_hex(scenes ? 0x1F242B : 0x15181D), 0);
+          // dim-elementen vs roller wisselen
+          if (scenes) {
+            lv_obj_add_flag(id(arc_light), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(lbl_light_head), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(lbl_light_val), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(roller_scenes)->obj, LV_OBJ_FLAG_HIDDEN);
+          } else {
+            lv_obj_clear_flag(id(arc_light), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(lbl_light_head), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_clear_flag(id(lbl_light_val), LV_OBJ_FLAG_HIDDEN);
+            lv_obj_add_flag(id(roller_scenes)->obj, LV_OBJ_FLAG_HIDDEN);
+          }
+  - id: roll_scene
+    then:
+      - lvgl.roller.update:
+          id: roller_scenes
+          selected_index: !lambda "return id(scene_index);"
+  - id: activate_scene
+    # ⚠️ Er bestaan nog GEEN scene.woonkamer_* entiteiten — deze namen zijn stubs.
+    #    Maak de scènes aan in HA (of pas de mapping aan) voordat dit werkt.
+    then:
+      - if:
+          condition: { lambda: "return id(scene_index) == 0;" }
+          then: [ { homeassistant.action: { action: scene.turn_on, data: { entity_id: scene.woonkamer_avond } } } ]
+      - if:
+          condition: { lambda: "return id(scene_index) == 1;" }
+          then: [ { homeassistant.action: { action: scene.turn_on, data: { entity_id: scene.woonkamer_fel } } } ]
+      - if:
+          condition: { lambda: "return id(scene_index) == 2;" }
+          then: [ { homeassistant.action: { action: scene.turn_on, data: { entity_id: scene.woonkamer_film } } } ]
+      - if:
+          condition: { lambda: "return id(scene_index) == 3;" }
+          then: [ { homeassistant.action: { action: scene.turn_on, data: { entity_id: scene.woonkamer_ontspannen } } } ]
+      - if:
+          condition: { lambda: "return id(scene_index) == 4;" }
+          then: [ { homeassistant.action: { action: scene.turn_on, data: { entity_id: scene.woonkamer_uit } } } ]
+
+  # ---------- statuskop-klok + binnentemp ----------
+  - id: refresh_clock
+    then:
+      - lambda: |-
+          char t[8];
+          auto now = id(ha_time).now();
+          if (now.is_valid()) snprintf(t, sizeof(t), "%02d:%02d", now.hour, now.minute);
+          else strcpy(t, "--:--");
+          lv_label_set_text(id(lbl_clock), t);
+          char temp[16];
+          snprintf(temp, sizeof(temp), "%.1f°", id(ha_binnen).state);
+          lv_label_set_text(id(lbl_indoor), temp);

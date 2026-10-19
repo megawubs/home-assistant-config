@@ -1,0 +1,40 @@
+{# Berekent het tijdstip waarop de batterij volledig is opgeladen. #}
+
+{# --- INPUTS --- #}
+
+{# Totale capaciteit van de batterij in kWh #}
+{% set capacity = 5.4 %}
+
+{# Huidig laadpercentage in % (0-100) #}
+{% set charge_pct = states('sensor.plug_in_battery_laadpercentage') | int(0) %}
+
+{# Huidig laadvermogen in Watt.
+   De | abs wordt gebruikt om zeker te zijn van een positief getal (laden). #}
+{% set power_w = states('sensor.plug_in_battery_vermogen') | float(0) | abs %}
+
+
+{# --- BEREKENING --- #}
+
+{# Controleer of er geladen wordt om delen door nul te voorkomen #}
+{% if power_w > 0 %}
+
+  {# Converteer vermogen van Watt naar kilowatt #}
+  {% set power_kw = power_w / 1000 %}
+
+  {# Bereken hoeveel kWh er nog geladen moet worden #}
+  {% set charge_missing_pct = 100 - charge_pct %}
+  {% set kwh_missing = capacity * charge_missing_pct / 100 %}
+
+  {# Bereken de resterende laadtijd in uren (decimaal) #}
+  {% set remaining_hours = kwh_missing / power_kw %}
+
+  {# Converteer de resterende uren naar een timedelta object #}
+  {% set time_remaining = timedelta(hours=remaining_hours) %}
+
+  {# Geef het tijdstip terug waarop de batterij vol is #}
+  {{ (now() + time_remaining).strftime('%H:%M') }}
+
+{% else %}
+  {# Geef een duidelijke melding of een standaardwaarde als er niet geladen wordt #}
+  N.v.t.
+{% endif %}
