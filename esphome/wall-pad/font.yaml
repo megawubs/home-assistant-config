@@ -1,0 +1,105 @@
+substitutions:
+  mdi_shuffle_disabled: "\U000F049E"
+  mdi_shuffle: "\U000F049F"
+  mdi_play: "\U000F040A"
+  mdi_pause: "\U000F03E4"
+  mdi_skip_next: "\U000F04AD"
+  mdi_skip_previous: "\U000F04AE"
+  mdi_repeat: "\U000F0456"
+  mdi_repeat_off: "\U000F0457"
+  mdi_heart_outline: "\U000F02D5"
+  mdi_home_outline: "\U000F0A1D"
+  mdi_home_assistant: "\U000F07D0"
+  mdi_sun_clock_outline: "\U000F1A78"
+  mdi_calendar_month_outline: "\U000F0E18"
+  mdi_music: "\U000F075A"
+  mdi_air_conditioner: "\U000F001B"
+  mdi_lightning_bolt: "\U000F140B"
+  mdi_settings: "\U000F08BB"
+  mdi_home_thermometer_outline: "\U000F0F55"
+  mdi_weather_partly_cloudy: "\U000F0595"
+  mdi_weather_sunny_off: "\U000F14E4"
+  mdi_weather_night: "\U000F0594"
+  mdi_weather_cloudy: "\U000F0590"
+  mdi_alert_circle_outline: "\U000F05D6"
+  mdi_weather_fog: "\U000F0591"
+  mdi_weather_hail: "\U000F0592"
+  mdi_weather_lightning: "\U000F0593"
+  mdi_weather_lightning_rainy: "\U000F067E"
+  mdi_weather_pouring: "\U000F0596"
+  mdi_weather_rainy: "\U000F0597"
+  mdi_weather_snowy: "\U000F0598"
+  mdi_weather_snowy_rainy: "\U000F067F"
+  mdi_weather_sunny: "\U000F0599"
+  mdi_weather_windy: "\U000F059D"
+  mdi_weather_windy_variant: "\U000F059E"
+  mdi_calendar_plus: "\U000F00F3"
+  mdi_plus_box_outline: "\U000F0704"
+
+font: 
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons24
+    size: 24
+    bpp: 4
+    glyphs: [
+      "${mdi_home_thermometer_outline}",
+      "${mdi_weather_partly_cloudy}",
+      "${mdi_weather_sunny_off}",
+      "${mdi_weather_night}",
+      "${mdi_weather_cloudy}",
+      "${mdi_alert_circle_outline}",
+      "${mdi_weather_fog}",
+      "${mdi_weather_hail}",
+      "${mdi_weather_lightning}",
+      "${mdi_weather_lightning_rainy}",
+      "${mdi_weather_pouring}",
+      "${mdi_weather_rainy}",
+      "${mdi_weather_snowy}",
+      "${mdi_weather_snowy_rainy}",
+      "${mdi_weather_sunny}",
+      "${mdi_weather_windy}",
+      "${mdi_weather_windy_variant}",
+      "${mdi_calendar_plus}",
+      "${mdi_plus_box_outline}"
+    ]
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: ha_icon
+    size: 30
+    bpp: 4
+    glyphs: [
+      "${mdi_home_assistant}",
+    ]
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: settings_icon
+    size: 28 
+    bpp: 4
+    glyphs: [
+      "${mdi_settings}",
+    ]
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons
+    size: 32 
+    bpp: 4
+    glyphs: [
+      "${mdi_shuffle}", 
+      "${mdi_shuffle_disabled}", 
+      "${mdi_play}",
+      "${mdi_pause}",
+      "${mdi_skip_next}",
+      "${mdi_skip_previous}",
+      "${mdi_repeat}",
+      "${mdi_repeat_off}",
+      "${mdi_heart_outline}",
+      "${mdi_home_outline}",
+      "${mdi_sun_clock_outline}",
+      "${mdi_calendar_month_outline}",
+      "${mdi_music}",
+      "${mdi_air_conditioner}",
+      "${mdi_lightning_bolt}"
+    ]
+  - file:
+      type: gfonts
+      family: Roboto
+      weight: 700
+    id: roboto_37
+    size: 37

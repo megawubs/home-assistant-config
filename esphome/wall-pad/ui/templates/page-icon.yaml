@@ -1,0 +1,89 @@
+# vars:
+#   uid:           unique identifier
+#   checked_color: color for checked state
+#   icon:          the icon to use for this nav-button
+#   label:         the label to use for this nav-button
+#   page_id:       the page id this icon corresponds to
+#
+lvgl:
+  pages:
+    - id: !extend $page_id
+      on_load:
+        - lvgl.widget.update:
+            id: button_${uid}
+            state:
+              checked: true
+        - lvgl.widget.update:
+            id: label_${uid}_icon
+            state:
+              checked: true
+        - lvgl.widget.update:
+            id: label_${uid}_text
+            state:
+              checked: true
+      on_unload:
+        - lvgl.widget.update:
+            id: button_${uid}
+            state:
+              checked: false
+        - lvgl.widget.update:
+            id: label_${uid}_icon
+            state:
+              checked: false
+        - lvgl.widget.update:
+            id: label_${uid}_text
+            state:
+              checked: false
+
+    
+  top_layer: 
+    widgets:
+      - container:
+          id: !extend container_sidebar
+          widgets:
+            - container:
+                id: !extend container_nav_buttons
+                widgets:
+                  - button:
+                      id: button_${uid}
+                      layout:
+                        type: FLEX
+                        flex_flow: COLUMN
+                        flex_align_track: CENTER
+                        flex_align_main: CENTER
+                        flex_align_cross: CENTER
+                        pad_row: 4px
+                      checked:
+                        bg_opa: COVER
+                        bg_color: "${stone_800}"
+                        border_opa: COVER 
+                      width: 72
+                      height: 72
+                      radius: 16
+                      border_width: 4
+                      bg_opa: 0
+                      border_side: LEFT
+                      border_color: "${checked_color}"
+                      border_opa: 0
+                      border_post: true
+                      pad_all: 0
+                      on_press:
+                        - lvgl.page.show:
+                            id: $page_id
+                      widgets:
+                      - label:
+                          id: label_${uid}_icon
+                          text_font: icons
+                          text_color: "${text_muted}"
+                          text: "${icon}"
+                          bg_opa: 0
+                          checked:
+                            text_color: "${checked_color}"
+                      - label:
+                          id: label_${uid}_text
+                          text: "${label}"
+                          text_font: montserrat_12
+                          text_color: "${text_muted}"
+                          checked:
+                            text_color: "${text_primary}"
+

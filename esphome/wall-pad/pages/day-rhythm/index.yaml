@@ -1,0 +1,33 @@
+packages:
+  page_icon: !include 
+    file: ../../ui/templates/page-icon.yaml
+    vars: 
+      uid: day_rhythm
+      label: "Dagritme"
+      icon: "${mdi_sun_clock_outline}"
+      checked_color: "${lime_300}"
+      page_id: page_day_rhythm
+
+lvgl:
+  pages:
+    - id: page_day_rhythm
+      bg_color: "${bg_primary}"
+      layout:
+        type: flex
+        flex_flow: row
+        flex_align_main: space_evenly
+        flex_align_track: center
+        flex_align_cross: center
+      widgets:
+        - container:
+            id: container_day_rhythm_widget
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_evenly
+              flex_align_track: center
+              flex_align_cross: center
+            widgets:
+              - label:
+                  id: day_rhythm_wip
+                  text: "Dagritme WIP"

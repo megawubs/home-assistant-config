@@ -1,0 +1,115 @@
+packages:
+  page_icon: !include 
+    file: ../../ui/templates/page-icon.yaml
+    vars: 
+      uid: overview
+      label: "Overzicht"
+      icon: "${mdi_home_outline}"
+      checked_color: "${indigo_400}"
+      page_id: page_overview
+
+lvgl:
+  pages:
+    - id: page_overview
+      layout: 
+        type: grid
+        grid_columns: [FR(3), FR(2)]
+        pad_column: 15px
+        grid_cell_x_align: STRETCH
+        grid_cell_y_align: STRETCH
+      pad_left: 120px
+      pad_top: 94px
+      pad_right: 24px
+      widgets:
+        - container:
+            id: container_grid_column_1
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_evenly
+              flex_align_track: start
+              flex_align_cross: start
+            widgets:
+              - container:
+                  id: container_1
+                  layout:
+                    type: flex
+                    flex_flow: row
+                    flex_align_main: space_evenly
+                    flex_align_track: start
+                    flex_align_cross: start
+                    pad_column: 12px
+                  widgets:
+                    - button:
+                        bg_color: 0xB794F6
+                        radius: 14px
+                        height: 60px
+                        flex_grow: 1
+                        id: button_1
+                        layout:
+                          type: FLEX
+                          flex_flow: ROW
+                          flex_align_track: CENTER
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              text_font: icons24
+                              text_color: "${text_ink}"
+                              text: "${mdi_calendar_plus}"
+                          - label:
+                              text_font: montserrat_24
+                              text_color: "${text_ink}"
+                              text: Afspraak
+                    - button:
+                        radius: 14px
+                        height: 60px
+                        flex_grow: 1
+                        id: button_2
+                        text_align: center
+                        layout:
+                          type: FLEX
+                          flex_flow: ROW
+                          flex_align_track: CENTER
+                          flex_align_main: CENTER
+                          flex_align_cross: CENTER
+                        widgets:
+                          - label:
+                              text_font: icons24
+                              text: "${mdi_plus_box_outline}"
+                          - label:
+                              text_font: montserrat_24
+                              text: Taak
+                        
+        - container:
+            id: container_gid_column_2
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_evenly
+              flex_align_track: start
+              flex_align_cross: start
+              pad_column: 16px
+            widgets:
+              - container:
+                  id: container_aricos
+                  bg_grad: gradient_widget_container
+                  border_color: 0x222A35
+                  border_opa: cover
+                  widgets:
+                    - label:
+                        text: "aircos"
+              # - container:
+              #     id: container_energy
+              #     bg_grad: gradient_widget_container
+              #     border_color: 0x222A35
+              #     widgets:
+              #       - label:
+              #           text: "Energy"
+              # - container:
+              #     id: container_energy_now
+              #     bg_grad: gradient_widget_container
+              #     border_color: 0x222A35
+              #     widgets:
+              #       - label:
+              #           text: "Energy now"

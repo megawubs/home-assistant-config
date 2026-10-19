@@ -1,0 +1,33 @@
+packages:
+  page_icon: !include 
+    file: ../../ui/templates/page-icon.yaml
+    vars: 
+      uid: airco
+      label: "Airco"
+      icon: "${mdi_air_conditioner}"
+      checked_color: "${blue_400}"
+      page_id: page_airco
+
+lvgl:
+  pages:
+    - id: page_airco
+      bg_color: "${bg_primary}"
+      layout:
+        type: flex
+        flex_flow: row
+        flex_align_main: space_evenly
+        flex_align_track: center
+        flex_align_cross: center
+      widgets:
+        - container:
+            id: container_airco_widget
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_evenly
+              flex_align_track: center
+              flex_align_cross: center
+            widgets:
+              - label:
+                  id: airco_wip
+                  text: "Airco WIP"

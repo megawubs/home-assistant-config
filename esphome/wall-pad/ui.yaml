@@ -1,0 +1,62 @@
+substitutions:
+  bg_primary: $gray_950
+  bg_secondary: $zinc_950
+  surface_1: $zinc_900
+  surface_2: $zinc_800
+  surface_3: $zinc_700
+  border: $gray_800
+  text_primary: $slate_100
+  text_secondary: $gray_400
+  text_muted: $gray_500
+  ink: 0x1C1C1E
+  text_ink: ${ink}
+  bg_ink: ${ink}
+  status_ok: $emerald_400
+  status_warm: $amber_300
+  status_fout: $red_400
+
+packages:
+  top_layer: !include
+    file:  ui/top_layer.yaml
+    vars: 
+      temp_inside_entity: "sensor.tstat_9d4027_current_temperature"
+      weather_entity: "weather.home"
+  page_overview: !include pages/overview/index.yaml
+  page_day_rhythm: !include pages/day-rhythm/index.yaml
+  page_calendar: !include pages/calendar/index.yaml
+  page_music: !include pages/music/index.yaml
+  page_airco: !include pages/airco/index.yaml
+  page_energy: !include pages/energy/index.yaml
+
+lvgl:
+  displays: 
+    - main_display
+  touchscreens: 
+    - main_touchscreen
+  theme:
+    dark_mode: true
+  gradients:
+    - id: gradient_widget_container
+      direction: linear
+      linear:
+        from_x: 0%
+        from_y: 0%
+        to_x: 100%
+        to_y: 100%
+      stops:
+        - color: "${bg_ink}"
+          position: 0
+        - color: 0x10141B
+          position: 255
+    - id: gradient_logo
+      direction: linear
+      linear: 
+        from_x: 0%
+        from_y: 0%
+        to_x: 100%
+        to_y: 100%
+      stops:
+        - color: "${stone_800}"
+          position: 0
+        - color: "${zinc_900}"
+          position: 255

@@ -1,0 +1,33 @@
+packages:
+  page_icon: !include 
+    file: ../../ui/templates/page-icon.yaml
+    vars: 
+      uid: agenda
+      label: "Agenda"
+      icon: "${mdi_calendar_month_outline}"
+      checked_color: "${violet_400}"
+      page_id: page_calendar
+
+lvgl:
+  pages:
+    - id: page_calendar
+      bg_color: "${bg_primary}"
+      layout:
+        type: flex
+        flex_flow: row
+        flex_align_main: space_evenly
+        flex_align_track: center
+        flex_align_cross: center
+      widgets:
+        - container:
+            id: container_calendar_widget
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_evenly
+              flex_align_track: center
+              flex_align_cross: center
+            widgets:
+              - label:
+                  id: calendar_wip
+                  text: "Calendar WIP"

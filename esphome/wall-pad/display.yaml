@@ -1,0 +1,62 @@
+
+i2c:
+  id: i2c_bus
+  sda: GPIO7
+  scl: GPIO8
+  frequency: 400kHz
+  scan: true
+
+# This is a low-level hardware chanel that controls a pin 
+output:
+  - platform: ledc
+    id: backlight_output
+    pin: GPIO26
+    frequency: 1000Hz
+    min_power: 3%
+    max_power: 100%
+    zero_means_zero: true
+
+light:
+  - platform: monochromatic
+    id: backlight
+    name: "${friendly_name} Backlight"
+    output: backlight_output
+    restore_mode: RESTORE_DEFAULT_ON
+    default_transition_length: 250ms
+    gamma_correct: 1.0
+
+script:
+  - id: display_wake
+    mode: restart
+    then:
+      - light.turn_on:
+          id: backlight
+          brightness: 100%
+          transition_length: 150ms
+
+display:
+  id: main_display
+  platform: mipi_dsi
+  model: WAVESHARE-10.1-DSI-TOUCH-A
+  reset_pin: GPIO27
+  update_interval: never
+
+touchscreen:
+  - platform: gt911
+    id: main_touchscreen
+    i2c_id: i2c_bus
+    display: main_display
+    update_interval: 50ms
+    on_touch:
+      - script.execute: display_wake
+
+lvgl:
+  rotation: 270 
+  on_idle:
+    - timeout: $idle_timeout
+      then:
+        - light.turn_on:
+            id: backlight
+            brightness: $idle_brightness
+            transition_length: 3s
+

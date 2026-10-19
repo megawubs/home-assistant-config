@@ -1,0 +1,312 @@
+# vars:
+#   temp_inside_entity:       temperature sensor for the inside
+#   weather_entity:           weather sensor
+
+lvgl:
+  top_layer: 
+    layout:
+      type: FLEX
+      flex_flow: ROW
+      flex_align_main: START
+      flex_align_track: START
+      pad_column: 1px
+    widgets:
+      - container: 
+          id: container_sidebar
+          width: 96px
+          bg_color: 0x0E1218
+          border_opa: COVER
+          border_side: RIGHT
+          border_color: "${neutral_800}"
+          border_width: 1
+          layout:
+            type: FLEX
+            flex_flow: COLUMN
+            flex_align_main: SPACE_EVENLY
+            flex_align_track: CENTER
+            flex_align_cross: CENTER
+          widgets:
+            - container:
+                id: container_home_assistant_icon
+                width: 48px 
+                height: 48px
+                radius: 14
+                bg_opa: COVER
+                bg_grad: gradient_logo
+                widgets:
+                  - label:
+                      id: label_home_assistant
+                      text: "${mdi_home_assistant}"
+                      text_font: ha_icon
+                      text_color: "${cornflower_blue}"
+                      align: CENTER
+            - container:
+                id: container_nav_buttons
+                width: SIZE_CONTENT
+                height: SIZE_CONTENT
+                layout:
+                  type: FLEX
+                  flex_flow: COLUMN
+                  flex_align_track: CENTER
+                  flex_align_main: CENTER
+                  flex_align_cross: CENTER
+                  pad_row: 6px
+                widgets:
+            - container:
+                id: container_settings_icon
+                width: 72px 
+                height: 64px
+                radius: 16
+                widgets:
+                  - label:
+                      id: label_settings
+                      text: "${mdi_settings}"
+                      text_font: settings_icon
+                      text_color: "${text_muted}"
+                      align: CENTER
+      - container:
+          id: container_top_bar
+          bg_color: 0x0E1218
+          pad_top: 20px 
+          pad_right: 24px 
+          pad_left: 24px
+          # pad_bottom: 20px
+          flex_grow: 1
+          layout: 
+            type: FLEX
+            flex_flow: ROW
+            flex_align_main: SPACE_BETWEEN
+            flex_align_cross: END
+            flex_align_track: END
+          height: 78px
+          widgets:
+            - container:
+                width: SIZE_CONTENT
+                height: SIZE_CONTENT
+                layout: 
+                  type: FLEX
+                  flex_flow: ROW
+                  flex_align_main: START
+                  flex_align_cross: END
+                  flex_align_track: START
+                  pad_column: 14px
+                widgets:
+                  - label:
+                      id: label_top_layer_time
+                      text_font: roboto_37
+                      text: "--:--"
+                      text_color: "${text_primary}"
+                  - label:
+                      id: label_top_layer_date
+                      text_font: montserrat_16
+                      text: "-------- -- -------"
+                      text_color: "${text_muted}"
+                      margin_bottom: 5px
+            - container:
+                width: SIZE_CONTENT
+                height: SIZE_CONTENT
+                layout: 
+                  type: FLEX
+                  flex_flow: ROW
+                  flex_align_main: SPACE_BETWEEN
+                  flex_align_track: START
+                  flex_align_cross: END
+                  pad_column: 22px
+                widgets:
+                  - container:
+                      width: SIZE_CONTENT
+                      height: SIZE_CONTENT
+                      layout:
+                        type: FLEX
+                        flex_flow: ROW
+                        flex_align_main: CENTER
+                        flex_align_cross: END
+                        pad_column: 8px
+                      widgets:
+                        - label:
+                            id: label_top_layer_temp_icon
+                            text_font: icons24
+                            text: "${mdi_home_thermometer_outline}"
+                            text_color: "${text_muted}"
+                        - label:
+                            id: label_top_layer_temp_inside
+                            text_font: montserrat_20
+                            text: "--.-°"
+                            text_color: "${text_primary}"
+                  - container:
+                      width: SIZE_CONTENT
+                      height: SIZE_CONTENT
+                      layout:
+                        type: FLEX
+                        flex_flow: ROW
+                        flex_align_main: CENTER
+                        flex_align_cross: END
+                        pad_column: 8px
+                      widgets:
+                        - label:
+                            id: label_top_layer_weather_icon
+                            text_font: icons24
+                            text: "${mdi_weather_sunny_off}"
+                            text_color: "${text_muted}"
+                        - label:
+                            id: label_top_layer_temp_outside
+                            text_font: montserrat_20
+                            text: "--°"
+                            text_color: "${text_primary}"
+                        - label:
+                            text_font: montserrat_14
+                            text: "buiten"
+                            text_color: "${text_muted}"
+                  - container:
+                      id: container_top_layer_connected
+                      width: SIZE_CONTENT
+                      height: SIZE_CONTENT
+                      bg_color: "${status_fout}"
+                      bg_opa: 12%
+                      radius: 16
+                      layout:
+                        type: FLEX
+                        flex_flow: ROW
+                        flex_align_main: CENTER
+                        flex_align_cross: CENTER
+                        pad_column: 8px
+                      pad_top: 6px
+                      pad_bottom: 6px
+                      pad_left: 14px
+                      pad_right: 14px
+                      widgets:
+                      - container:
+                          hidden: true
+                          width: 8px  
+                          height: 8px
+                          id: container_top_layer_connected_status
+                          bg_color: "${status_fout}" 
+                          bg_opa: 50%
+                          radius: 4px
+                      - spinner:
+                          id: spinner_top_layer_connection_loading
+                          hidden: false
+                          width: 12px
+                          height: 12px
+                          arc_opa: 0%
+                          arc_rounded: true
+                          indicator:
+                            arc_color: ${status_fout}
+                            arc_opa: 100%
+                            arc_width: 3px
+                      - label:
+                          id: label_top_layer_connected_status
+                          text_color: "${status_fout}"
+                          text: "Verbinden..."
+script:
+  - id: !extend ha_disconnected
+    then:
+      - lvgl.widget.update:
+          id: container_top_layer_connected
+          bg_color: "${status_fout}"
+      - lvgl.widget.update:
+          id: container_top_layer_connected_status
+          bg_color: "${status_fout}" 
+      - lvgl.widget.show:
+          id: spinner_top_layer_connection_loading
+      - lvgl.widget.hide:
+          id: container_top_layer_connected_status
+      - lvgl.label.update:
+          id: label_top_layer_connected_status
+          text_color: "${status_fout}"
+          text: "Verbinden..."
+  - id: !extend ha_connected
+    then:
+      - lvgl.widget.update:
+          id: container_top_layer_connected
+          bg_color: "${status_ok}"
+      - lvgl.widget.update:
+          id: container_top_layer_connected_status
+          bg_color: "${status_ok}" 
+      - lvgl.widget.hide:
+          id: spinner_top_layer_connection_loading
+      - lvgl.widget.show:
+          id: container_top_layer_connected_status
+      - lvgl.label.update:
+          id: label_top_layer_connected_status
+          text_color: "${status_ok}"
+          text: "Verbonden"
+
+  - id: !extend time_update
+    then: 
+      - lvgl.label.update:
+          id: label_top_layer_time
+          text: !lambda |-
+            return id(ha_time).now().strftime("%H:%M");
+      - lvgl.label.update:
+          id: label_top_layer_date
+          text: !lambda |-
+            static const char * const day_names[] = {"Zondag", "Maandag", "Dinsdag", "Woensdag", "Donderdag", "Vrijdag", "Zaterdag"};
+            static const char * const mon_names[] = {"januari", "februari", "maart", "april", "mei", "juni",
+                                                     "juli", "augustus", "september", "oktober", "november", "december"};
+            
+            auto now = id(ha_time).now();
+            auto day_of_week = day_names[now.day_of_week - 1];
+
+            return str_sprintf("%s %d %s", day_of_week, now.day_of_month, mon_names[now.month-1]);
+
+
+text_sensor:
+  - platform: homeassistant
+    id: ha_temp_inside
+    entity_id: ${temp_inside_entity}
+    on_value:
+      - lvgl.label.update:
+          id: label_top_layer_temp_inside
+          text: !lambda return x + "°";
+  - platform: homeassistant
+    id: ha_temp_outside
+    entity_id: ${weather_entity}
+    attribute: temperature
+    on_value:
+      - lvgl.label.update:
+          id: label_top_layer_temp_outside
+          text: !lambda return x + "°";
+  - platform: homeassistant
+    id: ha_weather_outside
+    entity_id: ${weather_entity}
+    on_value:
+      - lvgl.label.update:
+          id: label_top_layer_weather_icon
+          text: !lambda return id(weather_icon)[x];
+
+mapping:
+  - id: weather_icon
+    from: string
+    to: string
+    default_value: "${mdi_weather_sunny_off}"
+    entries:
+      clear-night: "${mdi_weather_night}"
+      cloudy: "${mdi_weather_cloudy}"
+      exceptional: "${mdi_alert_circle_outline}"
+      fog: "${mdi_weather_fog}"
+      hail: "${mdi_weather_hail}"
+      lightning: "${mdi_weather_lightning}"
+      lightning-rainy: "${mdi_weather_lightning_rainy}"
+      partlycloudy: "${mdi_weather_partly_cloudy}"
+      pouring: "${mdi_weather_pouring}"
+      rainy: "${mdi_weather_rainy}"
+      snowy: "${mdi_weather_snowy}"
+      snowy-rainy: "${mdi_weather_snowy_rainy}"
+      sunny: "${mdi_weather_sunny}"
+      windy: "${mdi_weather_windy}"
+      windy-variant: "${mdi_weather_windy_variant}"
+
+  - id: day_map
+    from: int
+    to: string
+    entries:
+      1: DIM
+      2: LUN
+      3: MAR
+      4: MER
+      5: JEU
+      6: VEN
+      7: SAM
+    default_value: "---"
+

@@ -1,0 +1,33 @@
+packages:
+  page_icon: !include 
+    file: ../../ui/templates/page-icon.yaml
+    vars: 
+      uid: music
+      label: "Muziek"
+      icon: "${mdi_music}"
+      checked_color: "${pink_400}"
+      page_id: page_music
+
+lvgl:
+  pages:
+    - id: page_music
+      bg_color: "${bg_primary}"
+      layout:
+        type: flex
+        flex_flow: row
+        flex_align_main: space_evenly
+        flex_align_track: center
+        flex_align_cross: center
+      widgets:
+        - container:
+            id: container_music_widget
+            layout:
+              type: flex
+              flex_flow: column
+              flex_align_main: space_evenly
+              flex_align_track: center
+              flex_align_cross: center
+            widgets:
+              - label:
+                  id: music_wip
+                  text: "WIP"
