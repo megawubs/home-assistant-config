@@ -1,23 +1,34 @@
+substitutions:
+  devicename: m5core2
+  upper_devicename: M5Core2
+  player: partybtlite_pi4
+  media_player: "media_player.${player}"
+  midi_shuffle_disabled: "\U000F049E"
+  midi_shuffle: "\U000F049F"
+  midi_play: "\U000F040A"
+  midi_pause: "\U000F03E4"
+  midi_skip_next: "\U000F04AD"
+  midi_skip_previous: "\U000F04AE"
+  midi_repeat: "\U000F0456"
+  midi_repeat_off: "\U000F0457"
+  midi_heart_outline: "\U000F02D5"
+  midi_bluetooth_off: "\U000F00B2"
+
 esphome:
-  name: m5stack-core2
+  name: $devicename
+  platformio_options:
+    upload_speed: 460800
   friendly_name: M5Stack Core2
 
 esp32:
-  board: esp32dev
+  variant: esp32
   framework:
     type: arduino
 
-# Enable logging
-logger:
+psram:
+  mode: quad
+  speed: 80MHz
 
-# Enable Home Assistant API
-api:
-  encryption:
-    key: "ToyPNVqbN20UpDO34V5M2e/IYaAvlNG1J3tqye6R20I="
-
-ota:
-  password: "45c18276bae6987f6055672fbff870c0"
-  platform: esphome
 
 wifi:
   ssid: !secret wifi_ssid
@@ -29,4 +40,407 @@ wifi:
     password: "DnqccjmdUMAy"
 
 captive_portal:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: !secret zolder_music_controller_encryption_key
+  on_client_connected:
+    - wait_until:
+        condition:
+          api.connected:
+            state_subscription_only: true
+    - lvgl.widget.show: wifi_connected
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - lvgl.widget.hide: wifi_connected
+
+ota:
+  platform: esphome
+  encryption:
+
+web_server:
+  port: 80
+
+http_request:
+
+# Enable logging
+logger:
+  level: INFO
+
+
+external_components:
+  - source: github://martydingo/esphome-axp192
+    components: [axp192]
+# light:
+#   - platform: monochromatic
+#     name: "Display Backlight"
+#     id: display_backlight
+#     output: display_output
+#     default_transition_length: 0ms
+#     on_turn_off:
+#       then:
+#         - lambda: |-
+#             id(main_display).set_update_interval(0);
+#             id(axp_comp).set_lcd_enabled(false);
+#             //id(axp_comp).set_speaker_enabled(false);
+#             // Panel: Display OFF (0x28), then Sleep IN (0x10)
+#             id(main_display).send_command(0x28, nullptr, 0);
+#             delay(20);
+#             id(main_display).send_command(0x10, nullptr, 0);
+#     on_turn_on:
+#       then:
+#         - lambda: |-
+#             float level = id(display_backlight).current_values.get_brightness();  // 0.0–1.0
+#             // Panel: Sleep OUT (0x11), then Display ON (0x29)
+#             id(main_display).send_command(0x11, nullptr, 0);
+#             delay(120);  // datasheet recommends >=120 ms after sleep out
+#             id(main_display).send_command(0x29, nullptr, 0);
+#             id(axp_comp).set_lcd_enabled(true);
+#             id(axp_comp).set_brightness(level);
+#             id(main_display).set_update_interval(250);
+#             //id(axp_comp).set_speaker_enabled(true);
+#             id(axp_comp).update();
+
+
+sensor:
+  - platform: axp192
+    model: M5CORE2
+    address: 0x34
+    i2c_id: bus_a
+    id: axp192_id
+    update_interval: 30s
+    battery_level:
+      name: "${upper_devicename} Battery Level"
+      id: "${devicename}_batterylevel"
+
+  - platform: mpu6886
+    address: 0x68
+    update_interval: 1s
+    accel_x:
+      name: "MPU6886 Accel X"
+    accel_y:
+      name: "MPU6886 Accel Y"
+    accel_z:
+      name: "MPU6886 Accel Z"
+    gyro_x:
+      name: "MPU6886 Gyro X"
+    gyro_y:
+      name: "MPU6886 Gyro Y"
+    gyro_z:
+      name: "MPU6886 Gyro Z"
+    temperature:
+      name: "MPU6886 Temperature"
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+i2c:
+  - id: bus_a
+    sda: GPIO21
+    scl: GPIO22
+    scan: true
+
+display:
+  - platform: mipi_spi
+    model: M5CORE2
+
+touchscreen:
+  - platform: ft63x6
+    interrupt_pin: GPIO39
+
+binary_sensor:
+  # the virtual buttons--coordinates taken from
+  # https://github.com/m5stack/M5Core2/blob/0134dd3a38cfd335a1ec39da2c149f88baf54326/src/M5Core2.h#L54-L56
+  # and
+  # https://github.com/m5stack/M5Core2/blob/0134dd3a38cfd335a1ec39da2c149f88baf54326/src/utility/M5Button.h#L811-L815
+  # for the parameter order `(x, y, width, height)`
+  - platform: touchscreen
+    name: Button A
+    x_min: 10
+    x_max: 120
+    y_min: 240
+    y_max: 280
+    use_raw: true
+
+  - platform: touchscreen
+    name: Button B
+    x_min: 130
+    x_max: 200
+    y_min: 240
+    y_max: 280
+    use_raw: true
+
+  - platform: touchscreen
+    name: Button C
+    x_min: 230
+    x_max: 310
+    y_min: 240
+    y_max: 280
+    use_raw: true
+
+font: 
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons
+    size: 20
+    bpp: 4
+    glyphs: [
+      "${midi_shuffle}", 
+      "${midi_shuffle_disabled}", 
+      "${midi_play}",
+      "${midi_pause}",
+      "${midi_skip_next}",
+      "${midi_skip_previous}",
+      "${midi_repeat}",
+      "${midi_repeat_off}",
+      "${midi_heart_outline}",
+      "${midi_bluetooth_off}",
+    ]
     
+text_sensor:
+  - platform: homeassistant
+    id: media_player_state
+    entity_id: $media_player
+    on_value:
+      - lvgl.button.update:
+          id: btn_play_pause
+          text: !lambda |-
+            if(x == "playing") return "${midi_pause}"; 
+            return "${midi_play}";
+      - if:
+          condition:
+            lambda: 'return x == "unavailable";'
+          then:
+            - lvgl.page.show: standby_display
+          else:
+            - lvgl.page.show: player_display
+  - platform: homeassistant
+    id: media_player_shuffle
+    entity_id: $media_player
+    attribute: shuffle
+    on_value:
+      - lvgl.button.update:
+          id: button_shuffle
+          text: !lambda |-
+            if(x == "on") return "${midi_shuffle}"; 
+            return "${midi_shuffle_disabled}";
+  - platform: homeassistant
+    id: entity_picture
+    entity_id: $media_player
+    attribute: entity_picture
+    on_value:
+      - online_image.set_url:
+          id: album_art
+          url: !lambda "return x;"
+
+  - platform: homeassistant
+    entity_id: $media_player
+    id: repeat
+    attribute: repeat
+  - platform: homeassistant
+    entity_id: $media_player
+    id: media_artist
+    attribute: media_artist
+    on_value:
+      - lvgl.label.update:
+          id: label_media_artist
+          text: !lambda return x;
+  - platform: homeassistant
+    entity_id: $media_player
+    id: media_title
+    attribute: media_title
+    on_value:
+      - lvgl.label.update:
+          id: label_media_title
+          text: !lambda return x;
+
+  - platform: homeassistant
+    entity_id: $media_player
+    id: media_album_name
+    attribute: media_album_name
+    on_value:
+      - lvgl.label.update:
+          id: label_media_album_name
+          text: !lambda return x;
+      
+
+image:
+  - platform: file
+    id: no_art
+    file: "images/cover_dark.png"
+    type: RGB565
+    resize: 150x150
+  - platform: online_image
+    id: album_art
+    placeholder: no_art
+    url: "http://wubsinfo.nl/never_fetched.jpg"
+    format: JPEG
+    type: RGB565
+    resize: 150x150
+    on_download_finished:
+      - lvgl.image.update:
+          id: album_art_widget
+          src: album_art
+    
+
+lvgl:
+  theme:
+    dark_mode: true
+  top_layer:
+    widgets:
+      - label:
+          text: "\uF1EB"
+          id: wifi_connected
+          hidden: true
+          align: top_left
+          text_align: left
+          text_color: 0xFFFFFF
+  pages:
+    - id: standby_display
+      bg_color: 0x000000
+      width: 320
+      height: 240
+      # pad_top: 20
+      border_opa: TRANSP
+      # scrollbar_mode: "OFF"
+      layout:
+        type: FLEX
+        flex_flow: COLUMN
+        flex_align_main: SPACE_EVENLY
+        flex_align_track: START
+        pad_row: 5px
+        pad_column: 5px
+      widgets:
+        - container:
+            pad_top: 50
+            id: stanby_info
+            layout: 
+              type: FLEX
+              flex_flow: COLUMN
+              flex_align_cross: center
+            align: CENTER
+            widgets:
+            - label:
+                text_font: icons
+                text: "${midi_bluetooth_off}"
+            - label:
+                text: "Box is uit"
+    - id: player_display
+      bg_color: 0x000000
+      width: 320
+      height: 240
+      # pad_top: 20
+      border_opa: TRANSP
+      # scrollbar_mode: "OFF"
+      layout:
+        type: FLEX
+        flex_flow: COLUMN
+        flex_align_main: SPACE_EVENLY
+        flex_align_track: START
+        pad_row: 5px
+        pad_column: 5px
+      widgets:
+        - container:
+            id: track_info
+            width: 320
+            height: 170
+            layout: HORIZONTAL
+            widgets:
+              - image:
+                  id: album_art_widget
+                  src: no_art
+                  # align: TOP_LEFT
+                  width: 150
+                  height: 150
+              - container:
+                  layout: VERTICAL
+                  width: 160px
+                  height: 80px
+                  widgets:
+                    - label:
+                        id: label_media_title
+                        text: "[TITLE]"
+                        long_mode: SCROLL
+                    - label:
+                        id: label_media_artist
+                        text: "[Artiest]"
+                        long_mode: SCROLL
+                    - label:
+                        id: label_media_album_name
+                        text: "[Album]"
+                        long_mode: DOT
+        - container:
+            outline_width: 1 
+            id: player_controlls
+            bg_color: red
+            width: 320
+            height: 30
+            # pad_top: 10px
+            layout: 
+              type: FLEX
+              flex_flow: ROW
+              flex_align_main: SPACE_EVENLY
+            widgets:
+              - button:
+                  id: button_like
+                  bg_opa: 0%
+                  text_font: icons
+                  text: "${midi_heart_outline}"
+                  ext_click_area: 10
+                  on_click:
+                    - homeassistant.action:
+                        action: button.press
+                        data:
+                            entity_id: "button.workhorse_favorite_current_song"
+              - button:
+                  id: button_shuffle
+                  bg_opa: 0%
+                  text_font: icons
+                  text: "${midi_shuffle}"
+                  ext_click_area: 10
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.shuffle_set
+                        data:
+                            entity_id: $media_player
+                            shuffle: !lambda |- 
+                              if(id(media_player_shuffle).state == "on") return "false";
+                              return "true";
+              - button:
+                  id: bnt_prev
+                  bg_opa: 0%
+                  text_font: icons
+                  text: "${midi_skip_previous}"
+                  ext_click_area: 10
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.media_previous_track
+                        data:
+                           entity_id: $media_player
+              - button:
+                  id: btn_play_pause
+                  bg_opa: 0%
+                  text_font: icons
+                  text: "${midi_play}"
+                  ext_click_area: 10
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.media_play_pause
+                        data:
+                            entity_id: $media_player
+              - button:
+                  id: next
+                  bg_opa: 0%
+                  text_font: icons
+                  text: "${midi_skip_next}"
+                  ext_click_area: 10
+                  on_click:
+                    - homeassistant.action:
+                        action: media_player.media_next_track
+                        data:
+                            entity_id: $media_player
+
