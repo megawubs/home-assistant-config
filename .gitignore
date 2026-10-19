@@ -58,3 +58,4 @@ addons_autoscripts
 .mcp.json
 .idea/
 .DS_store
+esphome/esphome-modular-lvgl-buttons/
