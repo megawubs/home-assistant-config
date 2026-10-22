@@ -103,29 +103,40 @@
             <!-- LEFT -->
             <div style="display:flex; flex-direction:column; gap:16px; min-height:0;">
               <!-- compact hero -->
-              <div style="background:linear-gradient(160deg,#171D27,#10141B); border:1px solid #222A35; border-radius:24px; padding:24px 28px;">
-                <div style="display:flex; align-items:center; justify-content:space-between;">
-                  <div>
-                    <div style="font-size:15px; color:#9BA7B4; font-weight:600;">{{ dateStr }}</div>
-                    <div style="font-size:76px; font-weight:800; line-height:.92; letter-spacing:-.03em; font-variant-numeric:tabular-nums;">{{ clock }}</div>
-                  </div>
-                  <div style="display:flex; align-items:center; gap:14px;">
-                    <span class="mdi mdi-weather-partly-cloudy" style="font-size:52px; color:#FBBF24;"></span>
-                    <div style="text-align:right;">
-                      <div style="font-size:32px; font-weight:700;">24°</div>
-                      <div style="font-size:14px; color:#9BA7B4;">binnen 21.4°</div>
-                    </div>
-                  </div>
-                </div>
-                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:20px;">
+              <div style="flex:none;">
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                   <button onClick="{{ openDialog }}" style="height:60px; border:none; border-radius:14px; background:#B794F6; color:#14101D; font-size:17px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer;"><span class="mdi mdi-calendar-plus" style="font-size:24px;"></span>Afspraak</button>
                   <button onClick="{{ openTaskDialog }}" style="height:60px; border:none; border-radius:14px; background:rgba(251,146,60,.16); border:1px solid rgba(251,146,60,.4); color:#FB923C; font-size:17px; font-weight:700; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer;"><span class="mdi mdi-plus-box-outline" style="font-size:24px;"></span>Taak</button>
                 </div>
               </div>
 
+              <!-- mini dagritme -->
+              <div style="background:#10141B; border:1px solid #222A35; border-radius:24px; padding:12px 16px; flex:none; display:flex; flex-direction:column; gap:4px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; height:32px;">
+                  <div style="display:flex; align-items:center; gap:10px; color:#A3E635;"><span class="mdi mdi-timeline-clock-outline" style="font-size:22px;"></span><span style="font-size:15px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;">Nu &amp; straks</span></div>
+                  <button onClick="{{ goRitme }}" style="display:flex; align-items:center; gap:4px; border:none; background:transparent; color:#9BA7B4; font-size:14px; font-weight:600; cursor:pointer;">Dagritme<span class="mdi mdi-chevron-right" style="font-size:20px;"></span></button>
+                </div>
+                <sc-for list="{{ ovRit }}" as="p" hint-placeholder-count="5">
+                  <button onClick="{{ goRitme }}" style="display:flex; align-items:center; gap:12px; height:36px; padding:0; border:none; background:transparent; color:#F2F5F8; cursor:pointer; text-align:left; font-family:'Montserrat',sans-serif;">
+                    <div style="width:30px; height:30px; flex:none; border-radius:50%; background:{{ p.color }}; display:flex; align-items:center; justify-content:center;"><span class="{{ p.icon }}" style="font-size:20px; color:#0B0E13;"></span></div>
+                    <span class="{{ p.nowIcon }}" style="font-size:22px; color:{{ p.nowIconColor }}; flex:none;"></span>
+                    <div style="flex:1; min-width:0; font-size:16px; font-weight:700; color:{{ p.ovNowColor }}; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ p.nowLabel }}</div>
+                    <sc-if value="{{ p.hasNow }}" hint-placeholder-val="{{ true }}">
+                      <span style="flex:none; font-size:14px; font-weight:800; color:{{ p.color }}; font-variant-numeric:tabular-nums;">{{ p.nowLeft }}</span>
+                    </sc-if>
+                    <span class="mdi mdi-chevron-right" style="font-size:20px; color:#3A434F; flex:none;"></span>
+                    <div style="flex:none; width:110px; display:flex; gap:6px;">
+                      <sc-for list="{{ p.ovNext }}" as="n" hint-placeholder-count="3">
+                        <div style="width:30px; height:30px; flex:none; border-radius:8px; background:#151A22; border:1px solid #222A35; display:flex; align-items:center; justify-content:center;"><span class="{{ n.cls }}" style="font-size:18px; color:{{ n.iconColor }};"></span></div>
+                      </sc-for>
+                    </div>
+                  </button>
+                </sc-for>
+              </div>
+
               <!-- upcoming (multi-day) -->
-              <div style="background:#10141B; border:1px solid #222A35; border-radius:24px; padding:20px 22px; flex:1; display:flex; flex-direction:column; min-height:0;">
-                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+              <div style="background:#10141B; border:1px solid #222A35; border-radius:24px; padding:16px 20px; flex:1; display:flex; flex-direction:column; min-height:180px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
                   <div style="display:flex; align-items:center; gap:10px; color:#B794F6;"><span class="mdi mdi-calendar-clock" style="font-size:22px;"></span><span style="font-size:15px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;">Volgende afspraken</span></div>
                   <button onClick="{{ goAgenda }}" style="display:flex; align-items:center; gap:4px; border:none; background:transparent; color:#9BA7B4; font-size:14px; font-weight:600; cursor:pointer;">Alle<span class="mdi mdi-chevron-right" style="font-size:20px;"></span></button>
                 </div>
@@ -194,15 +205,38 @@
               <!-- interactive airco — alleen zichtbaar als de airco aan staat -->
               <sc-if value="{{ climateOn }}" hint-placeholder-val="{{ true }}">
                 <div style="background:linear-gradient(160deg,{{ climTint }},#10141B); border:1px solid #222A35; border-radius:24px; padding:18px 20px;">
-                  <div style="display:flex; align-items:center; gap:10px; color:{{ climAccent }}; margin-bottom:10px;"><span class="mdi mdi-air-conditioner" style="font-size:20px;"></span><span style="font-size:14px; font-weight:700; letter-spacing:.04em; text-transform:uppercase;">Airco · Beneden</span></div>
+                  <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+                    <span class="mdi mdi-air-conditioner" style="font-size:20px; color:{{ climAccent }};"></span>
+                    <div style="flex:1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; background:#0B0E13; border:1px solid #222A35; border-radius:14px; padding:4px;">
+                      <sc-for list="{{ acTabs }}" as="u" hint-placeholder-count="3">
+                        <button onClick="{{ u.go }}" style="height:44px; border-radius:10px; border:none; background:{{ u.pillBg }}; color:{{ u.text }}; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-size:14px; font-weight:700; padding:0 6px;"><span style="width:8px; height:8px; border-radius:50%; background:{{ u.color }}; flex:none;"></span>{{ u.name }}</button>
+                      </sc-for>
+                    </div>
+                  </div>
                   <div style="display:flex; align-items:center; gap:14px;">
                     <button onClick="{{ dec }}" style="width:60px; height:60px; border-radius:50%; border:2px solid #2A323D; background:#151A22; color:#F2F5F8; cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-minus" style="font-size:32px;"></span></button>
                     <div style="flex:1; text-align:center;">
-                      <div style="font-size:12px; color:#9BA7B4;">doeltemperatuur</div>
                       <div style="font-size:46px; font-weight:800; line-height:1; color:{{ climAccent }}; letter-spacing:-.02em;">{{ targetStr }}</div>
-                      <div style="font-size:12px; color:#9BA7B4; margin-top:2px;">offset {{ offsetStr }} · {{ modeLabel }}</div>
                     </div>
                     <button onClick="{{ inc }}" style="width:60px; height:60px; border-radius:50%; border:2px solid #2A323D; background:#151A22; color:#F2F5F8; cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-plus" style="font-size:32px;"></span></button>
+                  </div>
+                  <div style="display:grid; grid-template-columns:repeat(6,minmax(0,1fr)); gap:4px; margin-top:12px; background:#0B0E13; border:1px solid #222A35; border-radius:14px; padding:4px;">
+                    <sc-for list="{{ ovModes }}" as="m" hint-placeholder-count="6">
+                      <button onClick="{{ m.set }}" title="{{ m.label }}" style="height:48px; border-radius:10px; border:none; background:{{ m.bg }}; color:{{ m.color }}; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="{{ m.icon }}" style="font-size:24px;"></span></button>
+                    </sc-for>
+                  </div>
+                  <div style="display:flex; gap:8px; margin-top:8px;">
+                    <div style="position:relative; flex:1; min-width:0;">
+                      <button onClick="{{ toggleFanOpen }}" style="width:100%; height:48px; border-radius:12px; border:1px solid #222A35; background:#0B0E13; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; gap:10px; padding:0 12px; font-size:15px; font-weight:600;"><span class="{{ fanIcon }}" style="font-size:22px; color:#9BA7B4;"></span><span style="flex:1; text-align:left;">{{ fanLabel }}</span><span class="mdi mdi-menu-down" style="font-size:22px; color:#9BA7B4;"></span></button>
+                      <sc-if value="{{ fanOpen }}" hint-placeholder-val="{{ false }}">
+                        <div style="position:absolute; left:0; right:0; bottom:54px; z-index:20; background:#151A22; border:1px solid #2A323D; border-radius:14px; padding:4px; display:flex; flex-direction:column; gap:2px; box-shadow:0 12px 32px rgba(0,0,0,.5);">
+                          <sc-for list="{{ fanOpts }}" as="f" hint-placeholder-count="5">
+                            <button onClick="{{ f.set }}" style="height:44px; border-radius:10px; border:none; background:{{ f.bg }}; color:{{ f.color }}; cursor:pointer; display:flex; align-items:center; gap:10px; padding:0 12px; font-size:15px; font-weight:600;"><span class="{{ f.icon }}" style="font-size:20px;"></span>{{ f.label }}</button>
+                          </sc-for>
+                        </div>
+                      </sc-if>
+                    </div>
+                    <button onClick="{{ toggleBoost }}" style="height:48px; border-radius:12px; border:1px solid {{ boostBorder }}; background:{{ boostBg }}; color:{{ boostText }}; cursor:pointer; display:flex; align-items:center; gap:8px; padding:0 14px; font-size:15px; font-weight:700;"><span class="mdi mdi-rocket-launch-outline" style="font-size:20px; color:{{ boostColor }};"></span>Boost</button>
                   </div>
                 </div>
               </sc-if>
@@ -497,7 +531,9 @@
               <button onClick="{{ agPrev }}" style="width:48px; height:48px; border-radius:12px; border:1px solid #222A35; background:#10141B; color:#C7D0DB; cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-chevron-left" style="font-size:30px;"></span></button>
               <button onClick="{{ agNext }}" style="width:48px; height:48px; border-radius:12px; border:1px solid #222A35; background:#10141B; color:#C7D0DB; cursor:pointer; flex:none; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-chevron-right" style="font-size:30px;"></span></button>
               <div style="font-size:24px; font-weight:700; min-width:280px;">{{ agPeriod }}</div>
-              <button onClick="{{ agToday }}" style="height:44px; padding:0 18px; border-radius:11px; border:1px solid #222A35; background:#10141B; color:#C7D0DB; font-size:15px; font-weight:600; cursor:pointer;">Vandaag</button>
+              <sc-if value="{{ agShowToday }}" hint-placeholder-val="{{ false }}">
+                <button onClick="{{ agToday }}" style="height:44px; padding:0 18px; border-radius:11px; border:1px solid #222A35; background:#10141B; color:#C7D0DB; font-size:15px; font-weight:600; cursor:pointer;">Naar vandaag</button>
+              </sc-if>
               <span style="flex:1;"></span>
               <div style="display:flex; gap:6px; background:#0B0E13; border-radius:12px; padding:4px;">
                 <sc-for list="{{ agViews }}" as="v" hint-placeholder-count="3">
@@ -671,24 +707,8 @@
         <sc-if value="{{ isMusic }}" hint-placeholder-val="{{ false }}">
           <div style="display:grid; grid-template-columns:420px 1fr; gap:18px; height:100%;">
             <div style="background:linear-gradient(165deg,{{ cur.tint }},#10141B); border:1px solid #222A35; border-radius:24px; padding:20px 22px; display:flex; flex-direction:column;">
-              <!-- carrousel-puntjes -->
-              <div style="display:flex; align-items:center; justify-content:center; gap:7px; margin-bottom:12px;">
-                <sc-for list="{{ carDots }}" as="d" hint-placeholder-count="4">
-                  <button onClick="{{ d.go }}" style="{{ d.style }}"></button>
-                </sc-for>
-              </div>
-              <!-- speler-pill + link + overflow -->
-              <div style="display:flex; align-items:center; gap:8px;">
-                <button onClick="{{ carPrev }}" style="width:56px; height:56px; flex:none; border:none; border-radius:14px; background:transparent; color:#9BA7B4; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-chevron-left" style="font-size:32px;"></span></button>
-                <button onClick="{{ openSpkDialog }}" style="flex:1; min-width:0; min-height:56px; padding:0 16px; border:1px solid #2A323D; border-radius:999px; background:transparent; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:10px;">
-                  <span class="{{ cur.icon }}" style="font-size:22px; color:{{ cur.accent }}; flex:none;"></span>
-                  <span style="font-size:19px; font-weight:600; color:#F2F5F8; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">{{ cur.pillLabel }}</span>
-                </button>
-                <button onClick="{{ openSpkDialog }}" style="{{ cur.linkStyle }}"><span class="mdi mdi-link-variant" style="font-size:24px;"></span></button>
-                <button onClick="{{ carNext }}" style="width:56px; height:56px; flex:none; border:none; border-radius:14px; background:transparent; color:#9BA7B4; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-chevron-right" style="font-size:32px;"></span></button>
-              </div>
               <!-- albumart -->
-              <div style="width:100%; flex:1 1 auto; min-height:150px; max-height:300px; margin-top:14px; border-radius:18px; background:{{ cur.tint }}; border:1px solid #222A35; display:flex; align-items:center; justify-content:center;">
+              <div style="width:100%; flex:1 1 auto; min-height:150px; border-radius:18px; background:{{ cur.tint }}; border:1px solid #222A35; display:flex; align-items:center; justify-content:center;">
                 <span class="{{ cur.artGlyph }}" style="font-size:120px; color:{{ cur.accent }}; opacity:.55;"></span>
               </div>
               <div style="text-align:center; margin-top:14px;">
@@ -699,27 +719,11 @@
               <div style="display:flex; align-items:center; justify-content:center; margin-top:10px;">
                 <span style="font-size:14px; font-weight:800; color:#0B0E13; background:{{ cur.qColor }}; border-radius:7px; padding:3px 9px;">{{ cur.quality }}</span>
               </div>
-              <!-- transport -->
-              <div style="display:flex; align-items:center; justify-content:center; gap:10px; margin-top:12px;">
+              <div style="display:flex; align-items:center; justify-content:center; gap:16px; margin-top:8px;">
                 <button style="width:56px; height:56px; flex:none; border:none; border-radius:50%; background:transparent; color:{{ cur.accent }}; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-heart-outline" style="font-size:26px;"></span></button>
                 <button style="width:56px; height:56px; flex:none; border:none; border-radius:50%; background:transparent; color:#9BA7B4; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-shuffle-variant" style="font-size:26px;"></span></button>
-                <button style="width:56px; height:56px; flex:none; border:none; border-radius:50%; background:#1B2330; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-skip-previous" style="font-size:32px;"></span></button>
-                <button onClick="{{ cur.togglePlay }}" style="width:80px; height:80px; flex:none; border:none; border-radius:50%; background:{{ cur.accent }}; color:#0B0E13; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="{{ cur.playIcon }}" style="font-size:44px;"></span></button>
-                <button style="width:56px; height:56px; flex:none; border:none; border-radius:50%; background:#1B2330; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-skip-next" style="font-size:32px;"></span></button>
                 <button style="width:56px; height:56px; flex:none; border:none; border-radius:50%; background:transparent; color:#9BA7B4; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-repeat" style="font-size:26px;"></span></button>
               </div>
-              <!-- volume -->
-              <div style="display:flex; align-items:center; gap:12px; margin-top:10px;">
-                <span class="mdi mdi-volume-high" style="font-size:26px; color:{{ cur.accent }};"></span>
-                <div onClick="{{ cur.setVol }}" style="flex:1; height:56px; display:flex; align-items:center; cursor:pointer;">
-                  <div style="width:100%; height:8px; background:#2A323D; border-radius:8px; position:relative;">
-                    <div style="width:{{ cur.vol }}%; height:100%; background:{{ cur.accent }}; border-radius:8px;"></div>
-                    <span style="position:absolute; left:{{ cur.vol }}%; top:50%; transform:translate(-50%,-50%); width:26px; height:26px; border-radius:50%; background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.4);"></span>
-                  </div>
-                </div>
-                <span style="font-size:17px; font-weight:700; color:#F2F5F8; width:48px; text-align:right; font-variant-numeric:tabular-nums;">{{ cur.vol }}</span>
-              </div>
-              <button onClick="{{ openSpkDialog }}" style="min-height:56px; margin-top:10px; border:1px solid #2A323D; border-radius:14px; background:transparent; color:{{ cur.accent }}; font-size:17px; font-weight:700; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;"><span class="mdi mdi-speaker-multiple" style="font-size:22px;"></span>Groepsinstellingen</button>
             </div>
 
             <div style="display:flex; flex-direction:column; min-height:0;">
@@ -746,30 +750,43 @@
 
         <!-- ===================== CLIMATE ===================== -->
         <sc-if value="{{ isClimate }}" hint-placeholder-val="{{ false }}">
-          <div style="display:grid; grid-template-columns:1.25fr 1fr; gap:18px; height:100%;">
-            <div style="background:linear-gradient(165deg,{{ climTint }},#10141B); border:1px solid #222A35; border-radius:24px; padding:28px; display:flex; flex-direction:column; align-items:center;">
-              <div style="align-self:flex-start; display:flex; align-items:center; gap:10px; color:{{ climAccent }};"><span class="mdi mdi-air-conditioner" style="font-size:26px;"></span><span style="font-size:18px; font-weight:700;">Beneden · woonkamer + keuken</span></div>
-              <div style="position:relative; width:340px; height:340px; margin:18px 0;">
-                <svg width="340" height="340" viewBox="0 0 340 340">
+          <div style="display:flex; flex-direction:column; gap:14px; height:100%;">
+          <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:12px; flex:none;">
+            <sc-for list="{{ acTabs }}" as="u" hint-placeholder-count="3">
+              <button onClick="{{ u.go }}" style="height:64px; padding:0 18px; border-radius:18px; border:2px solid {{ u.border }}; background:{{ u.bg }}; display:flex; align-items:center; gap:14px; cursor:pointer; text-align:left; font-family:'Montserrat',sans-serif;">
+                <div style="width:44px; height:44px; flex:none; border-radius:12px; background:#10141B; border:1px solid #222A35; display:flex; align-items:center; justify-content:center;"><span class="{{ u.modeIcon }}" style="font-size:24px; color:{{ u.color }};"></span></div>
+                <div style="flex:1; min-width:0;">
+                  <div style="font-size:18px; font-weight:700; color:{{ u.text }};">{{ u.name }}</div>
+                  <div style="font-size:14px; font-weight:600; color:#9BA7B4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ u.sub }}</div>
+                </div>
+                <div style="font-size:28px; font-weight:800; color:{{ u.color }}; font-variant-numeric:tabular-nums; flex:none;">{{ u.temp }}</div>
+              </button>
+            </sc-for>
+          </div>
+          <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.35fr); gap:18px; flex:1; min-height:0;">
+            <div style="background:linear-gradient(165deg,{{ climTint }},#10141B); border:1px solid #222A35; border-radius:24px; padding:22px 28px; display:flex; flex-direction:column; align-items:center; min-height:0;">
+              <div style="align-self:flex-start; display:flex; align-items:center; gap:10px; color:{{ climAccent }};"><span class="mdi mdi-air-conditioner" style="font-size:26px;"></span><span style="font-size:18px; font-weight:700;">{{ acTitle }}</span></div>
+              <div style="position:relative; width:240px; height:240px; margin:auto 0;">
+                <svg width="240" height="240" viewBox="0 0 340 340">
                   <circle cx="170" cy="170" r="150" fill="none" stroke="#1B222C" stroke-width="22" stroke-linecap="round" stroke-dasharray="707 1000" transform="rotate(135 170 170)"></circle>
                   <circle cx="170" cy="170" r="150" fill="none" stroke="{{ climAccent }}" stroke-width="22" stroke-linecap="round" stroke-dasharray="{{ arcDash }} 1000" transform="rotate(135 170 170)"></circle>
                 </svg>
                 <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;">
                   <div style="font-size:17px; color:#9BA7B4; font-weight:600;">doeltemperatuur</div>
-                  <div style="font-size:92px; font-weight:800; letter-spacing:-.03em; line-height:1; color:{{ climAccent }};">{{ targetStr }}</div>
+                  <div style="font-size:64px; font-weight:800; letter-spacing:-.03em; line-height:1; color:{{ climAccent }};">{{ targetStr }}</div>
                   <div style="display:flex; align-items:center; gap:7px; margin-top:10px; padding:5px 14px; background:#10141B; border:1px solid #222A35; border-radius:999px;"><span style="font-size:13px; color:#5E6976;">offset</span><span style="font-size:16px; font-weight:700; color:#C7D0DB; font-variant-numeric:tabular-nums;">{{ offsetStr }}</span></div>
                 </div>
               </div>
               <div style="display:flex; align-items:center; gap:24px;">
-                <button onClick="{{ dec }}" style="width:88px; height:88px; border-radius:50%; border:2px solid #2A323D; background:#151A22; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-minus" style="font-size:44px;"></span></button>
+                <button onClick="{{ dec }}" style="width:76px; height:76px; border-radius:50%; border:2px solid #2A323D; background:#151A22; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-minus" style="font-size:44px;"></span></button>
                 <div style="font-size:15px; color:#5E6976; width:110px; text-align:center;">16 … 26 °C<br>stappen 0.5</div>
-                <button onClick="{{ inc }}" style="width:88px; height:88px; border-radius:50%; border:2px solid #2A323D; background:#151A22; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-plus" style="font-size:44px;"></span></button>
+                <button onClick="{{ inc }}" style="width:76px; height:76px; border-radius:50%; border:2px solid #2A323D; background:#151A22; color:#F2F5F8; cursor:pointer; display:flex; align-items:center; justify-content:center;"><span class="mdi mdi-plus" style="font-size:44px;"></span></button>
               </div>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:18px;">
-              <div style="background:#151A22; border:1px solid #222A35; border-radius:24px; padding:24px;">
-                <div style="font-size:14px; font-weight:700; color:#5E6976; letter-spacing:.04em; text-transform:uppercase; margin-bottom:14px;">Modus</div>
+            <div style="display:flex; flex-direction:column; gap:12px; min-height:0;">
+              <div style="background:#151A22; border:1px solid #222A35; border-radius:24px; padding:18px 20px;">
+                <div style="font-size:14px; font-weight:700; color:#5E6976; letter-spacing:.04em; text-transform:uppercase; margin-bottom:10px;">Modus</div>
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                   <sc-for list="{{ modes }}" as="m" hint-placeholder-count="4">
                     <button onClick="{{ m.set }}" style="{{ m.style }}">
@@ -778,13 +795,13 @@
                     </button>
                   </sc-for>
                 </div>
-                <div style="font-size:14px; color:#5E6976; margin-top:14px; line-height:1.4;">{{ modeHint }}</div>
+                <div style="font-size:14px; color:#5E6976; margin-top:10px; line-height:1.4;">{{ modeHint }}</div>
               </div>
 
-              <div style="background:#151A22; border:1px solid #222A35; border-radius:24px; padding:24px; display:flex; align-items:center; gap:20px;">
+              <div style="background:#151A22; border:1px solid #222A35; border-radius:24px; padding:16px 20px; display:flex; align-items:center; gap:20px;">
                 <div style="flex:1;">
                   <div style="font-size:15px; color:#9BA7B4;">Binnen</div>
-                  <div style="font-size:56px; font-weight:800; line-height:1; letter-spacing:-.02em;">21.4°</div>
+                  <div style="font-size:48px; font-weight:800; line-height:1; letter-spacing:-.02em;">{{ acRoom }}</div>
                 </div>
                 <div style="width:1px; align-self:stretch; background:#2A323D;"></div>
                 <div style="flex:1;">
@@ -801,6 +818,7 @@
                 <span style="width:60px; height:34px; border-radius:999px; background:{{ boostTrack }}; position:relative;"><span style="position:absolute; top:3px; left:{{ boostKnob }}px; width:28px; height:28px; border-radius:50%; background:#fff; transition:left .2s;"></span></span>
               </button>
             </div>
+          </div>
           </div>
         </sc-if>
 
@@ -1474,11 +1492,16 @@ class Component extends DCLogic {
     ritScope: 'all', ritPast: true,
     beheerTab: 'iconen', rPerson: 'sem', rDay: 'ma', rOff: {}, rDis: {}, srcOff: {},
     pick: null, pickIcon: null, pickCat: 'ochtend', pickRem: true, learned: {},
-    dialog: false, kb: 'Spelletjesavond', offset: 1.0, mode: 'auto', boost: false,
+    dialog: false, kb: 'Spelletjesavond', offset: 1.0, mode: 'auto', boost: false, fan: 'auto', fanOpen: false,
     playing: true, volume: 42, scale: 1, fitMargin: 0,
     agView: 'day', agSet: 'gezin', agYmd: '2025-06-20', selEvent: null,
     done: { n3: true, s4: true, b3: true, b1: true },
-    target: 21.5,
+    target: 21.5, acSel: 'beneden',
+    acUnits: {
+      beneden: { target:21.5, offset:1.0, mode:'auto', boost:false },
+      boven:   { target:19.5, offset:0, mode:'cool', boost:false },
+      zolder:  { target:18.0, offset:0, mode:'off', boost:false },
+    },
     evDate: '2025-06-20', evTime: 1140, evCal: 'familie',
     taskDialog: false, taskText: 'Pakketje ophalen', taskList: 'boodschappen',
     spkDialog: false, active: 'woonkamer', joined: [], spkBase: null, carIdx: 0,
@@ -1532,6 +1555,13 @@ class Component extends DCLogic {
   }
 
   set(k, v) { this.setState({ [k]: v }); }
+  acSwitch(id) {
+    this.setState(s => {
+      if (s.acSel === id) return null;
+      const units = { ...s.acUnits, [s.acSel]: { target:s.target, offset:s.offset, mode:s.mode, boost:s.boost, fan:s.fan } };
+      return { acUnits: units, acSel: id, fan:'auto', fanOpen:false, ...units[id] };
+    });
+  }
 
   renderVals() {
     const s = this.state;
@@ -1561,9 +1591,18 @@ class Component extends DCLogic {
     const offset = s.offset;
     const offsetStr = (offset > 0 ? '+' : (offset < 0 ? '−' : '')) + Math.abs(offset).toFixed(1) + '°';
     const target = s.target.toFixed(1) + '°';
-    const climW = { auto:'#7AA2F7', cool:'#38BDF8', heat:'#FB923C', off:'#5E6976' };
+    const climW = { auto:'#7AA2F7', cool:'#38BDF8', heat:'#FB923C', off:'#5E6976', fan:'#A3E635', dry:'#2DD4BF' };
     const climAccent = climW[s.mode];
-    const climTintMap = { auto:'#161C28', cool:'#0E1A24', heat:'#221710', off:'#12161C' };
+    const climTintMap = { auto:'#161C28', cool:'#0E1A24', heat:'#221710', off:'#12161C', fan:'#161C12', dry:'#0F1C1C' };
+    const ovModes = [
+      { id:'off', icon:'mdi mdi-power', label:'Uit' },
+      { id:'fan', icon:'mdi mdi-fan', label:'Ventilator' },
+      { id:'dry', icon:'mdi mdi-water-percent', label:'Drogen' },
+      { id:'cool', icon:'mdi mdi-snowflake', label:'Koelen' },
+      { id:'heat', icon:'mdi mdi-fire', label:'Verwarmen' },
+      { id:'auto', icon:'mdi mdi-thermostat-auto', label:'Auto' },
+    ].map(m => { const a = s.mode === m.id; return { ...m, set:()=>this.set('mode', m.id),
+      bg: a ? (m.id==='off' ? '#2A323D' : climW[m.id] + '2E') : 'transparent', color: a ? (m.id==='off' ? '#F2F5F8' : climW[m.id]) : '#9BA7B4' }; });
     const arcDash = Math.round(((s.target - 16) / 10) * 707);
     const modeDefs = [
       { id:'auto', icon:'mdi mdi-autorenew', label:'Auto' },
@@ -1574,9 +1613,35 @@ class Component extends DCLogic {
     const modes = modeDefs.map(m => {
       const a = s.mode === m.id;
       return { ...m, set:()=>this.set('mode',m.id), color: a?climW[m.id]:'#5E6976', text: a?'#F2F5F8':'#9BA7B4',
-        style:`height:88px; border:2px solid ${a?climW[m.id]:'#222A35'}; border-radius:16px; background:${a?'rgba(255,255,255,.04)':'#10141B'}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer;` };
+        style:`height:72px; border:2px solid ${a?climW[m.id]:'#222A35'}; border-radius:16px; background:${a?'rgba(255,255,255,.04)':'#10141B'}; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; cursor:pointer;` };
     });
-    const modeHints = { auto:'Automatisch beheerd — de regie ligt bij de automatisering.', cool:'Actief koelen tot de doeltemperatuur.', heat:'Actief verwarmen tot de doeltemperatuur.', off:'Klimaatregeling staat uit.' };
+    const AC = [
+      { id:'beneden', name:'Beneden', title:'Beneden · woonkamer + keuken', room:21.4 },
+      { id:'boven', name:'Boven', title:'Boven · slaapkamers', room:22.8 },
+      { id:'zolder', name:'Zolder', title:'Zolder · werkkamer', room:25.1 },
+    ];
+    const acCurDef = AC.find(u => u.id === s.acSel) || AC[0];
+    const acTabs = AC.map(u => {
+      const sel = u.id === s.acSel;
+      const st = sel ? { target:s.target, mode:s.mode } : s.acUnits[u.id];
+      const md = ovModes.find(m => m.id === st.mode) || ovModes[0];
+      const on = st.mode !== 'off';
+      return { name:u.name, go:()=>this.acSwitch(u.id), modeIcon: md.icon,
+        color: on ? climW[st.mode] : '#5E6976', temp: u.room.toFixed(1)+'°',
+        sub: on ? md.label+' naar '+st.target.toFixed(1)+'°' : 'Uit',
+        text: sel ? '#F2F5F8' : '#C7D0DB',
+        border: sel ? (on ? climW[st.mode] : '#5E6976') : '#222A35',
+        bg: sel ? '#151A22' : '#10141B', pillBg: sel ? '#222A35' : 'transparent' };
+    });
+    const FAN = [
+      { id:'auto', label:'Automatisch', icon:'mdi mdi-fan-auto' },
+      { id:'1', label:'1 · Laagst', icon:'mdi mdi-fan-speed-1' },
+      { id:'2', label:'2 · Laag', icon:'mdi mdi-fan-speed-2' },
+      { id:'3', label:'3 · Hoog', icon:'mdi mdi-fan-speed-3' },
+      { id:'4', label:'4 · Hoogst', icon:'mdi mdi-fan-plus' },
+    ];
+    const fanCur = FAN.find(f => f.id === s.fan) || FAN[0];
+    const modeHints = { fan:'Alleen ventileren, zonder koelen of verwarmen.', dry:'Ontvochtigen van de lucht.', auto:'Automatisch beheerd — de regie ligt bij de automatisering.', cool:'Actief koelen tot de doeltemperatuur.', heat:'Actief verwarmen tot de doeltemperatuur.', off:'Klimaatregeling staat uit.' };
 
     // music
     const covers = ['linear-gradient(135deg,#F472B6,#7C3AED)','linear-gradient(135deg,#38BDF8,#0EA5E9)','linear-gradient(135deg,#FBBF24,#F97316)','linear-gradient(135deg,#34D399,#059669)','linear-gradient(135deg,#A78BFA,#6366F1)','linear-gradient(135deg,#F87171,#DC2626)','linear-gradient(135deg,#22D3EE,#3B82F6)','linear-gradient(135deg,#FB923C,#EAB308)','linear-gradient(135deg,#E879F9,#A21CAF)'];
@@ -1714,13 +1779,19 @@ class Component extends DCLogic {
       goAgenda:()=>this.set('page','agenda'), goClimate:()=>this.set('page','climate'), goEnergy:()=>this.set('page','energy'), goKlusjes:()=>this.set('page','klusjes'), goMusic:()=>this.set('page','music'),
 
       // overview/climate shared
-      offsetStr, targetStr: target, modeLabel: modeDefs.find(m=>m.id===s.mode).label,
+      offsetStr, targetStr: target, modeLabel: (ovModes.find(m=>m.id===s.mode)||{}).label,
 
       // climate
+      acTabs, ovModes, acTitle: acCurDef.title, acShort: acCurDef.name, acRoom: acCurDef.room.toFixed(1)+'°',
       climAccent, climTint: climTintMap[s.mode], arcDash, modes, modeHint: modeHints[s.mode],
       dec: () => this.set('target', Math.max(16, +(s.target - 0.5).toFixed(1))),
       inc: () => this.set('target', Math.min(26, +(s.target + 0.5).toFixed(1))),
       toggleBoost: () => this.set('boost', !s.boost),
+      boostBorder: s.boost ? 'rgba(251,146,60,.5)' : '#222A35', boostBg: s.boost ? 'rgba(251,146,60,.14)' : '#0B0E13',
+      toggleFanOpen: () => this.set('fanOpen', !s.fanOpen), fanOpen: s.fanOpen,
+      fanLabel: fanCur.label, fanIcon: fanCur.icon,
+      fanOpts: FAN.map(f => { const a = f.id === s.fan; return { ...f, set: () => this.setState({ fan: f.id, fanOpen: false }),
+        bg: a ? '#222A35' : 'transparent', color: a ? '#7AA2F7' : '#F2F5F8' }; }),
       boostColor: s.boost ? '#FB923C' : '#5E6976', boostText: s.boost ? '#F2F5F8' : '#9BA7B4',
       boostSub: s.boost ? 'Versneld naar doeltemperatuur · 30 min' : 'Tik om versneld te starten',
       boostTrack: s.boost ? '#FB923C' : '#2A323D', boostKnob: s.boost ? 29 : 3,
@@ -1734,10 +1805,10 @@ class Component extends DCLogic {
       togglePlay: () => this.set('playing', !s.playing),
       volume: s.volume,
       setVolClick: (e) => { const r = e.currentTarget.getBoundingClientRect(); const pct = Math.round(Math.max(0, Math.min(1, (e.clientX - r.left) / r.width)) * 100); this.set('volume', pct); },
-      showMini: s.page !== 'music' && s.page !== 'overview',
-      showMusicCard: anyPlaying,
-      climateOn: s.mode !== 'off',
-      showFallback: !anyPlaying,
+      showMini: true,
+      showMusicCard: false,
+      climateOn: true,
+      showFallback: true,
 
       // energy
       chartBars,
@@ -1806,7 +1877,8 @@ class Component extends DCLogic {
     for (let i=0;i<42;i++){ const d=addDays(gridStart,i); const dy=ymd(d); const inM=d.getMonth()===rM; const de=filtered.filter(e=>e.date===dy); const chips=de.slice(0,3).map(e=>({label:e.t1+' '+e.title, color:cals[e.cal].color, bg:hexA(cals[e.cal].color,0.16)})); monthCells.push({ day:d.getDate(), isToday:dy===tYmd, bg:inM?'#10141B':'#0A0D12', dayColor:dy===tYmd?'#14101D':(inM?'#F2F5F8':'#3A434F'), dayBg:dy===tYmd?'#B794F6':'transparent', chips, more:de.length>3, moreN:de.length-3, open:()=>this.setState({agYmd:dy,agView:'day'}) }); }
 
     let agPeriod;
-    if (s.agView==='day') agPeriod = WD_F[ref.getDay()]+' '+ref.getDate()+' '+MN[ref.getMonth()];
+    const relDay = {'-1':'Gisteren','0':'Vandaag','1':'Morgen'}[Math.round((new Date(s.agYmd)-new Date(tYmd))/864e5)];
+    if (s.agView==='day') agPeriod = relDay || (WD_F[ref.getDay()]+' '+ref.getDate()+' '+MN[ref.getMonth()]);
     else if (s.agView==='week'){ const we=addDays(ws,6); agPeriod = 'Week '+isoWeek(ref)+' · '+ws.getDate()+' '+MN_S[ws.getMonth()]+' – '+we.getDate()+' '+MN_S[we.getMonth()]; }
     else agPeriod = cap(MN[rM])+' '+rY;
 
@@ -1830,7 +1902,7 @@ class Component extends DCLogic {
     return {
       isDay:s.agView==='day', isWeek:s.agView==='week', isMonth:s.agView==='month',
       agPeriod, agViews, agSets, legend,
-      agPrev:()=>shift(-1), agNext:()=>shift(1), agToday:()=>this.set('agYmd',tYmd), isAgToday:s.agYmd===tYmd,
+      agPrev:()=>shift(-1), agNext:()=>shift(1), agToday:()=>this.set('agYmd',tYmd), isAgToday:s.agYmd===tYmd, agShowToday:s.agYmd!==tYmd,
       hours, dayEvents, dayEmpty, isTodayRef:s.agYmd===tYmd, nowTop:nowMin-420,
       weekDays, weekHasToday,
       monthCells,
@@ -1899,7 +1971,7 @@ class Component extends DCLogic {
       const gr = G[g], mem = gr.members;
       entries.push(mkEntry({ id:g, kind:'group', isGroup:true, name:gr.name, count:mem.length, members:mem,
         title:gr.title, artist:gr.artist, state:gr.state, quality:gr.quality, progress:gr.progress,
-        queueLabel:'Wachtrij (' + gr.queue + ')', art:gr.art, accent:'#38BDF8', tint:gr.tint,
+        queueLabel:'Wachtrij (' + gr.queue + ')', art:gr.art, accent:'#7AA2F7', tint:'#141A24',
         vol: Math.max(...mem.map(m => P[m].vol)), setVol: setMembersVol(mem),
         togglePlay: () => patchG(g, { state: gr.state === 'playing' ? 'paused' : 'playing' }) }));
     });
@@ -1907,7 +1979,7 @@ class Component extends DCLogic {
       const mem = [s.active, ...joined], lead = P[s.active];
       entries.push(mkEntry({ id:'sync', kind:'sync', isGroup:true, name:lead.name, count:mem.length, members:mem,
         title:lead.title, artist:lead.artist, state:lead.state, quality:lead.quality, progress:38,
-        queueLabel:'Wachtrij (1/12)', art:'disc', accent:'#F472B6', tint:'#2A1A2E',
+        queueLabel:'Wachtrij (1/12)', art:'disc', accent:'#7AA2F7', tint:'#141A24',
         vol: Math.max(...mem.map(m => P[m].vol)), setVol: setMembersVol(mem),
         togglePlay: () => patch(s.active, { state: lead.state === 'playing' ? 'paused' : 'playing' }) }));
     }
@@ -2276,7 +2348,7 @@ class Component extends DCLogic {
                t:a[1], done: en<=nowMin, isNow: st<=nowMin && en>nowMin };
     });
     const scope = s.ritScope === 'kids' ? PPL.filter(p=>p.kid) : PPL;
-    const ritPeople = scope.map(p => {
+    const mapP = p => {
       const mine = acts.filter(a => a.who===p.id).sort((a,b)=>a.s-b.s);
       const dn = mine.filter(a=>a.done).length;
 
@@ -2308,13 +2380,15 @@ class Component extends DCLogic {
         past: pastShow.map(a=>({ cls:a.cls })), hasPastMore: doneActs.length>3, pastMoreN: doneActs.length-3,
         nowStyle: `flex:none; width:274px; position:relative; overflow:hidden; display:flex; align-items:center; gap:11px; background:${nowBg}; border:1px solid ${cur?hexA(p.color,.45):'#222A35'}; border-radius:16px; padding:9px 13px; min-height:72px;`
       };
-    });
+    };
+    const ritPeople = scope.map(mapP);
+    const ovRit = PPL.map(mapP).map(p => ({ ...p, ovNext: p.next3.slice(0,3), ovNowColor: p.hasNow ? '#F2F5F8' : '#9BA7B4' }));
 
     const seg = (active, wide) => `display:flex; align-items:center; gap:7px; height:44px; padding:0 ${wide?15:16}px; border:none; border-radius:9px; background:${active?'#A3E635':'transparent'}; color:${active?'#141A08':'#9BA7B4'}; font-size:15px; font-weight:${active?700:600}; font-family:'Montserrat',sans-serif; white-space:nowrap; cursor:pointer;`;
 
     return {
-      ritPeople,
-      ritDay: 'Vrijdag 20 juni', ritHint: 'Nu bezig, en wat daarna komt',
+      ritPeople, ovRit,
+      ritDay: 'Nu & straks', ritHint: 'Nu bezig, en wat daarna komt',
       goBeheer:()=>this.set('page','beheer'), goRitme:()=>this.set('page','dagritme'),
       ritPast: s.ritPast,
       ritPastToggle: { set:()=>this.set('ritPast', !s.ritPast), style:seg(s.ritPast,true), label:'Gedaan' },
