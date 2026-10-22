@@ -35,6 +35,7 @@ substitutions:
   mdi_weather_windy_variant: "\U000F059E"
   mdi_calendar_plus: "\U000F00F3"
   mdi_plus_box_outline: "\U000F0704"
+  mdi_circle_small: "\U000F09DF"
 
 font: 
   - file: "fonts/materialdesignicons-webfont.ttf"
@@ -63,18 +64,26 @@ font:
       "${mdi_plus_box_outline}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
-    id: ha_icon
+    id: icons30
     size: 30
     bpp: 4
     glyphs: [
       "${mdi_home_assistant}",
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
-    id: settings_icon
+    id: icons28
     size: 28 
     bpp: 4
     glyphs: [
       "${mdi_settings}",
+    ]
+  - file: "fonts/materialdesignicons-webfont.ttf"
+    id: icons20
+    size: 20
+    bpp: 4
+    glyphs: [
+      "${mdi_air_conditioner}",
+      "${mdi_circle_small}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons

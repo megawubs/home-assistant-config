@@ -37,7 +37,7 @@ lvgl:
                   - label:
                       id: label_home_assistant
                       text: "${mdi_home_assistant}"
-                      text_font: ha_icon
+                      text_font: icons30
                       text_color: "${cornflower_blue}"
                       align: CENTER
             - container:
@@ -61,7 +61,7 @@ lvgl:
                   - label:
                       id: label_settings
                       text: "${mdi_settings}"
-                      text_font: settings_icon
+                      text_font: icons28
                       text_color: "${text_muted}"
                       align: CENTER
       - container:
@@ -296,17 +296,4 @@ mapping:
       sunny: "${mdi_weather_sunny}"
       windy: "${mdi_weather_windy}"
       windy-variant: "${mdi_weather_windy_variant}"
-
-  - id: day_map
-    from: int
-    to: string
-    entries:
-      1: DIM
-      2: LUN
-      3: MAR
-      4: MER
-      5: JEU
-      6: VEN
-      7: SAM
-    default_value: "---"
 
