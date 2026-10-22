@@ -7,6 +7,13 @@ packages:
       icon: "${mdi_home_outline}"
       checked_color: "${indigo_400}"
       page_id: page_overview
+  airco_widget: !include
+    file: airco.yaml
+    vars:
+      page_id: page_overview
+      container: container_right
+      widget: airco_widget
+
 
 lvgl:
   pages:
@@ -20,9 +27,11 @@ lvgl:
       pad_left: 120px
       pad_top: 94px
       pad_right: 24px
+      pad_bottom: 72px
+      # height: 742px
       widgets:
         - container:
-            id: container_grid_column_1
+            id: container_left
             layout:
               type: flex
               flex_flow: column
@@ -41,7 +50,7 @@ lvgl:
                     pad_column: 12px
                   widgets:
                     - button:
-                        bg_color: 0xB794F6
+                        bg_color: "${bg_heather}"
                         radius: 14px
                         height: 60px
                         flex_grow: 1
@@ -82,7 +91,7 @@ lvgl:
                               text: Taak
                         
         - container:
-            id: container_gid_column_2
+            id: container_right
             layout:
               type: flex
               flex_flow: column
@@ -90,26 +99,38 @@ lvgl:
               flex_align_track: start
               flex_align_cross: start
               pad_column: 16px
+              pad_row: 16px
             widgets:
               - container:
-                  id: container_aricos
-                  bg_grad: gradient_widget_container
-                  border_color: 0x222A35
-                  border_opa: cover
+                  id: airco_widget
+                              
+              - container:
+                  id: container_energy
+                  flex_grow: 3
+                  bg_color: "${bg_ink}"
+                  radius: 14
+                  bg_opa: COVER
+                  border_opa: COVER
+                  border_color: ${border_gunmetal}
+                  pad_left: 20px
+                  pad_right: 20px
+                  pad_top: 18px
+                  pad_bottom: 18px
                   widgets:
                     - label:
-                        text: "aircos"
-              # - container:
-              #     id: container_energy
-              #     bg_grad: gradient_widget_container
-              #     border_color: 0x222A35
-              #     widgets:
-              #       - label:
-              #           text: "Energy"
-              # - container:
-              #     id: container_energy_now
-              #     bg_grad: gradient_widget_container
-              #     border_color: 0x222A35
-              #     widgets:
-              #       - label:
-              #           text: "Energy now"
+                        text: "Energy"
+              - container:
+                  id: container_energy_now
+                  flex_grow: 1
+                  bg_color: "${bg_ink}"
+                  radius: 14
+                  bg_opa: COVER
+                  border_opa: COVER
+                  border_color: ${border_gunmetal}
+                  pad_left: 20px
+                  pad_right: 20px
+                  pad_top: 18px
+                  pad_bottom: 18px
+                  widgets:
+                    - label:
+                        text: "Energy now"

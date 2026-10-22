@@ -1,0 +1,31 @@
+# vars:
+#   uid:    unique identifier → ids worden ${uid}_button, ${uid}_icon en ${uid}_label
+#   label:  tekst op de button
+#   entity: de entity die gebruikt moet gaan worden
+#
+button:
+  id: ${uid}_button
+  bg_opa: TRANSP
+  layout:
+    type: flex
+    flex_flow: row
+    flex_align_track: CENTER
+    flex_align_main: CENTER
+    flex_align_cross: CENTER
+  radius: 14
+  checked:
+    bg_opa: COVER
+    bg_color: "${bg_gunmetal}"
+  on_press: 
+    - script.execute:
+        id: script_airco_widget
+        uid: "${uid}"
+  widgets:
+    - label:
+        id: ${uid}_icon
+        text_font: icons20
+        text: "${mdi_circle_small}"
+    - label:
+        id: ${uid}_label
+        text_font: montserrat_14
+        text: "${label}"

@@ -8,9 +8,16 @@ substitutions:
   text_primary: $slate_100
   text_secondary: $gray_400
   text_muted: $gray_500
-  ink: 0x1C1C1E
+  ink: 0x141923
   text_ink: ${ink}
   bg_ink: ${ink}
+  gunmetal: 0x222A36
+  text_gunmetal: ${gunmetal}
+  bg_gunmetal: ${gunmetal}
+  border_gunmetal: ${gunmetal}
+  heather: 0xB794F6
+  bg_heather: ${heather}
+  text_heather: ${heather}
   status_ok: $emerald_400
   status_warm: $amber_300
   status_fout: $red_400
