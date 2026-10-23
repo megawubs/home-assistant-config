@@ -26,7 +26,6 @@
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.tstat_9d4027_current_temperature') | float(none) }}"
-  # Stand spiegelt de echte unit (ook als een automation 'm uitzet, bv. raam open).
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_woonkamer') %}
     {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}
@@ -121,7 +120,6 @@
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) }}"
-  # Stand spiegelt de echte unit (ook als een automation 'm uitzet, bv. raam open).
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_boven') %}
     {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}
@@ -230,7 +228,6 @@
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) }}"
-  # Stand spiegelt de echte unit (ook als een automation 'm uitzet, bv. raam open).
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_zolder') %}
     {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}

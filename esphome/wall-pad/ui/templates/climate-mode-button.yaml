@@ -5,9 +5,6 @@
 #   checked_color: icoonkleur als deze modus actief is
 #   checked_bg:    achtergrondkleur als deze modus actief is
 #   checked_bg_opa: dekking van die achtergrond
-#
-# Het icoon-label heeft geen eigen text_color: het erft die van de button,
-# ook in de checked-state. Zo hoeft de state niet naar het label gespiegeld.
 button:
   id: climate_mode_${mode}_button
   height: 48px

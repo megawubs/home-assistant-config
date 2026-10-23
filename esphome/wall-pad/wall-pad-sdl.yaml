@@ -1,4 +1,3 @@
-# Lokale SDL-preview van de wall-pad UI op de Mac, met live HA-koppeling
 substitutions:
   name: wall-pad-preview
   friendly_name: WallPad Preview
@@ -24,7 +23,6 @@ api:
   encryption:
     key: !secret wallpad_preview_encryption_key
 
-# Venster op het formaat van het echte scherm (landscape, geen rotatie nodig)
 display:
   - platform: sdl
     id: main_display
@@ -32,7 +30,6 @@ display:
       width: 1280
       height: 800
     update_interval: never
-    # F12 schrijft een .bmp naar .esphome/snapshots/wall-pad-preview/
     snapshot_key: SDLK_F12
     window_options:
       position:

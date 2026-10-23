@@ -18,8 +18,6 @@ globals:
     initial_value: '"climate_woonkamer"'
     max_restore_data_length: 30
 
-  # Doeltemperatuur die het label toont. + / − rekenen hier vanaf, zodat snel
-  # tikken optelt, ook als HA nog niet heeft teruggemeld.
   - id: climate_displayed_target
     type: float
     initial_value: 'NAN'
@@ -265,7 +263,6 @@ lvgl:
                                   checked_bg: "${indigo_400}"
                                   checked_bg_opa: 18%
 
-# Huidige doeltemperatuur per climate_template (attribuut `temperature`).
 sensor:
   - platform: homeassistant
     id: climate_woonkamer_target
@@ -307,7 +304,6 @@ sensor:
                 value: !lambda return x;
             - script.execute: script_climate_show_target
 
-# Huidige modus (hvac_mode = de state) per climate_template.
 text_sensor:
   - platform: homeassistant
     id: climate_woonkamer_mode
@@ -356,7 +352,6 @@ text_sensor:
             - script.execute: script_climate_show_mode
 
 script:
-  # + / − : verhoog/verlaag de doeltemperatuur van de geselecteerde climate.
   - id: script_climate_step
     mode: queued
     parameters:
@@ -380,7 +375,6 @@ script:
               return entity_id;
             temperature: !lambda return str_sprintf("%.1f", id(climate_displayed_target));
 
-  # Zet de getoonde doeltemperatuur in het label ("--.-" zolang die onbekend is).
   - id: script_climate_show_target
     then:
       - lvgl.label.update:
@@ -390,7 +384,6 @@ script:
             if (std::isnan(displayed_target)) return std::string("--.-");
             return str_sprintf("%.1f", displayed_target);
 
-  # Modus-knop: zet de hvac_mode van de geselecteerde climate.
   - id: script_climate_set_mode
     parameters:
       mode: string
@@ -417,7 +410,6 @@ script:
                     return entity_id;
                   hvac_mode: !lambda return mode;
 
-  # Zet de modus-knop die bij climate_displayed_mode hoort op checked, de rest uit.
   - id: script_climate_show_mode
     then:
       - lvgl.widget.update:
