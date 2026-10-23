@@ -1,0 +1,29 @@
+substitutions:
+  slate_100: 0xF2F5F8    # primaire tekst
+  slate_300: 0xC7D0DB    # secundaire tekst
+  slate_800: 0x2A323D    # oppervlak/kaart
+  gray_400: 0x9BA7B4     # gedimde tekst
+  gray_500: 0x5E6976     # label/uppercase-tekst
+  gray_600: 0x4B5563
+  gray_700: 0x3A434F     # rand/scheidslijn
+  gray_800: 0x222A35     # oppervlak/kaart
+  gray_950: 0x070A0F     # hoofdachtergrond
+  zinc_700: 0x28313E     # oppervlak-niveau (lichtste)
+  zinc_800: 0x1B2330
+  zinc_900: 0x151A22     # oppervlak-niveau
+  zinc_950: 0x0B0E13     # oppervlak-niveau (donkerder)
+  neutral_800: 0x1B222C
+  neutral_900: 0x10141B  # oppervlak-niveau
+  stone_800: 0x1E2530
+  indigo_400: 0x7AA2F7   # accent: Overzicht
+  violet_400: 0xB794F6   # accent: Agenda
+  purple_400: 0xA78BFA
+  pink_400: 0xF472B6     # accent: Muziek
+  blue_400: 0x38BDF8     # accent: Airco
+  emerald_400: 0x34D399  # accent: Energie (opwek)
+  lime_300: 0xA3E635     # modus: ventilator
+  teal_400: 0x2DD4BF     # modus: drogen
+  amber_300: 0xFBBF24
+  orange_400: 0xFB923C   # warmte/boost
+  red_400: 0xF87171      # fout/geen verbinding
+  cornflower_blue: 0x7AA2F7
