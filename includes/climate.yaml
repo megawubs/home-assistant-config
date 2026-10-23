@@ -20,15 +20,16 @@
     - cool
     - heat
     - auto
+    - dry
+    - fan_only
   min_temp: 16
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.tstat_9d4027_current_temperature') | float(none) }}"
   # Stand spiegelt de echte unit (ook als een automation 'm uitzet, bv. raam open).
-  # dry / fan_only / auto tonen als 'auto'.
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_woonkamer') %}
-    {% if unit_state in ['off', 'heat', 'cool'] %}{{ unit_state }}
+    {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}
     {% else %}auto{% endif %}
   target_temperature_template: >-
     {% if is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') %}
@@ -60,6 +61,9 @@
           data:
             value: "{{ temperature }}"
   set_hvac_mode:
+    - if: "{{ hvac_mode in ['dry', 'fan_only'] }}"
+      then:
+        - stop: "Drogen/ventileren kiezen wordt nog niet ondersteund"
     - choose:
         - conditions: "{{ hvac_mode == 'off' }}"
           sequence:
@@ -111,15 +115,16 @@
     - cool
     - heat
     - auto
+    - dry
+    - fan_only
   min_temp: 16
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_slaapkamer_temperatuur') | float(none) }}"
   # Stand spiegelt de echte unit (ook als een automation 'm uitzet, bv. raam open).
-  # dry / fan_only / auto tonen als 'auto'.
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_boven') %}
-    {% if unit_state in ['off', 'heat', 'cool'] %}{{ unit_state }}
+    {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}
     {% else %}auto{% endif %}
   target_temperature_template: >-
     {% if is_state('input_boolean.airco_boven_moet_verwarmen','on') %}
@@ -151,6 +156,9 @@
           data:
             value: "{{ temperature }}"
   set_hvac_mode:
+    - if: "{{ hvac_mode in ['dry', 'fan_only'] }}"
+      then:
+        - stop: "Drogen/ventileren kiezen wordt nog niet ondersteund"
     - choose:
         - conditions: "{{ hvac_mode == 'off' }}"
           sequence:
@@ -216,15 +224,16 @@
     - cool
     - heat
     - auto
+    - dry
+    - fan_only
   min_temp: 16
   max_temp: 30
   temp_step: 0.5
   current_temperature_template: "{{ states('sensor.luchtkwaliteitsensor_zolder_temperatuur') | float(none) }}"
   # Stand spiegelt de echte unit (ook als een automation 'm uitzet, bv. raam open).
-  # dry / fan_only / auto tonen als 'auto'.
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_zolder') %}
-    {% if unit_state in ['off', 'heat', 'cool'] %}{{ unit_state }}
+    {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}
     {% else %}auto{% endif %}
   target_temperature_template: >-
     {% if is_state('input_boolean.airco_zolder_moet_verwarmen','on') %}
@@ -256,6 +265,9 @@
           data:
             value: "{{ temperature }}"
   set_hvac_mode:
+    - if: "{{ hvac_mode in ['dry', 'fan_only'] }}"
+      then:
+        - stop: "Drogen/ventileren kiezen wordt nog niet ondersteund"
     - choose:
         - conditions: "{{ hvac_mode == 'off' }}"
           sequence:
