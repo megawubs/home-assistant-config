@@ -78,10 +78,11 @@ lvgl:
                   id: !extend $widget
                   height: SIZE_CONTENT
                   bg_color: "${bg_ink}"
-                  radius: 14
+                  radius: 24
                   bg_opa: COVER
                   border_opa: COVER
-                  border_color: ${border_gunmetal}
+                  border_width: 1
+                  border_color: "${border}"
                   pad_left: 20px
                   pad_right: 20px
                   pad_top: 18px
@@ -91,7 +92,7 @@ lvgl:
                     flex_flow: column
                     flex_align_main: start
                     flex_align_track: start
-                    pad_row: 16px
+                    pad_row: 8px
                   widgets:
                     - container:
                         id: climate_widget_title
@@ -105,6 +106,7 @@ lvgl:
                           pad_column: 10px
                         widgets:
                           - label:
+                              id: climate_widget_icon
                               text_font: icons20
                               text_color: "${blue_400}"
                               text: "${mdi_air_conditioner}"
@@ -112,9 +114,9 @@ lvgl:
                               id: climate_widget_buttons_grid
                               flex_grow: 1
                               height: 53px
-                              bg_color: "${bg_ink}"
+                              bg_color: "${bg_secondary}"
                               bg_opa: COVER
-                              border_color: "${border_gunmetal}"
+                              border_color: "${border}"
                               border_opa: COVER
                               border_width: 1
                               pad_all: 4px
@@ -157,8 +159,9 @@ lvgl:
                               height: 60px
                               pad_all: 0
                               radius: 255
-                              bg_opa: TRANSP
-                              border_color:  "${border_gunmetal}"
+                              bg_color: "${zinc_900}"
+                              bg_opa: COVER
+                              border_color: "${slate_800}"
                               border_opa: COVER
                               border_width: 2
                               border_post: true
@@ -170,21 +173,22 @@ lvgl:
                                 - label:
                                     align: CENTER
                                     text_font: icons
-                                    text_color: "${blue_400}"
+                                    text_color: "${text_primary}"
                                     text: "${mdi_minus}"
                           - label:
                               id: climate_target_label
                               text_font: montserrat_46
                               text_color: "${blue_400}"
-                              text: "--.-"
+                              text: "--.-°"
                           - button:
                               id: climate_plus
                               width: 60px
                               height: 60px
                               pad_all: 0
                               radius: 255
-                              bg_opa: TRANSP
-                              border_color: "${border_gunmetal}"
+                              bg_color: "${zinc_900}"
+                              bg_opa: COVER
+                              border_color: "${slate_800}"
                               border_opa: COVER
                               border_post: true
                               border_width: 2
@@ -196,10 +200,11 @@ lvgl:
                                 - label:
                                     align: CENTER
                                     text_font: icons
-                                    text_color: "${blue_400}"
+                                    text_color: "${text_primary}"
                                     text: "${mdi_plus}"
                     - container:
                         id: climate_widget_mode_grid
+                        margin_top: 4px
                         height: SIZE_CONTENT
                         bg_color: "${bg_secondary}"
                         bg_opa: COVER
@@ -384,8 +389,8 @@ script:
           id: climate_target_label
           text: !lambda |-
             float displayed_target = id(climate_displayed_target);
-            if (std::isnan(displayed_target)) return std::string("--.-");
-            return str_sprintf("%.1f", displayed_target);
+            if (std::isnan(displayed_target)) return std::string("--.-°");
+            return str_sprintf("%.1f°", displayed_target);
 
   - id: script_climate_set_mode
     parameters:
@@ -415,6 +420,9 @@ script:
 
   - id: script_climate_show_mode
     then:
+      - lvgl.widget.update:
+          id: [climate_widget_icon, climate_target_label]
+          text_color: !lambda return lv_color_hex(id(climate_mode_color)[id(climate_displayed_mode)]);
       - lvgl.widget.update:
           id: climate_mode_off_button
           state:

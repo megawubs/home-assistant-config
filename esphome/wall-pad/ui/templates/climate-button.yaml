@@ -13,10 +13,12 @@ button:
     flex_align_track: CENTER
     flex_align_main: CENTER
     flex_align_cross: CENTER
-  radius: 14
+  radius: 10
+  text_color: "${slate_300}"
   checked:
     bg_opa: COVER
-    bg_color: "${bg_gunmetal}"
+    bg_color: "${border}"
+    text_color: "${text_primary}"
   on_press: 
     - script.execute:
         id: script_climate_widget
