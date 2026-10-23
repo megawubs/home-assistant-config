@@ -1,0 +1,40 @@
+preferences:
+  flash_write_interval: 10s
+
+api:
+  on_client_connected:
+    - wait_until:
+        condition:
+          api.connected:
+            state_subscription_only: true
+    - script.execute: ha_connected
+  on_client_disconnected:
+    - if:
+        condition:
+          lambda: 'return (0 == client_info.find("Home Assistant "));'
+        then:
+          - script.execute: ha_disconnected
+
+time:
+  - platform: homeassistant
+    id: ha_time
+    timezone: Europe/Amsterdam
+    on_time_sync:
+      - script.execute: time_update
+    on_time:
+      - minutes: '*'
+        seconds: 0
+        then:
+          - script.execute: time_update
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    id: device_uptime
+    update_interval: 60s
+    entity_category: diagnostic
+
+script:
+  - id: time_update
+  - id: ha_connected
+  - id: ha_disconnected
