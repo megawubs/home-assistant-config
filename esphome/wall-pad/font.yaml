@@ -37,6 +37,15 @@ substitutions:
   mdi_plus_box_outline: "\U000F0704"
   mdi_circle_small: "\U000F09DF"
 
+  mdi_power: "\U000F0425"
+  mdi_fan: "\U000F0210"
+  mdi_water_percent: "\U000F058E"
+  mdi_snowflake: "\U000F0717"
+  mdi_fire: "\U000F0238"
+  mdi_thermostat_auto: "\U000F1B17"
+  mdi_minus: "\U000F0374"
+  mdi_plus: "\U000F0415"
+
 font: 
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons24
@@ -61,7 +70,13 @@ font:
       "${mdi_weather_windy}",
       "${mdi_weather_windy_variant}",
       "${mdi_calendar_plus}",
-      "${mdi_plus_box_outline}"
+      "${mdi_plus_box_outline}",
+      "${mdi_power}",
+      "${mdi_fan}",
+      "${mdi_water_percent}",
+      "${mdi_snowflake}",
+      "${mdi_fire}",
+      "${mdi_thermostat_auto}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons30
@@ -104,7 +119,9 @@ font:
       "${mdi_calendar_month_outline}",
       "${mdi_music}",
       "${mdi_air_conditioner}",
-      "${mdi_lightning_bolt}"
+      "${mdi_lightning_bolt}",
+      "${mdi_minus}",
+      "${mdi_plus}"
     ]
   - file:
       type: gfonts

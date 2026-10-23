@@ -3,6 +3,14 @@
 #   container: 
 #   widget: 
 #
+esphome:
+  on_boot:
+    - priority: -100
+      then:
+        - script.execute:
+            id: script_climate_widget
+            uid: !lambda return id(selected_climate);
+
 globals:
   - id: selected_climate
     type: std::string
@@ -16,8 +24,10 @@ globals:
     type: float
     initial_value: 'NAN'
 
-# Conventie: de uid van een climate is zijn entity-id met '_' in plaats van '.'
-# (climate_woonkamer -> climate.woonkamer). Zo staat elke airco maar op één plek.
+  - id: climate_displayed_mode
+    type: std::string
+    initial_value: '""'
+
 mapping:
   - id: climate_target_sensor
     from: string
@@ -26,6 +36,26 @@ mapping:
       climate_woonkamer: climate_woonkamer_target
       climate_slaapkamer: climate_slaapkamer_target
       climate_zolder: climate_zolder_target
+
+  - id: climate_mode_color
+    from: string
+    to: int
+    default_value: ${gray_500}
+    entries:
+      "off": ${gray_500}
+      fan_only: ${lime_300}
+      dry: ${teal_400}
+      cool: ${blue_400}
+      heat: ${orange_400}
+      auto: ${indigo_400}
+
+  - id: climate_mode_sensor
+    from: string
+    to: text_sensor::TextSensor
+    entries:
+      climate_woonkamer: climate_woonkamer_mode
+      climate_slaapkamer: climate_slaapkamer_mode
+      climate_zolder: climate_zolder_mode
 
 lvgl:
   pages: 
@@ -129,9 +159,9 @@ lvgl:
                               widgets:
                                 - label:
                                     align: CENTER
-                                    text_font: montserrat_32
+                                    text_font: icons
                                     text_color: "${blue_400}"
-                                    text: "-"
+                                    text: "${mdi_minus}"
                           - label:
                               id: climate_target_label
                               text_font: montserrat_46
@@ -155,9 +185,73 @@ lvgl:
                               widgets:
                                 - label:
                                     align: CENTER
-                                    text_font: montserrat_32
+                                    text_font: icons
                                     text_color: "${blue_400}"
-                                    text: "+"
+                                    text: "${mdi_plus}"
+                    - container:
+                        id: climate_widget_mode_grid
+                        height: SIZE_CONTENT
+                        bg_color: "${bg_secondary}"
+                        bg_opa: COVER
+                        border_color: "${border}"
+                        border_opa: COVER
+                        border_width: 1
+                        radius: 14
+                        pad_all: 4px
+                        layout:
+                          type: grid
+                          grid_columns: [FR(1), FR(1), FR(1), FR(1), FR(1), FR(1)]
+                          pad_column: 4px
+                          grid_cell_x_align: STRETCH
+                        widgets:
+                            - !include
+                                file: ../../ui/templates/climate-mode-button.yaml
+                                vars:
+                                  mode: "off"
+                                  icon: "${mdi_power}"
+                                  checked_color: "${text_primary}"
+                                  checked_bg: "${slate_800}"
+                                  checked_bg_opa: COVER
+                            - !include
+                                file: ../../ui/templates/climate-mode-button.yaml
+                                vars:
+                                  mode: fan_only
+                                  icon: "${mdi_fan}"
+                                  checked_color: "${lime_300}"
+                                  checked_bg: "${lime_300}"
+                                  checked_bg_opa: 18%
+                            - !include
+                                file: ../../ui/templates/climate-mode-button.yaml
+                                vars:
+                                  mode: dry
+                                  icon: "${mdi_water_percent}"
+                                  checked_color: "${teal_400}"
+                                  checked_bg: "${teal_400}"
+                                  checked_bg_opa: 18%
+                            - !include
+                                file: ../../ui/templates/climate-mode-button.yaml
+                                vars:
+                                  mode: cool
+                                  icon: "${mdi_snowflake}"
+                                  checked_color: "${blue_400}"
+                                  checked_bg: "${blue_400}"
+                                  checked_bg_opa: 18%
+                            - !include
+                                file: ../../ui/templates/climate-mode-button.yaml
+                                vars:
+                                  mode: heat
+                                  icon: "${mdi_fire}"
+                                  checked_color: "${orange_400}"
+                                  checked_bg: "${orange_400}"
+                                  checked_bg_opa: 18%
+                            - !include
+                                file: ../../ui/templates/climate-mode-button.yaml
+                                vars:
+                                  mode: auto
+                                  icon: "${mdi_thermostat_auto}"
+                                  checked_color: "${indigo_400}"
+                                  checked_bg: "${indigo_400}"
+                                  checked_bg_opa: 18%
 
 # Huidige doeltemperatuur per climate_template (attribuut `temperature`).
 sensor:
@@ -201,6 +295,54 @@ sensor:
                 value: !lambda return x;
             - script.execute: script_climate_show_target
 
+# Huidige modus (hvac_mode = de state) per climate_template.
+text_sensor:
+  - platform: homeassistant
+    id: climate_woonkamer_mode
+    entity_id: climate.woonkamer
+    on_value:
+      - lvgl.widget.update:
+          id: climate_woonkamer_icon
+          text_color: !lambda return lv_color_hex(id(climate_mode_color)[x]);
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_woonkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_mode
+                value: !lambda return x;
+            - script.execute: script_climate_show_mode
+  - platform: homeassistant
+    id: climate_slaapkamer_mode
+    entity_id: climate.slaapkamer
+    on_value:
+      - lvgl.widget.update:
+          id: climate_slaapkamer_icon
+          text_color: !lambda return lv_color_hex(id(climate_mode_color)[x]);
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_slaapkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_mode
+                value: !lambda return x;
+            - script.execute: script_climate_show_mode
+  - platform: homeassistant
+    id: climate_zolder_mode
+    entity_id: climate.zolder
+    on_value:
+      - lvgl.widget.update:
+          id: climate_zolder_icon
+          text_color: !lambda return lv_color_hex(id(climate_mode_color)[x]);
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_zolder";
+          then:
+            - globals.set:
+                id: climate_displayed_mode
+                value: !lambda return x;
+            - script.execute: script_climate_show_mode
+
 script:
   # + / − : verhoog/verlaag de doeltemperatuur van de geselecteerde climate.
   - id: script_climate_step
@@ -236,6 +378,61 @@ script:
             if (std::isnan(displayed_target)) return std::string("--.-");
             return str_sprintf("%.1f", displayed_target);
 
+  # Modus-knop: zet de hvac_mode van de geselecteerde climate.
+  - id: script_climate_set_mode
+    parameters:
+      mode: string
+    then:
+      - if:
+          condition:
+            lambda: return mode == "dry" || mode == "fan_only";
+          then:
+            - logger.log:
+                format: "modus %s kiezen wordt nog niet ondersteund"
+                args: ['mode.c_str()']
+          else:
+            - globals.set:
+                id: climate_displayed_mode
+                value: !lambda return mode;
+            - script.execute: script_climate_show_mode
+            - homeassistant.action:
+                action: climate.set_hvac_mode
+                data:
+                  entity_id: !lambda |-
+                    std::string entity_id = id(selected_climate);
+                    auto separator_position = entity_id.find('_');
+                    if (separator_position != std::string::npos) entity_id[separator_position] = '.';
+                    return entity_id;
+                  hvac_mode: !lambda return mode;
+
+  # Zet de modus-knop die bij climate_displayed_mode hoort op checked, de rest uit.
+  - id: script_climate_show_mode
+    then:
+      - lvgl.widget.update:
+          id: climate_mode_off_button
+          state:
+            checked: !lambda return id(climate_displayed_mode) == "off";
+      - lvgl.widget.update:
+          id: climate_mode_fan_only_button
+          state:
+            checked: !lambda return id(climate_displayed_mode) == "fan_only";
+      - lvgl.widget.update:
+          id: climate_mode_dry_button
+          state:
+            checked: !lambda return id(climate_displayed_mode) == "dry";
+      - lvgl.widget.update:
+          id: climate_mode_cool_button
+          state:
+            checked: !lambda return id(climate_displayed_mode) == "cool";
+      - lvgl.widget.update:
+          id: climate_mode_heat_button
+          state:
+            checked: !lambda return id(climate_displayed_mode) == "heat";
+      - lvgl.widget.update:
+          id: climate_mode_auto_button
+          state:
+            checked: !lambda return id(climate_displayed_mode) == "auto";
+
   - id: script_climate_widget
     parameters:
       uid: string
@@ -262,6 +459,10 @@ script:
           auto *target_sensor = id(climate_target_sensor)[id(selected_climate)];
           id(climate_displayed_target) = target_sensor != nullptr ? target_sensor->state : NAN;
       - script.execute: script_climate_show_target
+      - lambda: |-
+          auto *mode_sensor = id(climate_mode_sensor)[id(selected_climate)];
+          id(climate_displayed_mode) = mode_sensor != nullptr ? mode_sensor->state : "";
+      - script.execute: script_climate_show_mode
       - logger.log: 
           format: "script done, selected_climate: %s"
           args: ['id(selected_climate).c_str()']
