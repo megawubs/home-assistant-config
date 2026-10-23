@@ -112,29 +112,10 @@ lvgl:
                           pad_column: 14px
                         widgets:
                           - button:
-                              id: climate_plus
-                              radius: 255
-                              bg_opa: TRANSP
-                              border_color: "${border_gunmetal}"
-                              border_opa: COVER
-                              border_post: true
-                              border_width: 2
-                              on_press:
-                                - script.execute:
-                                    id: script_climate_step
-                                    delta: 0.5
-                              widgets:
-                                - label:
-                                    text_font: montserrat_32
-                                    text_color: "${blue_400}"
-                                    text: "+"
-                          - label:
-                              id: climate_target_label
-                              text_font: montserrat_46
-                              text_color: "${blue_400}"
-                              text: "--.-"
-                          - button:
                               id: climate_min
+                              width: 60px
+                              height: 60px
+                              pad_all: 0
                               radius: 255
                               bg_opa: TRANSP
                               border_color:  "${border_gunmetal}"
@@ -147,10 +128,36 @@ lvgl:
                                     delta: -0.5
                               widgets:
                                 - label:
+                                    align: CENTER
                                     text_font: montserrat_32
                                     text_color: "${blue_400}"
                                     text: "-"
-                          
+                          - label:
+                              id: climate_target_label
+                              text_font: montserrat_46
+                              text_color: "${blue_400}"
+                              text: "--.-"
+                          - button:
+                              id: climate_plus
+                              width: 60px
+                              height: 60px
+                              pad_all: 0
+                              radius: 255
+                              bg_opa: TRANSP
+                              border_color: "${border_gunmetal}"
+                              border_opa: COVER
+                              border_post: true
+                              border_width: 2
+                              on_press:
+                                - script.execute:
+                                    id: script_climate_step
+                                    delta: 0.5
+                              widgets:
+                                - label:
+                                    align: CENTER
+                                    text_font: montserrat_32
+                                    text_color: "${blue_400}"
+                                    text: "+"
 
 # Huidige doeltemperatuur per climate_template (attribuut `temperature`).
 sensor:
