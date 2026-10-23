@@ -13,5 +13,6 @@ packages:
   common: !include ./common.yaml
   core: !include ./core.yaml
   display: !include ./display.yaml
+  ota_screen: !include ./ota-screen.yaml
   ui: !include ./ui.yaml
   font: !include ./font.yaml

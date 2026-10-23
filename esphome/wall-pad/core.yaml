@@ -50,10 +50,6 @@ api:
   encryption:
     key: !secret wallpad_encryption_key
 
-ota:
-  platform: esphome
-  encryption:
-
 esp32_ble_tracker:
   scan_parameters:
     interval: 320ms
