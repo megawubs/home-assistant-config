@@ -45,6 +45,12 @@ substitutions:
   mdi_thermostat_auto: "\U000F1B17"
   mdi_minus: "\U000F0374"
   mdi_plus: "\U000F0415"
+  mdi_fan_auto: "\U000F171D"
+  mdi_fan_speed_1: "\U000F1472"
+  mdi_fan_speed_2: "\U000F1473"
+  mdi_fan_speed_3: "\U000F1474"
+  mdi_fan_plus: "\U000F146F"
+  mdi_menu_down: "\U000F035D"
 
 font: 
   - file: "fonts/materialdesignicons-webfont.ttf"
@@ -76,7 +82,13 @@ font:
       "${mdi_water_percent}",
       "${mdi_snowflake}",
       "${mdi_fire}",
-      "${mdi_thermostat_auto}"
+      "${mdi_thermostat_auto}",
+      "${mdi_fan_auto}",
+      "${mdi_fan_speed_1}",
+      "${mdi_fan_speed_2}",
+      "${mdi_fan_speed_3}",
+      "${mdi_fan_plus}",
+      "${mdi_menu_down}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons30
@@ -104,7 +116,12 @@ font:
       "${mdi_water_percent}",
       "${mdi_snowflake}",
       "${mdi_fire}",
-      "${mdi_thermostat_auto}"
+      "${mdi_thermostat_auto}",
+      "${mdi_fan_auto}",
+      "${mdi_fan_speed_1}",
+      "${mdi_fan_speed_2}",
+      "${mdi_fan_speed_3}",
+      "${mdi_fan_plus}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons

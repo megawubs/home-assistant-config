@@ -1,0 +1,35 @@
+# vars:
+#   uid:      id-deel → id wordt climate_fan_${uid}_option
+#   fan_mode: HA fan_mode (auto, 1 Lowest, 2 Low, 3 High, 4 Highest)
+#   label:    tekst in de lijst
+#   icon:     MDI-glyph
+button:
+  id: climate_fan_${uid}_option
+  width: 100%
+  height: 38px
+  radius: 10
+  pad_left: 12px
+  pad_right: 12px
+  bg_opa: TRANSP
+  text_color: "${text_primary}"
+  layout:
+    type: flex
+    flex_flow: row
+    flex_align_cross: CENTER
+    flex_align_track: CENTER
+    pad_column: 10px
+  checked:
+    bg_color: "${border}"
+    bg_opa: COVER
+    text_color: "${indigo_400}"
+  on_press:
+    - script.execute:
+        id: script_climate_set_fan_mode
+        fan_mode: "${fan_mode}"
+  widgets:
+    - label:
+        text_font: icons20
+        text: "${icon}"
+    - label:
+        text_font: montserrat_16
+        text: "${label}"

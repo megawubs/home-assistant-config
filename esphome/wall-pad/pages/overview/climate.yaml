@@ -26,7 +26,41 @@ globals:
     type: std::string
     initial_value: '""'
 
+  - id: climate_displayed_fan_mode
+    type: std::string
+    initial_value: '""'
+
 mapping:
+  - id: climate_fan_sensor
+    from: string
+    to: text_sensor::TextSensor
+    entries:
+      climate_woonkamer: climate_woonkamer_fan_mode
+      climate_slaapkamer: climate_slaapkamer_fan_mode
+      climate_zolder: climate_zolder_fan_mode
+
+  - id: climate_fan_label
+    from: string
+    to: string
+    default_value: "Ventilator"
+    entries:
+      "auto": "Automatisch"
+      "1 Lowest": "1 • Laagst"
+      "2 Low": "2 • Laag"
+      "3 High": "3 • Hoog"
+      "4 Highest": "4 • Hoogst"
+
+  - id: climate_fan_icon
+    from: string
+    to: string
+    default_value: "${mdi_fan}"
+    entries:
+      "auto": "${mdi_fan_auto}"
+      "1 Lowest": "${mdi_fan_speed_1}"
+      "2 Low": "${mdi_fan_speed_2}"
+      "3 High": "${mdi_fan_speed_3}"
+      "4 Highest": "${mdi_fan_plus}"
+
   - id: climate_target_sensor
     from: string
     to: sensor::Sensor
@@ -77,6 +111,8 @@ lvgl:
               - container:
                   id: !extend $widget
                   height: SIZE_CONTENT
+                  overflow_visible: true
+                  scrollable: false
                   bg_color: "${bg_ink}"
                   radius: 24
                   bg_opa: COVER
@@ -267,6 +303,110 @@ lvgl:
                                   checked_color: "${indigo_400}"
                                   checked_bg: "${indigo_400}"
                                   checked_bg_opa: 18%
+                    - container:
+                        height: SIZE_CONTENT
+                        layout:
+                          type: flex
+                          flex_flow: row
+                          pad_column: 8px
+                        widgets:
+                          - button:
+                              id: climate_fan_button
+                              flex_grow: 1
+                              height: 48px
+                              radius: 12
+                              pad_left: 12px
+                              pad_right: 12px
+                              bg_color: "${bg_secondary}"
+                              bg_opa: COVER
+                              border_color: "${border}"
+                              border_opa: COVER
+                              border_width: 1
+                              layout:
+                                type: flex
+                                flex_flow: row
+                                flex_align_cross: CENTER
+                                flex_align_track: CENTER
+                                pad_column: 10px
+                              on_press:
+                                - if:
+                                    condition:
+                                      lambda: return lv_obj_has_flag(id(climate_fan_popup), LV_OBJ_FLAG_HIDDEN);
+                                    then:
+                                      - lvgl.widget.show: climate_fan_popup
+                                    else:
+                                      - lvgl.widget.hide: climate_fan_popup
+                              widgets:
+                                - label:
+                                    id: climate_fan_button_icon
+                                    text_font: icons24
+                                    text_color: "${text_secondary}"
+                                    text: "${mdi_fan}"
+                                - label:
+                                    id: climate_fan_button_label
+                                    flex_grow: 1
+                                    text_font: montserrat_16
+                                    text_color: "${text_primary}"
+                                    text: "Ventilator"
+                                - label:
+                                    text_font: icons24
+                                    text_color: "${text_secondary}"
+                                    text: "${mdi_menu_down}"
+                    - container:
+                        id: climate_fan_popup
+                        hidden: true
+                        ignore_layout: true
+                        align: BOTTOM_LEFT
+                        y: -56px
+                        width: 100%
+                        height: SIZE_CONTENT
+                        bg_color: "${zinc_900}"
+                        bg_opa: COVER
+                        border_color: "${slate_800}"
+                        border_opa: COVER
+                        border_width: 1
+                        radius: 14
+                        pad_all: 4px
+                        layout:
+                          type: flex
+                          flex_flow: column
+                          pad_row: 2px
+                        widgets:
+                          - !include
+                              file: ../../ui/templates/climate-fan-option.yaml
+                              vars:
+                                uid: auto
+                                fan_mode: "auto"
+                                label: "Automatisch"
+                                icon: "${mdi_fan_auto}"
+                          - !include
+                              file: ../../ui/templates/climate-fan-option.yaml
+                              vars:
+                                uid: speed_1
+                                fan_mode: "1 Lowest"
+                                label: "1 • Laagst"
+                                icon: "${mdi_fan_speed_1}"
+                          - !include
+                              file: ../../ui/templates/climate-fan-option.yaml
+                              vars:
+                                uid: speed_2
+                                fan_mode: "2 Low"
+                                label: "2 • Laag"
+                                icon: "${mdi_fan_speed_2}"
+                          - !include
+                              file: ../../ui/templates/climate-fan-option.yaml
+                              vars:
+                                uid: speed_3
+                                fan_mode: "3 High"
+                                label: "3 • Hoog"
+                                icon: "${mdi_fan_speed_3}"
+                          - !include
+                              file: ../../ui/templates/climate-fan-option.yaml
+                              vars:
+                                uid: speed_4
+                                fan_mode: "4 Highest"
+                                label: "4 • Hoogst"
+                                icon: "${mdi_fan_plus}"
 
 sensor:
   - platform: homeassistant
@@ -310,6 +450,45 @@ sensor:
             - script.execute: script_climate_show_target
 
 text_sensor:
+  - platform: homeassistant
+    id: climate_woonkamer_fan_mode
+    entity_id: climate.woonkamer
+    attribute: fan_mode
+    on_value:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_woonkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_fan_mode
+                value: !lambda return x;
+            - script.execute: script_climate_show_fan_mode
+  - platform: homeassistant
+    id: climate_slaapkamer_fan_mode
+    entity_id: climate.slaapkamer
+    attribute: fan_mode
+    on_value:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_slaapkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_fan_mode
+                value: !lambda return x;
+            - script.execute: script_climate_show_fan_mode
+  - platform: homeassistant
+    id: climate_zolder_fan_mode
+    entity_id: climate.zolder
+    attribute: fan_mode
+    on_value:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_zolder";
+          then:
+            - globals.set:
+                id: climate_displayed_fan_mode
+                value: !lambda return x;
+            - script.execute: script_climate_show_fan_mode
   - platform: homeassistant
     id: climate_woonkamer_mode
     entity_id: climate.woonkamer
@@ -418,6 +597,54 @@ script:
                     return entity_id;
                   hvac_mode: !lambda return mode;
 
+  - id: script_climate_set_fan_mode
+    parameters:
+      fan_mode: string
+    then:
+      - lvgl.widget.hide: climate_fan_popup
+      - globals.set:
+          id: climate_displayed_fan_mode
+          value: !lambda return fan_mode;
+      - script.execute: script_climate_show_fan_mode
+      - homeassistant.action:
+          action: climate.set_fan_mode
+          data:
+            entity_id: !lambda |-
+              std::string entity_id = id(selected_climate);
+              auto separator_position = entity_id.find('_');
+              if (separator_position != std::string::npos) entity_id[separator_position] = '.';
+              return entity_id;
+            fan_mode: !lambda return fan_mode;
+
+  - id: script_climate_show_fan_mode
+    then:
+      - lvgl.label.update:
+          id: climate_fan_button_icon
+          text: !lambda return id(climate_fan_icon)[id(climate_displayed_fan_mode)];
+      - lvgl.label.update:
+          id: climate_fan_button_label
+          text: !lambda return id(climate_fan_label)[id(climate_displayed_fan_mode)];
+      - lvgl.widget.update:
+          id: climate_fan_auto_option
+          state:
+            checked: !lambda return id(climate_displayed_fan_mode) == "auto";
+      - lvgl.widget.update:
+          id: climate_fan_speed_1_option
+          state:
+            checked: !lambda return id(climate_displayed_fan_mode) == "1 Lowest";
+      - lvgl.widget.update:
+          id: climate_fan_speed_2_option
+          state:
+            checked: !lambda return id(climate_displayed_fan_mode) == "2 Low";
+      - lvgl.widget.update:
+          id: climate_fan_speed_3_option
+          state:
+            checked: !lambda return id(climate_displayed_fan_mode) == "3 High";
+      - lvgl.widget.update:
+          id: climate_fan_speed_4_option
+          state:
+            checked: !lambda return id(climate_displayed_fan_mode) == "4 Highest";
+
   - id: script_climate_show_mode
     then:
       - lvgl.widget.update:
@@ -478,6 +705,10 @@ script:
           auto *mode_sensor = id(climate_mode_sensor)[id(selected_climate)];
           id(climate_displayed_mode) = mode_sensor != nullptr ? mode_sensor->state : "";
       - script.execute: script_climate_show_mode
+      - lambda: |-
+          auto *fan_sensor = id(climate_fan_sensor)[id(selected_climate)];
+          id(climate_displayed_fan_mode) = fan_sensor != nullptr ? fan_sensor->state : "";
+      - script.execute: script_climate_show_fan_mode
       - logger.log: 
           format: "script done, selected_climate: %s"
           args: ['id(selected_climate).c_str()']
