@@ -51,6 +51,7 @@ substitutions:
   mdi_fan_speed_3: "\U000F1474"
   mdi_fan_plus: "\U000F146F"
   mdi_menu_down: "\U000F035D"
+  mdi_rocket_launch_outline: "\U000F14DF"
 
 font: 
   - file: "fonts/materialdesignicons-webfont.ttf"
@@ -121,7 +122,8 @@ font:
       "${mdi_fan_speed_1}",
       "${mdi_fan_speed_2}",
       "${mdi_fan_speed_3}",
-      "${mdi_fan_plus}"
+      "${mdi_fan_plus}",
+      "${mdi_rocket_launch_outline}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons

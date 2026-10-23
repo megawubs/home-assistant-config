@@ -30,7 +30,27 @@ globals:
     type: std::string
     initial_value: '""'
 
+  - id: climate_displayed_boost
+    type: bool
+    initial_value: 'false'
+
 mapping:
+  - id: climate_boost_entity
+    from: string
+    to: string
+    entries:
+      climate_woonkamer: "input_boolean.airco_woonkamer_boost_modus"
+      climate_slaapkamer: "input_boolean.airco_boven_boost_modus"
+      climate_zolder: "input_boolean.airco_zolder_boost_modus"
+
+  - id: climate_boost_sensor
+    from: string
+    to: binary_sensor::BinarySensor
+    entries:
+      climate_woonkamer: climate_woonkamer_boost
+      climate_slaapkamer: climate_slaapkamer_boost
+      climate_zolder: climate_zolder_boost
+
   - id: climate_fan_sensor
     from: string
     to: text_sensor::TextSensor
@@ -352,6 +372,41 @@ lvgl:
                                     text_font: icons24
                                     text_color: "${text_secondary}"
                                     text: "${mdi_menu_down}"
+                          - button:
+                              id: climate_boost_button
+                              height: 48px
+                              radius: 12
+                              pad_left: 14px
+                              pad_right: 14px
+                              bg_color: "${bg_secondary}"
+                              bg_opa: COVER
+                              border_color: "${border}"
+                              border_opa: COVER
+                              border_width: 1
+                              text_color: "${text_secondary}"
+                              layout:
+                                type: flex
+                                flex_flow: row
+                                flex_align_cross: CENTER
+                                flex_align_track: CENTER
+                                pad_column: 8px
+                              checked:
+                                bg_color: "${orange_400}"
+                                bg_opa: 14%
+                                border_color: "${orange_400}"
+                                border_opa: 50%
+                                text_color: "${text_primary}"
+                              on_press:
+                                - script.execute: script_climate_toggle_boost
+                              widgets:
+                                - label:
+                                    id: climate_boost_icon
+                                    text_font: icons20
+                                    text_color: "${gray_500}"
+                                    text: "${mdi_rocket_launch_outline}"
+                                - label:
+                                    text_font: montserrat_16
+                                    text: "Boost"
                     - container:
                         id: climate_fan_popup
                         hidden: true
@@ -448,6 +503,44 @@ sensor:
                 id: climate_displayed_target
                 value: !lambda return x;
             - script.execute: script_climate_show_target
+
+binary_sensor:
+  - platform: homeassistant
+    id: climate_woonkamer_boost
+    entity_id: input_boolean.airco_woonkamer_boost_modus
+    on_state:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_woonkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_boost
+                value: !lambda return x;
+            - script.execute: script_climate_show_boost
+  - platform: homeassistant
+    id: climate_slaapkamer_boost
+    entity_id: input_boolean.airco_boven_boost_modus
+    on_state:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_slaapkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_boost
+                value: !lambda return x;
+            - script.execute: script_climate_show_boost
+  - platform: homeassistant
+    id: climate_zolder_boost
+    entity_id: input_boolean.airco_zolder_boost_modus
+    on_state:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_zolder";
+          then:
+            - globals.set:
+                id: climate_displayed_boost
+                value: !lambda return x;
+            - script.execute: script_climate_show_boost
 
 text_sensor:
   - platform: homeassistant
@@ -645,6 +738,28 @@ script:
           state:
             checked: !lambda return id(climate_displayed_fan_mode) == "4 Highest";
 
+  - id: script_climate_toggle_boost
+    then:
+      - globals.set:
+          id: climate_displayed_boost
+          value: !lambda return !id(climate_displayed_boost);
+      - script.execute: script_climate_show_boost
+      - homeassistant.action:
+          action: input_boolean.toggle
+          data:
+            entity_id: !lambda return id(climate_boost_entity)[id(selected_climate)];
+
+  - id: script_climate_show_boost
+    then:
+      - lvgl.widget.update:
+          id: climate_boost_button
+          state:
+            checked: !lambda return id(climate_displayed_boost);
+      - lvgl.label.update:
+          id: climate_boost_icon
+          text_color: !lambda |-
+            return lv_color_hex(id(climate_displayed_boost) ? ${orange_400} : ${gray_500});
+
   - id: script_climate_show_mode
     then:
       - lvgl.widget.update:
@@ -709,18 +824,10 @@ script:
           auto *fan_sensor = id(climate_fan_sensor)[id(selected_climate)];
           id(climate_displayed_fan_mode) = fan_sensor != nullptr ? fan_sensor->state : "";
       - script.execute: script_climate_show_fan_mode
+      - lambda: |-
+          auto *boost_sensor = id(climate_boost_sensor)[id(selected_climate)];
+          id(climate_displayed_boost) = boost_sensor != nullptr && boost_sensor->has_state() && boost_sensor->state;
+      - script.execute: script_climate_show_boost
       - logger.log: 
           format: "script done, selected_climate: %s"
           args: ['id(selected_climate).c_str()']
-      
-
-
-      
-# text_sensor:
-#   - platform: homeassistant
-#     id: climate_beneden_target_temperature
-#     entity_id: ${climate_beneden_target_temperature_entity}
-#     on_value:
-#       - lvgl.label.update:
-#           id: label_top_layer_temp_inside
-#           text: !lambda return x + "°";
