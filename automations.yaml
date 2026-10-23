@@ -2724,6 +2724,12 @@
       seconds: 0
     id: Verwarmen Klaar
     trigger: state
+  - trigger: state
+    entity_id:
+    - input_boolean.airco_woonkamer_moet_verwarmen
+    - input_boolean.airco_woonkamer_moet_afkoelen
+    to: 'off'
+    id: moet geforceerd gaat uit
   conditions:
   - condition: state
     entity_id: input_boolean.airco_woonkamer_manual_override
@@ -2747,6 +2753,35 @@
         data:
           temperature: '{{states(''sensor.airco_woonkamer_target_temperatuur'') |
             float }}'
+        target:
+          label_id: airco_beneden
+    - alias: 'Geforceerde modus uitgezet en niets te doen: direct uit'
+      conditions:
+      - condition: trigger
+        id:
+        - moet geforceerd gaat uit
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_afkoelen
+        state: 'off'
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_verwarmen
+        state: 'off'
+      - condition: state
+        entity_id: binary_sensor.airco_woonkamer_mag_ventileren
+        state: 'off'
+      - condition: not
+        conditions:
+        - condition: state
+          entity_id: climate.airco_woonkamer
+          state: 'off'
+      sequence:
+      - action: input_datetime.set_datetime
+        data:
+          timestamp: '{{ now().timestamp() }}'
+        target:
+          entity_id: input_datetime.airco_woonkamer_laatste_automatische_wijziging
+      - action: climate.turn_off
+        data: {}
         target:
           label_id: airco_beneden
     - alias: Afkoelen
