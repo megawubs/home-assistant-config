@@ -59,3 +59,7 @@ addons_autoscripts
 .idea/
 .DS_store
 esphome/esphome-modular-lvgl-buttons/
+
+# Python test environment
+.venv
+.pytest_cache
