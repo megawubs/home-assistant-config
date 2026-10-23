@@ -1,10 +1,11 @@
 # vars:
 #   uid:    unique identifier → ids worden ${uid}_button, ${uid}_icon en ${uid}_label
 #   label:  tekst op de button
-#   entity: de entity die gebruikt moet gaan worden
 #
 button:
   id: ${uid}_button
+  state:
+    checked: !lambda return id(selected_climate) == "${uid}";
   bg_opa: TRANSP
   layout:
     type: flex
@@ -18,7 +19,7 @@ button:
     bg_color: "${bg_gunmetal}"
   on_press: 
     - script.execute:
-        id: script_airco_widget
+        id: script_climate_widget
         uid: "${uid}"
   widgets:
     - label:

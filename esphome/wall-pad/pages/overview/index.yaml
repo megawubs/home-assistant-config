@@ -7,12 +7,12 @@ packages:
       icon: "${mdi_home_outline}"
       checked_color: "${indigo_400}"
       page_id: page_overview
-  airco_widget: !include
-    file: airco.yaml
+  climate_widget: !include
+    file: climate.yaml
     vars:
       page_id: page_overview
       container: container_right
-      widget: airco_widget
+      widget: climate_widget
 
 
 lvgl:
@@ -102,7 +102,7 @@ lvgl:
               pad_row: 16px
             widgets:
               - container:
-                  id: airco_widget
+                  id: climate_widget
                               
               - container:
                   id: container_energy

@@ -1,0 +1,272 @@
+# vars:
+#   page_id: 
+#   container: 
+#   widget: 
+#
+globals:
+  - id: selected_climate
+    type: std::string
+    restore_value: yes
+    initial_value: '"climate_woonkamer"'
+    max_restore_data_length: 30
+
+  # Doeltemperatuur die het label toont. + / − rekenen hier vanaf, zodat snel
+  # tikken optelt, ook als HA nog niet heeft teruggemeld.
+  - id: climate_displayed_target
+    type: float
+    initial_value: 'NAN'
+
+# Conventie: de uid van een climate is zijn entity-id met '_' in plaats van '.'
+# (climate_woonkamer -> climate.woonkamer). Zo staat elke airco maar op één plek.
+mapping:
+  - id: climate_target_sensor
+    from: string
+    to: sensor::Sensor
+    entries:
+      climate_woonkamer: climate_woonkamer_target
+      climate_slaapkamer: climate_slaapkamer_target
+      climate_zolder: climate_zolder_target
+
+lvgl:
+  pages: 
+    - id: !extend $page_id
+      widgets:
+        - container:
+            id: !extend $container
+            widgets: 
+              - container:
+                  id: !extend $widget
+                  flex_grow: 2
+                  bg_color: "${bg_ink}"
+                  radius: 14
+                  bg_opa: COVER
+                  border_opa: COVER
+                  border_color: ${border_gunmetal}
+                  pad_left: 20px
+                  pad_right: 20px
+                  pad_top: 18px
+                  pad_bottom: 18px
+                  layout:
+                    type: flex
+                    flex_flow: column
+                    flex_align_main: start
+                    flex_align_track: start
+                    pad_row: 16px
+                  widgets:
+                    - container:
+                        id: climate_widget_title
+                        flex_grow: 1
+                        layout:
+                          type: flex
+                          flex_flow: row
+                          flex_align_main: center
+                          flex_align_track: center
+                          flex_align_cross: center
+                          pad_column: 10px
+                        widgets:
+                          - label:
+                              text_font: icons20
+                              text_color: "${blue_400}"
+                              text: "${mdi_air_conditioner}"
+                          - container:
+                              id: climate_widget_buttons_grid
+                              flex_grow: 1
+                              height: 53px
+                              bg_color: "${bg_ink}"
+                              bg_opa: COVER
+                              border_color: "${border_gunmetal}"
+                              border_opa: COVER
+                              border_width: 1
+                              pad_all: 4px
+                              radius: 14
+                              layout:
+                                type: grid
+                                grid_columns: [FR(1), FR(1), FR(1)]
+                                pad_column: 6px
+                                grid_cell_x_align: STRETCH
+                                grid_cell_y_align: STRETCH
+                              widgets:
+                                - !include
+                                    file: ../../ui/templates/climate-button.yaml
+                                    vars:
+                                      uid: climate_woonkamer
+                                      label: "Beneden"
+                                - !include
+                                    file: ../../ui/templates/climate-button.yaml
+                                    vars:
+                                      uid: climate_slaapkamer
+                                      label: "Boven"
+                                - !include
+                                    file: ../../ui/templates/climate-button.yaml
+                                    vars:
+                                      uid: climate_zolder
+                                      label: "Zolder"
+                    - container:
+                        flex_grow: 1
+                        layout: 
+                          type: flex
+                          flex_flow: row
+                          flex_align_main: space_between
+                          flex_align_track: center
+                          # flex_align_cross: center
+                          pad_column: 14px
+                        widgets:
+                          - button:
+                              id: climate_plus
+                              radius: 255
+                              bg_opa: TRANSP
+                              border_color: "${border_gunmetal}"
+                              border_opa: COVER
+                              border_post: true
+                              border_width: 2
+                              on_press:
+                                - script.execute:
+                                    id: script_climate_step
+                                    delta: 0.5
+                              widgets:
+                                - label:
+                                    text_font: montserrat_32
+                                    text_color: "${blue_400}"
+                                    text: "+"
+                          - label:
+                              id: climate_target_label
+                              text_font: montserrat_46
+                              text_color: "${blue_400}"
+                              text: "--.-"
+                          - button:
+                              id: climate_min
+                              radius: 255
+                              bg_opa: TRANSP
+                              border_color:  "${border_gunmetal}"
+                              border_opa: COVER
+                              border_width: 2
+                              border_post: true
+                              on_press:
+                                - script.execute:
+                                    id: script_climate_step
+                                    delta: -0.5
+                              widgets:
+                                - label:
+                                    text_font: montserrat_32
+                                    text_color: "${blue_400}"
+                                    text: "-"
+                          
+
+# Huidige doeltemperatuur per climate_template (attribuut `temperature`).
+sensor:
+  - platform: homeassistant
+    id: climate_woonkamer_target
+    entity_id: climate.woonkamer
+    attribute: temperature
+    on_value:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_woonkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_target
+                value: !lambda return x;
+            - script.execute: script_climate_show_target
+  - platform: homeassistant
+    id: climate_slaapkamer_target
+    entity_id: climate.slaapkamer
+    attribute: temperature
+    on_value:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_slaapkamer";
+          then:
+            - globals.set:
+                id: climate_displayed_target
+                value: !lambda return x;
+            - script.execute: script_climate_show_target
+  - platform: homeassistant
+    id: climate_zolder_target
+    entity_id: climate.zolder
+    attribute: temperature
+    on_value:
+      - if:
+          condition:
+            lambda: return id(selected_climate) == "climate_zolder";
+          then:
+            - globals.set:
+                id: climate_displayed_target
+                value: !lambda return x;
+            - script.execute: script_climate_show_target
+
+script:
+  # + / − : verhoog/verlaag de doeltemperatuur van de geselecteerde climate.
+  - id: script_climate_step
+    mode: queued
+    parameters:
+      delta: float
+    then:
+      - lambda: |-
+          float current_target = id(climate_displayed_target);
+          if (std::isnan(current_target)) current_target = 20.0f;
+          float new_target = std::max(16.0f, std::min(30.0f, current_target + delta));
+          ESP_LOGD("climate", "%s: %.1f -> %.1f (stap %+.1f)",
+                   id(selected_climate).c_str(), current_target, new_target, delta);
+          id(climate_displayed_target) = new_target;
+      - script.execute: script_climate_show_target
+      - homeassistant.action:
+          action: climate.set_temperature
+          data:
+            entity_id: !lambda |-
+              std::string entity_id = id(selected_climate);
+              auto separator_position = entity_id.find('_');
+              if (separator_position != std::string::npos) entity_id[separator_position] = '.';
+              return entity_id;
+            temperature: !lambda return str_sprintf("%.1f", id(climate_displayed_target));
+
+  # Zet de getoonde doeltemperatuur in het label ("--.-" zolang die onbekend is).
+  - id: script_climate_show_target
+    then:
+      - lvgl.label.update:
+          id: climate_target_label
+          text: !lambda |-
+            float displayed_target = id(climate_displayed_target);
+            if (std::isnan(displayed_target)) return std::string("--.-");
+            return str_sprintf("%.1f", displayed_target);
+
+  - id: script_climate_widget
+    parameters:
+      uid: string
+    then:
+      - logger.log: 
+          format: "%s pressed, selected_climate: %s"
+          args: ['uid.c_str()', 'id(selected_climate).c_str()']
+      - globals.set:
+          id: selected_climate
+          value: !lambda return uid;
+      - lvgl.widget.update:
+          id: climate_woonkamer_button
+          state:
+            checked: !lambda return id(selected_climate) == "climate_woonkamer";
+      - lvgl.widget.update:
+          id: climate_slaapkamer_button
+          state:
+            checked: !lambda return id(selected_climate) == "climate_slaapkamer";
+      - lvgl.widget.update:
+          id: climate_zolder_button
+          state:
+            checked: !lambda return id(selected_climate) == "climate_zolder";
+      - lambda: |-
+          auto *target_sensor = id(climate_target_sensor)[id(selected_climate)];
+          id(climate_displayed_target) = target_sensor != nullptr ? target_sensor->state : NAN;
+      - script.execute: script_climate_show_target
+      - logger.log: 
+          format: "script done, selected_climate: %s"
+          args: ['id(selected_climate).c_str()']
+      
+
+
+      
+# text_sensor:
+#   - platform: homeassistant
+#     id: climate_beneden_target_temperature
+#     entity_id: ${climate_beneden_target_temperature_entity}
+#     on_value:
+#       - lvgl.label.update:
+#           id: label_top_layer_temp_inside
+#           text: !lambda return x + "°";
