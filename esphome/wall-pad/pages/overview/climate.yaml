@@ -36,7 +36,7 @@ lvgl:
             widgets: 
               - container:
                   id: !extend $widget
-                  flex_grow: 2
+                  height: SIZE_CONTENT
                   bg_color: "${bg_ink}"
                   radius: 14
                   bg_opa: COVER
@@ -55,7 +55,7 @@ lvgl:
                   widgets:
                     - container:
                         id: climate_widget_title
-                        flex_grow: 1
+                        height: SIZE_CONTENT
                         layout:
                           type: flex
                           flex_flow: row
@@ -102,7 +102,7 @@ lvgl:
                                       uid: climate_zolder
                                       label: "Zolder"
                     - container:
-                        flex_grow: 1
+                        height: SIZE_CONTENT
                         layout: 
                           type: flex
                           flex_flow: row
