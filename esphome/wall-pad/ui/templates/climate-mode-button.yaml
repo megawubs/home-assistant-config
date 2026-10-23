@@ -1,0 +1,30 @@
+# vars:
+#   mode:          HA hvac_mode (off, fan_only, dry, cool, heat, auto)
+#                  → id wordt climate_mode_${mode}_button
+#   icon:          MDI-glyph
+#   checked_color: icoonkleur als deze modus actief is
+#   checked_bg:    achtergrondkleur als deze modus actief is
+#   checked_bg_opa: dekking van die achtergrond
+#
+# Het icoon-label heeft geen eigen text_color: het erft die van de button,
+# ook in de checked-state. Zo hoeft de state niet naar het label gespiegeld.
+button:
+  id: climate_mode_${mode}_button
+  height: 48px
+  radius: 10
+  pad_all: 0
+  bg_opa: TRANSP
+  text_color: "${text_secondary}"
+  checked:
+    bg_color: "${checked_bg}"
+    bg_opa: ${checked_bg_opa}
+    text_color: "${checked_color}"
+  on_press:
+    - script.execute:
+        id: script_climate_set_mode
+        mode: "${mode}"
+  widgets:
+    - label:
+        align: CENTER
+        text_font: icons24
+        text: "${icon}"
