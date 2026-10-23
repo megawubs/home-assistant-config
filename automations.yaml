@@ -3042,6 +3042,11 @@
             message: Airco woonkamer uitgezet (verwarmen klaar, buiten warm genoeg)
     - alias: 'Te koud: airco volledig uit (min-uit-cyclus)'
       conditions:
+      - condition: numeric_state
+        entity_id: weather.home
+        attribute: temperature
+        below: input_number.airco_ventileren_buitentemp_drempel
+        above: input_number.airco_ventileren_buitentemp_drempel
       - condition: state
         entity_id: binary_sensor.airco_woonkamer_mag_aan
         state: 'on'
@@ -3829,30 +3834,37 @@
     de nacht.
   triggers:
   - entity_id:
-    - sensor.droger_bedrijfsstatus
-    to: Finished
+    - sensor.bijkeuken_droger_bedrijfsstatus
+    to:
+    - Finished
     id: Droger Finished
-    platform: state
+    trigger: state
   - entity_id:
-    - sensor.droger_bedrijfsstatus
-    to: run
+    - sensor.bijkeuken_droger_bedrijfsstatus
+    to:
+    - run
     id: Droger Started
-    from: delayedstart
-    platform: state
+    from:
+    - delayedstart
+    trigger: state
   - entity_id:
-    - sensor.wasmachine_bedrijfsstatus
-    from: Run
-    to: Finished
+    - sensor.bijkeuken_wasmachine_bedrijfsstatus
+    from:
+    - Run
+    to:
+    - Finished
     id: Wasmachine Finished
-    platform: state
+    trigger: state
   - entity_id:
-    - sensor.wasmachine_bedrijfsstatus
-    from: delayedstart
-    to: run
+    - sensor.bijkeuken_wasmachine_bedrijfsstatus
+    from:
+    - delayedstart
+    to:
+    - run
     id: Wasmachine Started
-    platform: state
+    trigger: state
   - entity_id:
-    - select.droger_geselecteerd_programma
+    - select.bijkeuken_droger_geselecteerd_programma
     id: droger_klaar
     not_from:
     - unknown
@@ -3864,9 +3876,9 @@
       hours: 0
       minutes: 0
       seconds: 7
-    platform: state
+    trigger: state
   - entity_id:
-    - select.wasmachine_geselecteerd_programma
+    - select.bijkeuken_wasmachine_geselecteerd_programma
     id: wasmachine_klaar
     not_from:
     - unknown
@@ -3878,16 +3890,17 @@
       hours: 0
       minutes: 0
       seconds: 7
-    platform: state
+    trigger: state
   - entity_id:
-    - sensor.droger_bedrijfsstatus
-    to: ready
+    - sensor.bijkeuken_droger_bedrijfsstatus
+    to:
+    - ready
     id: droger_klaar
     for:
       hours: 0
       minutes: 0
       seconds: 10
-    platform: state
+    trigger: state
   conditions: []
   actions:
   - choose:
@@ -3897,7 +3910,7 @@
         - wasmachine_klaar
       sequence:
       - variables:
-          duration_hours: '{% set hours = states(''sensor.wasmachine_estimated_total_program_time'')
+          duration_hours: '{% set hours = states(''sensor.bijkeuken_wasmachine_estimated_total_program_time'')
             | float(3.5) %} {{ [hours, 0.5] | max }}'
           start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
             %} {% set search_start = now() %} {% set search_end = today_at('07:00')
@@ -3922,7 +3935,7 @@
             finish_in:
               hours: '{{ hours }}'
               minutes: '{{ minutes }}'
-            device_id: 805a0e4a4b9ae3127127eab96b31ac4d
+            device_id: f135e4a4aafeb466d9f0d0f9b2a68deb
           continue_on_error: true
         - if:
           - condition: template
@@ -3948,7 +3961,7 @@
         - droger_klaar
       sequence:
       - variables:
-          duration_hours: '{% set hours = states(''sensor.droger_estimated_total_program_time'')
+          duration_hours: '{% set hours = states(''sensor.bijkeuken_droger_estimated_total_program_time'')
             | float(3.5) %} {{ [hours, 0.5] | max }}'
           start_time: "{% from 'cheapest_energy_hours.jinja' import cheapest_energy_hours
             %} {% set search_start = now() %} {% set search_end = today_at('07:00')
@@ -3996,7 +4009,7 @@
       - variables:
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''Wasmachine Finished''
             else ''droger'' }}'
-          appliance_program_scheduled: input_boolean.{{ appliance_name }}_programma_ingepland
+          appliance_program_scheduled: input_boolean.bijkeuken_{{ appliance_name }}_programma_ingepland
       - data:
           message: De {{appliance_name}} is klaar!
         action: notify.mobile_app_iphone_van_bram
@@ -4009,7 +4022,7 @@
       - variables:
           appliance_name: '{{ ''wasmachine'' if trigger.id == ''Wasmachine Started''
             else ''droger'' }}'
-          appliance_program_scheduled: input_boolean.{{ appliance_name }}_programma_ingepland
+          appliance_program_scheduled: input_boolean.bijkeuken_{{ appliance_name }}_programma_ingepland
       - data:
           message: De {{appliance_name}} is gestart!
         action: notify.mobile_app_iphone_van_bram
@@ -5504,8 +5517,12 @@
     de lampen niet onnodig gaan knipperen.
   triggers:
   - below: 0.5
-    entity_id: sensor.watermeter_water_gebruik
-    for: 00:01:30
+    entity_id:
+    - sensor.watermeter_water_gebruik
+    for:
+      hours: 0
+      minutes: 0
+      seconds: 20
     trigger: numeric_state
   conditions:
   - condition: state
@@ -6870,4 +6887,98 @@
         aan staat en er geen override actief is. Verwacht was GREEN op 40. Watertemperatuur
         nu {{ state_attr('water_heater.boiler','current_temperature') }} graden.
       title: 'Vakantiecheck: boiler staat niet zuinig'
+  mode: single
+- id: '1792567222583'
+  alias: Airco uit bij open verbinding naar buiten
+  description: ''
+  triggers:
+  - trigger: state
+    entity_id:
+    - binary_sensor.master_bedroom_raam_open_verbinding_naar_buiten_master_bedroom
+    to:
+    - 'on'
+    id: Open
+  - trigger: state
+    entity_id:
+    - binary_sensor.master_bedroom_raam_open_verbinding_naar_buiten_master_bedroom
+    to:
+    - 'off'
+    id: Dicht
+  - trigger: climate.turned_on
+    target:
+      device_id: e411ff839bb5b2a4aac47eac13179cd0
+    options:
+      behavior: each
+      for: 00:00:00
+    id: generated-V0cZ
+  conditions: []
+  actions:
+  - choose:
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Open
+        - condition: climate.is_hvac_mode
+          target:
+            device_id: e411ff839bb5b2a4aac47eac13179cd0
+          options:
+            behavior: any
+            for: 00:00:00
+            hvac_mode:
+            - fan_only
+            - auto
+            - dry
+            - cool
+            - heat
+          enabled: true
+      sequence:
+      - action: scene.create
+        metadata: {}
+        data:
+          scene_id: airco_master_bedroom_state
+          snapshot_entities:
+          - climate.airco_boven
+      - action: climate.toggle
+        metadata: {}
+        target:
+          device_id: e411ff839bb5b2a4aac47eac13179cd0
+        data: {}
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - Dicht
+        - condition: climate.is_off
+          target:
+            device_id: e411ff839bb5b2a4aac47eac13179cd0
+          options:
+            behavior: any
+            for: 00:00:00
+      sequence:
+      - action: scene.turn_on
+        metadata: {}
+        target:
+          entity_id: scene.airco_master_bedroom_state
+        data: {}
+    - conditions:
+      - condition: and
+        conditions:
+        - condition: trigger
+          id:
+          - generated-V0cZ
+        - condition: window.is_open
+          target:
+            entity_id: binary_sensor.master_bedroom_raam_open_verbinding_naar_buiten_master_bedroom
+          options:
+            behavior: any
+            for: 00:00:00
+      sequence:
+      - action: climate.toggle
+        metadata: {}
+        target:
+          device_id: e411ff839bb5b2a4aac47eac13179cd0
+        data: {}
   mode: single

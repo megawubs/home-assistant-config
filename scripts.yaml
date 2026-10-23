@@ -98,33 +98,38 @@ wakker_worden:
   - data: {}
     action: script.media_groepeer_woonkamer
     enabled: false
-  - action: media_player.volume_set
-    metadata: {}
-    target:
-      entity_id: media_player.benedenverdieping_2
-    data:
-      volume_level: 0.02
-  - data:
-      media:
-        media_content_id: media-source://radio_browser/ead62101-c57c-4841-9677-8500f9097091
-        media_content_type: audio/mpeg
-        metadata:
-          title: Groot Nieuws Radio
-          thumbnail: https://www.grootnieuwsradio.nl/favicons/favicon-1-180x180.png
-          media_class: music
-          children_media_class:
-          navigateIds:
-          - {}
-          - media_content_type: app
-            media_content_id: media-source://radio_browser
-          - media_content_type: music
-            media_content_id: media-source://radio_browser/language
-          - media_content_type: music
-            media_content_id: media-source://radio_browser/language/nl
-      enqueue: play
-    action: media_player.play_media
-    target:
-      entity_id: media_player.benedenverdieping_2
+  - if:
+    - condition: media_player.is_not_playing
+      target:
+        entity_id: media_player.benedenverdieping_2
+      options:
+        behavior: any
+        for: 00:00:00
+    then:
+    - action: media_player.volume_set
+      metadata: {}
+      target:
+        entity_id: media_player.benedenverdieping_2
+      data:
+        volume_level: 0.02
+    - data:
+        media:
+          media_content_id: library://radio/1
+          media_content_type: music
+          metadata:
+            title: Groot Nieuws Radio
+            thumbnail: https://cdn-profiles.tunein.com/s80791/images/logoq.jpg?t=637980771580000000
+            media_class: music
+            children_media_class:
+            navigateIds:
+            - {}
+            - media_content_type: music_assistant
+              media_content_id: radio
+            browse_entity_id: media_player.benedenverdieping_2
+        enqueue: play
+      action: media_player.play_media
+      target:
+        entity_id: media_player.benedenverdieping_2
   mode: single
 speel_geselecteerde_playlist_af:
   alias: Speel geselecteerde playlist af
@@ -150,7 +155,6 @@ woonkamer_aan:
   sequence:
   - data:
       brightness_pct: 60
-      transition: 30
     target:
       area_id:
       - 3baf8165348041e1b29208776b5bf03d
@@ -206,8 +210,7 @@ media_groepeer_woonkamer:
 woonkamer_uit:
   alias: woonkamer uit
   sequence:
-  - data:
-      transition: 30
+  - data: {}
     target:
       floor_id: beneden
     action: light.turn_off
