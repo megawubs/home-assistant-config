@@ -26,9 +26,6 @@ esp_ldo:
     id: display_supply_ldo
     voltage: 2.5V
 
-preferences:
-  flash_write_interval: 10s
-
 psram:
   mode: hex
   speed: 200MHz
@@ -52,18 +49,6 @@ logger:
 api:
   encryption:
     key: !secret wallpad_encryption_key
-  on_client_connected:
-    - wait_until:
-        condition:
-          api.connected:
-            state_subscription_only: true
-    - script.execute: ha_connected
-  on_client_disconnected:
-    - if:
-        condition:
-          lambda: 'return (0 == client_info.find("Home Assistant "));'
-        then:
-          - script.execute: ha_disconnected
 
 ota:
   platform: esphome
@@ -79,28 +64,10 @@ esp32_ble_tracker:
 bluetooth_proxy:
   active: true
 
-time:
-  - platform: homeassistant
-    id: ha_time
-    timezone: Europe/Amsterdam
-    on_time_sync:
-      - script.execute: time_update
-    on_time: 
-      - minutes: '*'
-        seconds: 0
-        then: 
-          - script.execute: time_update
-
 sensor:
   - platform: wifi_signal
     name: "Signal strength"
     id: wifi_signal_db
-    update_interval: 60s
-    entity_category: diagnostic
-
-  - platform: uptime
-    name: "Uptime"
-    id: device_uptime
     update_interval: 60s
     entity_category: diagnostic
 
@@ -109,10 +76,4 @@ sensor:
     id: chip_temperature
     update_interval: 60s
     entity_category: diagnostic
-
-
-script:
-  - id: time_update
-  - id: ha_connected
-  - id: ha_disconnected
 

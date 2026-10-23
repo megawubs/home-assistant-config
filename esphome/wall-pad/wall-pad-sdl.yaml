@@ -1,0 +1,44 @@
+# Lokale SDL-preview van de wall-pad UI op de Mac, met live HA-koppeling
+substitutions:
+  name: wall-pad-preview
+  friendly_name: WallPad Preview
+  idle_brightness: "1%"
+  idle_timeout: "30s"
+
+esphome:
+  name: $name
+  friendly_name: $friendly_name
+
+host:
+
+packages:
+  colors: !include ./colors.yaml
+  common: !include ./common.yaml
+  ui: !include ./ui.yaml
+  font: !include ./font.yaml
+
+logger:
+  level: DEBUG
+
+api:
+  encryption:
+    key: !secret wallpad_preview_encryption_key
+
+# Venster op het formaat van het echte scherm (landscape, geen rotatie nodig)
+display:
+  - platform: sdl
+    id: main_display
+    dimensions:
+      width: 1280
+      height: 800
+    update_interval: never
+    # F12 schrijft een .bmp naar .esphome/snapshots/wall-pad-preview/
+    snapshot_key: SDLK_F12
+    window_options:
+      position:
+        centered_on_display: 0
+
+touchscreen:
+  - platform: sdl
+    id: main_touchscreen
+    display: main_display
