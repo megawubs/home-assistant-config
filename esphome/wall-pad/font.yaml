@@ -98,7 +98,13 @@ font:
     bpp: 4
     glyphs: [
       "${mdi_air_conditioner}",
-      "${mdi_circle_small}"
+      "${mdi_circle_small}",
+      "${mdi_power}",
+      "${mdi_fan}",
+      "${mdi_water_percent}",
+      "${mdi_snowflake}",
+      "${mdi_fire}",
+      "${mdi_thermostat_auto}"
     ]
   - file: "fonts/materialdesignicons-webfont.ttf"
     id: icons

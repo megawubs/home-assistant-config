@@ -309,8 +309,9 @@ text_sensor:
     id: climate_woonkamer_mode
     entity_id: climate.woonkamer
     on_value:
-      - lvgl.widget.update:
+      - lvgl.label.update:
           id: climate_woonkamer_icon
+          text: !lambda return id(climate_mode_icon)[x];
           text_color: !lambda return lv_color_hex(id(climate_mode_color)[x]);
       - if:
           condition:
@@ -324,8 +325,9 @@ text_sensor:
     id: climate_slaapkamer_mode
     entity_id: climate.slaapkamer
     on_value:
-      - lvgl.widget.update:
+      - lvgl.label.update:
           id: climate_slaapkamer_icon
+          text: !lambda return id(climate_mode_icon)[x];
           text_color: !lambda return lv_color_hex(id(climate_mode_color)[x]);
       - if:
           condition:
@@ -339,8 +341,9 @@ text_sensor:
     id: climate_zolder_mode
     entity_id: climate.zolder
     on_value:
-      - lvgl.widget.update:
+      - lvgl.label.update:
           id: climate_zolder_icon
+          text: !lambda return id(climate_mode_icon)[x];
           text_color: !lambda return lv_color_hex(id(climate_mode_color)[x]);
       - if:
           condition:
