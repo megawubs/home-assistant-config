@@ -26,6 +26,9 @@ esp_ldo:
     id: display_supply_ldo
     voltage: 2.5V
 
+preferences:
+  flash_write_interval: 10s
+
 psram:
   mode: hex
   speed: 200MHz
