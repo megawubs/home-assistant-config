@@ -49,6 +49,18 @@ mapping:
       heat: ${orange_400}
       auto: ${indigo_400}
 
+  - id: climate_mode_icon
+    from: string
+    to: string
+    default_value: "${mdi_circle_small}"
+    entries:
+      "off": "${mdi_power}"
+      fan_only: "${mdi_fan}"
+      dry: "${mdi_water_percent}"
+      cool: "${mdi_snowflake}"
+      heat: "${mdi_fire}"
+      auto: "${mdi_thermostat_auto}"
+
   - id: climate_mode_sensor
     from: string
     to: text_sensor::TextSensor
