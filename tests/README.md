@@ -36,3 +36,16 @@ git -C tests/vendor/hass-template-climate fetch --tags
 git -C tests/vendor/hass-template-climate checkout <nieuwe-tag>
 uv run pytest
 ```
+
+## Stappen
+
+- **Generiek** (`conftest.py`), bruikbaar in elke feature:
+  - `Gegeven de entity "<entity_id>" staat op "<state>"`
+  - `Gegeven de entity "<entity_id>" heeft attribuut "<attribuut>" met waarde <waarde>`
+  - `Als de entity "<entity_id>" op "<state>" wordt gezet` (laat daarna 60 s verstrijken voor `delay`s)
+  - `Dan staat de entity "<entity_id>" op "<state>"`
+  - `Dan heeft de entity "<entity_id>" attribuut "<attribuut>" met waarde <waarde>`
+- **Domein** (`conftest.py` als ze door meerdere features gebruikt worden, anders in `test_*.py`):
+  woorden voor gedrag, zoals `geforceerd verwarmen staat aan`. Ze roepen alleen functies uit
+  `ha_test_helpers.py` aan en bevatten geen eigen logica.
+
