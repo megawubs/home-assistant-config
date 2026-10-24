@@ -63,3 +63,5 @@ esphome/esphome-modular-lvgl-buttons/
 # Python test environment
 .venv
 .pytest_cache
+
+# Vendored test dependencies

@@ -1,0 +1,3 @@
+[submodule "tests/vendor/hass-template-climate"]
+	path = tests/vendor/hass-template-climate
+	url = https://github.com/jcwillox/hass-template-climate

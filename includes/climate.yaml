@@ -28,10 +28,13 @@
   current_temperature_template: "{{ states('sensor.tstat_9d4027_current_temperature') | float(none) }}"
   hvac_mode_template: >-
     {% set unit_state = states('climate.airco_woonkamer') %}
-    {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}
+    {% if is_state('input_boolean.airco_woonkamer_moet_uit','on') %}off
+    {% elif is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') or is_state('input_boolean.airco_woonkamer_moet_afkoelen','on') %}
+      {% if unit_state in ['off', 'heat', 'cool', 'dry', 'fan_only'] %}{{ unit_state }}{% else %}auto{% endif %}
     {% else %}auto{% endif %}
   target_temperature_template: >-
-    {% if is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') %}
+    {% set heating_season = state_attr('weather.home', 'temperature') | float(99) < states('input_number.airco_ventileren_buitentemp_drempel') | float(12) %}
+    {% if is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') or (is_state('input_boolean.airco_woonkamer_moet_afkoelen','off') and heating_season) %}
       {{ states('input_number.airco_woonkamer_drempelwaarde_verwarmen') | float(20) }}
     {% else %}
       {{ states('input_number.airco_woonkamer_drempelwaarde_koelen') | float(24) }}
@@ -59,7 +62,9 @@
     {% else %}idle{% endif %}
   set_temperature:
     - choose:
-        - conditions: "{{ is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') }}"
+        - conditions: >-
+            {% set heating_season = state_attr('weather.home', 'temperature') | float(99) < states('input_number.airco_ventileren_buitentemp_drempel') | float(12) %}
+            {{ is_state('input_boolean.airco_woonkamer_moet_verwarmen','on') or (is_state('input_boolean.airco_woonkamer_moet_afkoelen','off') and heating_season) }}
           sequence:
             - action: input_number.set_value
               target:

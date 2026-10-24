@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 import pytest
-from homeassistant.const import ENTITY_MATCH_ALL
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.util import dt as dt_util
 from pytest_bdd import given, parsers, scenarios, then, when
@@ -26,17 +25,6 @@ MOCKED_SERVICES = [
 ]
 
 SECONDS_TO_LET_SCRIPT_DELAYS_PASS = 60
-
-
-@pytest.fixture
-def run_in_hass_loop(hass: HomeAssistant):
-    def run_coroutine(coroutine):
-        return hass.loop.run_until_complete(coroutine)
-
-    yield run_coroutine
-
-    if hass.services.has_service("automation", "turn_off"):
-        run_coroutine(hass.services.async_call("automation", "turn_off", {"entity_id": ENTITY_MATCH_ALL}, blocking=True))
 
 
 @pytest.fixture
